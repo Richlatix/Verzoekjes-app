@@ -25,8 +25,10 @@
       margin: auto; 
     }
 
-    .header-bar { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
-    .header-bar img { max-height: 60px; width: auto; object-fit: contain; }
+    /* LOGO GROTTE AANGEPAST NAAR 140PX */
+    .header-bar { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .header-bar img { max-height: 140px; width: auto; object-fit: contain; }
+    
     h1, h2, h3 { color: var(--accent-color); text-align: center; margin-top: 5px; }
     
     input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
@@ -184,7 +186,6 @@
       }
     }
 
-    // --- STEMMEN (+1) GECORRIGEERD EN ROBUUST GEMAAKT ---
     async function vote(id) {
       const song = allSongs.find(s => s.id === id);
       if (!song) return;
@@ -192,7 +193,6 @@
       const currentVotes = Number(song.votes) || 0;
       const newVotes = currentVotes + 1;
 
-      // Update de stemmen en zorg dat status op 'requested' staat
       const { error } = await dbClient
         .from('requests')
         .update({ votes: newVotes, status: 'requested' })
@@ -205,7 +205,6 @@
       }
     }
 
-    // --- LADEN EN TONEN VAN VERZOEKJES ---
     async function loadRequests() {
       if (!dbClient) return;
       const { data, error } = await dbClient
