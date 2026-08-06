@@ -1,408 +1,1215 @@
 <!DOCTYPE html>
 <html lang="nl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DJ Dashboard</title>
-    <!-- FontAwesome voor iconen -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <style>
-        :root {
-            --bg-color: #121212;
-            --card-bg: #1e1e1e;
-            --accent-color: #1db954;
-            --text-color: #ffffff;
-            --text-muted: #b3b3b3;
-            --border-color: #333333;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MXT Productions Verzoekjes</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      /* Dark mode volgens brandguide */
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --text-color: #ffffff;
+      --accent-color: #7dff00;
+      --border-color: #2a2a2a;
+      --subtext-color: #b0b0b0;
+    }
 
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            margin: 0;
-            padding: 20px;
-        }
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: var(--bg-color); 
+      color: var(--text-color); 
+      padding: 20px; 
+      max-width: 600px; 
+      margin: auto; 
+    }
 
-        .dashboard-container {
-            max-width: 900px;
-            margin: 0 auto;
-        }
+    /* NAVIGATIE BALK BOVENIN */
+    .top-nav {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      min-height: 35px;
+      margin-bottom: 10px;
+    }
 
-        /* Header met Tandwiel */
-        header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: var(--card-bg);
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border: 1px solid var(--border-color);
-        }
+    .top-nav-btn {
+      width: auto !important;
+      padding: 6px 14px !important;
+      font-size: 0.85em;
+      background: transparent !important;
+      color: var(--subtext-color) !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 20px !important;
+    }
+    .top-nav-btn:hover {
+      color: var(--accent-color) !important;
+      border-color: var(--accent-color) !important;
+    }
 
-        .header-titles h1 {
-            margin: 0 0 5px 0;
-            font-size: 1.8rem;
-        }
+    /* HEADER & LOGO */
+    .header-bar { 
+      display: flex; 
+      flex-direction: column;
+      justify-content: center; 
+      align-items: center; 
+      margin-bottom: 20px; 
+    }
+    .header-bar img { 
+      max-height: 140px; 
+      width: auto; 
+      object-fit: contain; 
+      transition: max-height 0.3s ease;
+    }
 
-        .header-titles p {
-            margin: 0;
-            color: var(--text-muted);
-            font-size: 0.95rem;
-        }
+    /* WELKOMSTBERICHT ONDER LOGO */
+    .welcome-banner {
+      margin-top: 12px;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: var(--accent-color);
+      text-align: center;
+      padding: 8px 16px;
+      background: rgba(125, 255, 0, 0.08);
+      border: 1px solid rgba(125, 255, 0, 0.2);
+      border-radius: 20px;
+    }
 
-        .gear-btn {
-            background: none;
-            border: none;
-            color: var(--text-color);
-            font-size: 1.5rem;
-            cursor: pointer;
-            transition: transform 0.2s;
-        }
+    @media (max-width: 600px) {
+      .header-bar img {
+        max-height: 80px;
+      }
+    }
 
-        .gear-btn:hover {
-            transform: rotate(90deg);
-            color: var(--accent-color);
-        }
+    h1, h2, h3, h4 { color: var(--accent-color); text-align: center; margin-top: 5px; }
+    
+    input, button, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
+    input, textarea, select { background: var(--card-bg); color: var(--text-color); }
+    button { background: var(--accent-color); color: #121212; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; opacity: 0.7; }
+    
+    .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
+    .card.done { opacity: 0.6; text-decoration: line-through; border-style: dashed; }
+    .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
+    .danger-btn { background: #ff4444; color: #ffffff; }
+    .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
+    
+    .hidden { display: none !important; }
+    
+    .request-box { 
+      background: var(--card-bg); 
+      padding: 15px; 
+      border-radius: 12px; 
+      border: 1px dashed var(--accent-color); 
+      margin-bottom: 25px; 
+    }
 
-        /* Visitekaartje Sectie */
-        .business-card {
-            background: var(--card-bg);
-            padding: 25px;
-            border-radius: 12px;
-            border: 1px solid var(--border-color);
-            text-align: center;
-            margin-bottom: 20px;
-        }
+    /* TANDWIEL EN UITKLAPBARE MENUS */
+    .settings-panel, .xml-panel {
+      background: #181818;
+      border: 1px solid var(--accent-color);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
 
-        .business-card h2 {
-            margin-top: 0;
-            margin-bottom: 20px;
-            font-size: 1.4rem;
-            border-bottom: 1px solid var(--border-color);
-            padding-bottom: 10px;
-        }
+    .xml-file-item {
+      background: #121212;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-top: 6px;
+      font-size: 0.85em;
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid var(--border-color);
+    }
 
-        .social-links {
-            display: flex;
-            justify-content: center;
-            gap: 15px;
-            flex-wrap: wrap;
-        }
+    .promo-card { background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%); border: 2px solid var(--accent-color); border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .promo-card h3 { margin-bottom: 5px; }
+    .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
+    .contact-link { display: inline-block; background: var(--accent-color); color: #121212; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin: 5px; }
 
-        .social-btn {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            background: #2a2a2a;
-            color: var(--text-color);
-            padding: 10px 16px;
-            border-radius: 30px;
-            text-decoration: none;
-            font-size: 0.9rem;
-            transition: background 0.2s, transform 0.2s;
-            border: 1px solid var(--border-color);
-        }
+    /* CUSTOM POPUP / TOAST NOTIFICATIE STYLING */
+    .toast-popup {
+      position: fixed;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e1e1e;
+      color: #ffffff;
+      border: 1.5px solid var(--accent-color);
+      padding: 12px 24px;
+      border-radius: 30px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      font-weight: bold;
+      text-align: center;
+      min-width: 250px;
+      animation: fadeInOut 3s ease forwards;
+    }
 
-        .social-btn:hover {
-            background: var(--accent-color);
-            color: #000;
-            transform: translateY(-2px);
-        }
-
-        /* Modal / Instellingen Menu */
-        .modal {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.7);
-            justify-content: center;
-            align-items: center;
-            z-index: 1000;
-        }
-
-        .modal.active {
-            display: flex;
-        }
-
-        .modal-content {
-            background: var(--card-bg);
-            padding: 30px;
-            border-radius: 12px;
-            width: 90%;
-            max-width: 500px;
-            max-height: 90vh;
-            overflow-y: auto;
-            border: 1px solid var(--border-color);
-        }
-
-        .modal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-        }
-
-        .close-btn {
-            background: none;
-            border: none;
-            color: var(--text-muted);
-            font-size: 1.2rem;
-            cursor: pointer;
-        }
-
-        .close-btn:hover {
-            color: var(--text-color);
-        }
-
-        .form-group {
-            margin-bottom: 15px;
-        }
-
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-            font-size: 0.9rem;
-            color: var(--text-muted);
-        }
-
-        .form-group input[type="text"] {
-            width: 100%;
-            padding: 10px;
-            background: #2a2a2a;
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            color: var(--text-color);
-            box-sizing: border-box;
-        }
-
-        .platform-setting {
-            background: #171717;
-            padding: 12px;
-            border-radius: 8px;
-            margin-bottom: 10px;
-            border: 1px solid var(--border-color);
-        }
-
-        .platform-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 8px;
-        }
-
-        .platform-row span {
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
-        .save-btn {
-            background: var(--accent-color);
-            color: #000;
-            border: none;
-            padding: 12px;
-            width: 100%;
-            border-radius: 6px;
-            font-weight: bold;
-            cursor: pointer;
-            margin-top: 15px;
-            font-size: 1rem;
-        }
-
-        .save-btn:hover {
-            opacity: 0.9;
-        }
-    </style>
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translate(-50%, 20px); }
+      15% { opacity: 1; transform: translate(-50%, 0); }
+      85% { opacity: 1; transform: translate(-50%, 0); }
+      100% { opacity: 0; transform: translate(-50%, -10px); }
+    }
+  </style>
 </head>
 <body>
 
-    <div class="dashboard-container">
-        <!-- Header -->
-        <header>
-            <div class="header-titles">
-                <h1 id="display-title">DJ Dashboard</h1>
-                <p id="display-subtitle">Welkom terug, beheer hier jouw gegevens</p>
-            </div>
-            <button class="gear-btn" id="openSettings" title="Instellingen">
-                <i class="fa-solid fa-gear"></i>
-            </button>
-        </header>
+  <!-- TOP NAVIGATIE BALK -->
+  <div class="top-nav" id="top-nav-bar">
+    <button id="dj-login-btn" class="top-nav-btn" onclick="checkDJPass()">🎧 DJ Inloggen</button>
+    <button id="back-to-guest-btn" class="top-nav-btn hidden" style="margin-right:auto;" onclick="showView('guest')">← Gastenscherm</button>
+  </div>
 
-        <!-- Visitekaartje -->
-        <div class="business-card">
-            <h2>Visitekaartje & Socials</h2>
-            <div class="social-links" id="socialLinksContainer">
-                <!-- Wordt dynamisch geladen -->
-            </div>
-        </div>
+  <!-- HEADER MET LOGO & WELKOMSTTEKST -->
+  <div class="header-bar">
+    <img src="Logo.png" alt="Drive-in Show Logo" id="app-logo">
+    <div id="welcome-banner" class="welcome-banner hidden"></div>
+  </div>
 
-        <!-- Hier kun je eventueel andere dashboard componenten kwijt -->
+  <!-- HOOFDSECTION -->
+  <div id="app-section">
+
+    <!-- GAST FEESTCODE INVOERSCHERM -->
+    <div id="party-code-view" class="card hidden" style="max-width: 400px; margin: 20px auto; text-align: center; flex-direction: column;">
+      <h2>🎉 Welkom op het feest!</h2>
+      <p style="color:var(--subtext-color); font-size: 0.9em;">Voer de 4-cijferige feestcode in die op de QR-poster of het DJ-scherm staat:</p>
+      
+      <input type="number" id="guest-party-code-input" placeholder="0000" maxlength="4" style="font-size: 2em; letter-spacing: 6px; text-align: center; width: 80%; margin: 15px auto;">
+      
+      <button onclick="submitPartyCode()" style="width: 100%; padding: 12px; font-size: 1.1em;">Deelnemen aan Feest 🚀</button>
     </div>
 
-    <!-- Instellingen Modal -->
-    <div class="modal" id="settingsModal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h3>Dashboard Instellingen</h3>
-                <button class="close-btn" id="closeSettings"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            
-            <form id="settingsForm">
-                <div class="form-group">
-                    <label for="inputTitle">Dashboard Titel</label>
-                    <input type="text" id="inputTitle" value="DJ Dashboard">
-                </div>
-                <div class="form-group">
-                    <label for="inputSubtitle">Dashboard Subtitel</label>
-                    <input type="text" id="inputSubtitle" value="Welkom terug, beheer hier jouw gegevens">
-                </div>
+    <!-- GASTENSCHERM -->
+    <div id="guest-view" class="hidden">
 
-                <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 20px 0;">
+      <div class="request-box">
+        <h2>Vraag een nummer aan</h2>
+        <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
 
-                <h4 style="margin-bottom: 15px;">Visitekaartje Platformen</h4>
-                
-                <!-- Platform instellingen container -->
-                <div id="platformsConfigContainer"></div>
-
-                <button type="submit" class="save-btn">Opslaan</button>
-            </form>
+        <div id="search-results-section" class="hidden" style="margin-top: 15px;">
+          <h3>🔍 Zoekresultaten uit bibliotheek</h3>
+          <div id="song-list"></div>
         </div>
+
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="secondary-btn" onclick="toggleCustomForm()" id="toggle-custom-btn">
+            ➕ Staat je nummer er niet tussen? Klik hier
+          </button>
+
+          <div id="custom-form-container" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="custom-title" placeholder="Nummer titel...">
+            <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
+            <input type="text" id="custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
+            <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
+          </div>
+        </div>
+      </div>
+      
+      <h3>🔥 Aangevraagde Nummers</h3>
+      <div id="guest-requested-list"></div>
+
+      <div id="guest-done-section" style="margin-top: 30px;">
+        <h3>🎉 Reeds Gedraaid</h3>
+        <div id="guest-done-list"></div>
+      </div>
+
+      <div class="promo-card">
+        <h3>🎉 Drive-in Show Boeken?</h3>
+        <p>Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
+        <div>
+          <a href="https://wa.me/31612345678" target="_blank" class="contact-link">💬 WhatsApp Mij</a>
+          <a href="mailto:info@jouwdriveinshow.nl" class="contact-link">✉️ E-mail Sturen</a>
+        </div>
+      </div>
     </div>
 
-    <script>
-        // Standaard configuratie met de vaste elementen
-        const defaultConfig = {
-            title: "DJ Dashboard",
-            subtitle: "Welkom terug, beheer hier jouw gegevens",
-            platforms: {
-                mail: { name: "Mail", icon: "fa-solid fa-envelope", active: true, value: "mailto:jouw@email.com" },
-                whatsapp: { name: "WhatsApp", icon: "fa-brands fa-whatsapp", active: true, value: "https://wa.me/31612345678" },
-                instagram: { name: "Instagram", icon: "fa-brands fa-instagram", active: true, value: "https://instagram.com/jouwaccount" },
-                tiktok: { name: "TikTok", icon: "fa-brands fa-tiktok", active: true, value: "https://tiktok.com/@jouwaccount" },
-                facebook: { name: "Facebook", icon: "fa-brands fa-facebook", active: true, value: "https://facebook.com/jouwaccount" }
-            }
-        };
+    <!-- DJ PINCODE SCHERM -->
+    <div id="pin-view" class="hidden">
+      <h2>🎧 DJ Toegang</h2>
+      <p style="text-align: center; color: var(--subtext-color);">Voer de DJ-pincode in om in te loggen:</p>
+      <input type="password" id="dj-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
+      <button onclick="verifyPin()">Inloggen</button>
+      <button onclick="showView('guest')" class="secondary-btn" style="margin-top:10px;">Annuleren</button>
+    </div>
 
-        // Laad opgeslagen configuratie uit localStorage of gebruik standaardwaarden
-        let config = JSON.parse(localStorage.getItem('djDashboardConfig')) || defaultConfig;
-
-        // Elementen selecteren
-        const modal = document.getElementById('settingsModal');
-        const openBtn = document.getElementById('openSettings');
-        const closeBtn = document.getElementById('closeSettings');
-        const settingsForm = document.getElementById('settingsForm');
+    <!-- DJ DASHBOARD -->
+    <div id="dj-view" class="hidden">
+      
+      <!-- HEADER MET DE AANWEZIGEN-TELLER & COMPACTE FEESTCODE -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; background: #1a1a1a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+        <div>
+          <h2 style="margin:0; text-align:left; font-size: 1.3em;">🎧 DJ Live Dashboard</h2>
+        </div>
         
-        const displayTitle = document.getElementById('display-title');
-        const displaySubtitle = document.getElementById('display-subtitle');
-        const socialLinksContainer = document.getElementById('socialLinksContainer');
-        const platformsConfigContainer = document.getElementById('platformsConfigContainer');
+        <div style="display:flex; align-items:center; gap: 10px;">
+          <!-- LIVE GASTEN TELLER -->
+          <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 6px; text-align: center;">
+            <span style="font-size:0.7em; color:var(--subtext-color); display:block; line-height:1;">INGELOGD</span>
+            <strong id="dj-online-count" style="font-size:1.1em; color:#ffffff;">👥 0</strong>
+          </div>
 
-        const inputTitle = document.getElementById('inputTitle');
-        const inputSubtitle = document.getElementById('inputSubtitle');
+          <!-- FEESTCODE BADGE -->
+          <div style="background: rgba(125,255,0,0.1); border: 1px solid var(--accent-color); padding: 4px 10px; border-radius: 6px; text-align: center;">
+            <span style="font-size:0.7em; color:var(--subtext-color); display:block; line-height:1;">CODE</span>
+            <strong id="dj-active-code-display" style="font-size:1.2em; color:var(--accent-color);">----</strong>
+          </div>
 
-        // Functie om het dashboard up-to-date te renderen
-        function renderDashboard() {
-            if (displayTitle) displayTitle.textContent = config.title;
-            if (displaySubtitle) displaySubtitle.textContent = config.subtitle;
-            
-            if (socialLinksContainer) {
-                socialLinksContainer.innerHTML = '';
+          <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 6px 10px; margin:0;" id="settings-toggle-btn">⚙️</button>
+        </div>
+      </div>
 
-                for (let key in config.platforms) {
-                    let p = config.platforms[key];
-                    if (p.active && p.value.trim() !== '') {
-                        let a = document.createElement('a');
-                        a.href = p.value;
-                        a.className = 'social-btn';
-                        a.target = '_blank';
-                        a.innerHTML = `<i class="${p.icon}"></i> ${p.name}`;
-                        socialLinksContainer.appendChild(a);
-                    }
-                }
-            }
+      <!-- TANDWIEL INSTELLINGEN PANEL -->
+      <div id="settings-panel" class="settings-panel hidden">
+        <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
+        
+        <!-- 1. WELKOMSTTEKST -->
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📢 Welkomsttekst Gastenscherm:</label>
+          <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
+          <div style="display:flex; gap:10px; margin-top:4px;">
+            <button onclick="saveWelcomeText()">Opslaan & Tonen</button>
+            <button onclick="clearWelcomeText()" class="secondary-btn">Wis Tekst</button>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
+        <!-- 2. EXPORTEREN -->
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📊 Gegevens Exporteren:</label>
+          <button onclick="downloadCSV()" class="secondary-btn" style="margin-top:6px;">📥 Exporteer Verzoekjes naar Excel/CSV</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
+        <!-- 3. FEEST SESSIE BEHEER -->
+        <div>
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚀 Nieuw Evenement Starten:</label>
+          <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">
+            Dit wist alle verzoekjes, genereert een nieuwe 4-cijferige Feestcode en blokkeert telefoons van het vorige feest.
+          </p>
+          <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest (Nieuwe Code)</button>
+        </div>
+      </div>
+
+      <!-- DJ ZOEKMENU (VERBORGEN TOTDAT VERGROOTGLAS WORDT AANGEKLIKT) -->
+      <div id="dj-search-panel" class="request-box hidden" style="margin-top: 15px;">
+        <h3 style="margin-top:0;">🔍 Verzoekje Toevoegen (Bibliotheek / Handmatig)</h3>
+        <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()">
+
+        <div id="dj-search-results-section" class="hidden" style="margin-top: 10px;">
+          <div id="dj-song-list"></div>
+        </div>
+
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="secondary-btn" onclick="toggleDjCustomForm()" id="dj-toggle-custom-btn">
+            ➕ Staat het nummer niet in de bibliotheek? Klik hier
+          </button>
+
+          <div id="dj-custom-form-container" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="dj-custom-title" placeholder="Nummer titel...">
+            <input type="text" id="dj-custom-artist" placeholder="Artiest (optioneel)...">
+            <input type="text" id="dj-custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
+            <button onclick="submitDjCustomRequest()">Direct Toevoegen aan Verzoekjes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- DE FOCUS: VERZOEKJES & SORTEERFILTER -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px; flex-wrap: wrap; gap: 8px;">
+        <h3 style="margin:0; text-align:left;">🔥 Live Verzoekjes</h3>
+        
+        <div style="display:flex; gap:6px; align-items:center;">
+          <!-- VERGROOTGLAS KNOP OM DJ ZOEKMENU TE OPENEN -->
+          <button onclick="toggleDjSearchMenu()" class="secondary-btn vote-btn" id="dj-search-toggle-btn" style="padding: 6px 10px; font-size:0.85em; margin:0;" title="Verzoekje toevoegen">🔍</button>
+
+          <!-- FILTER VOOR ZOEKEN EN SORTEREN -->
+          <select id="sort-select" onchange="renderDjRequests()" style="width:auto; padding: 6px 10px; margin:0; font-size:0.85em;">
+            <option value="votes">🔥 Meeste stemmen</option>
+            <option value="newest">⏱️ Nieuwste aanvragen</option>
+            <option value="oldest">⌛ Oudste aanvragen</option>
+          </select>
+          <button onclick="wipeRequests()" class="danger-btn vote-btn" style="padding: 6px 10px; font-size:0.85em;">🧹 Wis</button>
+        </div>
+      </div>
+      
+      <div id="request-list" style="margin-top: 10px;"></div>
+
+      <h3 style="margin-top: 25px;">🎉 Reeds Gedraaid</h3>
+      <div id="dj-done-list"></div>
+
+      <!-- ONDERSTE UITKLAPBARE SECTIE: XML / MUZIEKBIBLIOTHEEK -->
+      <div style="margin-top: 30px;">
+        <button onclick="toggleXmlMenu()" class="secondary-btn" id="xml-toggle-btn" style="width: 100%; border-color: var(--accent-color); color: var(--accent-color); font-weight: bold;">
+          📂 Muziekbibliotheek / XML Beheren (Uitklappen)
+        </button>
+
+        <div id="xml-panel" class="xml-panel hidden" style="margin-top: 10px;">
+          <h3 style="margin-top:0; color: var(--accent-color);">Rekordbox / Spotify XML Beheer</h3>
+          <p style="font-size: 0.85em; color: var(--subtext-color); margin-bottom: 10px;">Upload hier je muziekbestand zodat gasten uit je bibliotheek kunnen zoeken.</p>
+          
+          <input type="file" id="xml-file" accept=".xml">
+          <button onclick="uploadXML()">Importeer Muzieklijst</button>
+
+          <h4 style="margin-top:20px; color:var(--accent-color); margin-bottom:5px;">📂 Geüploade XML Bestanden</h4>
+          <div id="uploaded-xml-list">
+            <p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    const SUPABASE_URL = "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
+
+    let dbClient = null;
+    let allSongs = [];
+    let isDjLoggedIn = false;
+    let currentPartyCode = null;
+    let activeLibraryNoteId = null;
+    let activeDjLibraryNoteId = null;
+    let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
+    const DJ_PIN = "3977";
+
+    function toonPopup(bericht) {
+      const oudePopup = document.getElementById('custom-toast');
+      if (oudePopup) oudePopup.remove();
+
+      const popup = document.createElement('div');
+      popup.id = 'custom-toast';
+      popup.className = 'toast-popup';
+      popup.innerText = bericht;
+
+      document.body.appendChild(popup);
+
+      setTimeout(() => {
+        if (popup) popup.remove();
+      }, 3000);
+    }
+
+    function getVotedSongIds() {
+      try {
+        return JSON.parse(localStorage.getItem('voted_song_ids')) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function recordVote(id) {
+      const voted = getVotedSongIds();
+      if (!voted.includes(id)) {
+        voted.push(id);
+        localStorage.setItem('voted_song_ids', JSON.stringify(voted));
+      }
+    }
+
+    async function initSupabase() {
+      try {
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const codeFromUrl = urlParams.get('code');
+        if (codeFromUrl) {
+          localStorage.setItem('entered_party_code', codeFromUrl);
         }
 
-        // Functie om de instellingen modal dynamisch te vullen
-        function renderSettingsModal() {
-            if (inputTitle) inputTitle.value = config.title;
-            if (inputSubtitle) inputSubtitle.value = config.subtitle;
-            
-            if (platformsConfigContainer) {
-                platformsConfigContainer.innerHTML = '';
+        await loadActivePartyCode();
+        checkGuestAccess();
 
-                for (let key in config.platforms) {
-                    let p = config.platforms[key];
-                    
-                    let div = document.createElement('div');
-                    div.className = 'platform-setting';
-                    div.innerHTML = `
-                        <div class="platform-row">
-                            <span><i class="${p.icon}"></i> ${p.name}</span>
-                            <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                                Tonen <input type="checkbox" name="${key}-active" ${p.active ? 'checked' : ''}>
-                            </label>
-                        </div>
-                        <input type="text" name="${key}-value" value="${p.value}" placeholder="Link / URL / Contactinfo">
-                    `;
-                    platformsConfigContainer.appendChild(div);
-                }
-            }
+        loadRequests();
+        loadWelcomeText();
+        listenToRealtime();
+        
+        setInterval(() => {
+          loadActivePartyCode();
+          loadRequests();
+          loadWelcomeText();
+          pingPresence();
+        }, 3000);
+
+        setInterval(() => {
+          fetchOnlineCount();
+        }, 5000);
+
+      } catch (err) {
+        toonPopup('Fout bij verbinden met Supabase!');
+      }
+    }
+
+    async function pingPresence() {
+      const savedGuestCode = localStorage.getItem('entered_party_code');
+      if (!savedGuestCode || !currentPartyCode || savedGuestCode !== currentPartyCode || isDjLoggedIn) return;
+
+      await dbClient.from('presence').upsert({
+        session_id: guestSessionId,
+        party_code: currentPartyCode,
+        last_seen: new Date().toISOString()
+      }, { onConflict: 'session_id' });
+    }
+
+    async function fetchOnlineCount() {
+      if (!dbClient || !currentPartyCode) return;
+      
+      const threshold = new Date(Date.now() - 15000).toISOString();
+      await dbClient.from('presence').delete().lt('last_seen', threshold);
+
+      const { count, error } = await dbClient
+        .from('presence')
+        .select('*', { count: 'exact', head: true })
+        .eq('party_code', currentPartyCode);
+
+      if (!error && count !== null) {
+        const countDisplay = document.getElementById('dj-online-count');
+        if (countDisplay) {
+          countDisplay.innerText = `👥 ${count}`;
         }
+      }
+    }
 
-        // Event listeners voor openen en sluiten van de modal
-        if (openBtn) {
-            openBtn.addEventListener('click', () => {
-                renderSettingsModal();
-                modal.classList.add('active');
-            });
+    async function loadActivePartyCode() {
+      if (!dbClient) return;
+      const { data } = await dbClient
+        .from('settings')
+        .select('value')
+        .eq('key', 'party_code')
+        .maybeSingle();
+
+      if (data && data.value) {
+        currentPartyCode = data.value;
+        
+        const djCodeDisplay = document.getElementById('dj-active-code-display');
+        if (djCodeDisplay) djCodeDisplay.innerText = currentPartyCode;
+
+        const savedGuestCode = localStorage.getItem('entered_party_code');
+        if (savedGuestCode && savedGuestCode !== currentPartyCode && !isDjLoggedIn) {
+          localStorage.removeItem('entered_party_code');
+          checkGuestAccess();
+          toonPopup('Het vorige feest is afgelopen! Voer de nieuwe code in.');
         }
+      }
+    }
 
-        if (closeBtn) {
-            closeBtn.addEventListener('click', () => {
-                modal.classList.remove('active');
-            });
-        }
+    function checkGuestAccess() {
+      if (isDjLoggedIn) return; 
 
-        window.addEventListener('click', (e) => {
-            if (e.target === modal) {
-                modal.classList.remove('active');
-            }
+      const savedGuestCode = localStorage.getItem('entered_party_code');
+      
+      if (savedGuestCode && currentPartyCode && savedGuestCode === currentPartyCode) {
+        document.getElementById('party-code-view').classList.add('hidden');
+        document.getElementById('guest-view').classList.remove('hidden');
+        pingPresence();
+      } else {
+        document.getElementById('guest-view').classList.add('hidden');
+        document.getElementById('party-code-view').classList.remove('hidden');
+      }
+    }
+
+    function submitPartyCode() {
+      const inputCode = document.getElementById('guest-party-code-input').value.trim();
+      
+      if (!currentPartyCode) {
+        return toonPopup('Er is momenteel geen actief feest gestart door de DJ.');
+      }
+
+      if (inputCode === currentPartyCode) {
+        localStorage.setItem('entered_party_code', inputCode);
+        checkGuestAccess();
+        pingPresence();
+        toonPopup('Succesvol ingelogd op het feest!');
+      } else {
+        toonPopup('Onjuiste feestcode! Kijk op het scherm of de poster.');
+      }
+    }
+
+    async function startNewSession() {
+      const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Er wordt een nieuwe feestcode gegenereerd en verzoekjes worden gewist.");
+      if (!confirmStart) return;
+
+      const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+
+      try {
+        await dbClient.from('requests').delete().eq('status', 'requested');
+        await dbClient.from('requests').delete().eq('status', 'done');
+        await dbClient.from('presence').delete();
+
+        await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).eq('status', 'available');
+
+        await dbClient.from('settings').delete().eq('key', 'party_code');
+        await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]);
+
+        currentPartyCode = newCode;
+        const djCodeDisplay = document.getElementById('dj-active-code-display');
+        if (djCodeDisplay) djCodeDisplay.innerText = newCode;
+
+        toonPopup(`Nieuw feest gestart! Nieuwe code: ${newCode}`);
+        loadRequests();
+        fetchOnlineCount();
+      } catch (err) {
+        console.error(err);
+        toonPopup("Fout bij starten van nieuw feest.");
+      }
+    }
+
+    function toggleSettingsMenu() {
+      const panel = document.getElementById('settings-panel');
+      const btn = document.getElementById('settings-toggle-btn');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btn.style.borderColor = 'var(--accent-color)';
+        btn.style.color = 'var(--accent-color)';
+      } else {
+        panel.classList.add('hidden');
+        btn.style.borderColor = 'var(--border-color)';
+        btn.style.color = '#ffffff';
+      }
+    }
+
+    function toggleDjSearchMenu() {
+      const panel = document.getElementById('dj-search-panel');
+      const btn = document.getElementById('dj-search-toggle-btn');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btn.style.borderColor = 'var(--accent-color)';
+        btn.style.color = 'var(--accent-color)';
+        document.getElementById('dj-search-input').focus();
+      } else {
+        panel.classList.add('hidden');
+        btn.style.borderColor = 'var(--border-color)';
+        btn.style.color = '#ffffff';
+      }
+    }
+
+    function toggleXmlMenu() {
+      const panel = document.getElementById('xml-panel');
+      const btn = document.getElementById('xml-toggle-btn');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Inklappen)';
+      } else {
+        panel.classList.add('hidden');
+        btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Uitklappen)';
+      }
+    }
+
+    async function loadWelcomeText() {
+      if (!dbClient) return;
+      const { data } = await dbClient
+        .from('settings')
+        .select('value')
+        .eq('key', 'welcome_text')
+        .maybeSingle();
+
+      let text = "";
+      if (data && data.value) {
+        text = data.value;
+      } else {
+        text = localStorage.getItem('welcome_text') || "";
+      }
+
+      const banner = document.getElementById('welcome-banner');
+      const input = document.getElementById('welcome-text-input');
+
+      if (text.trim() !== "") {
+        banner.innerText = text;
+        banner.classList.remove('hidden');
+        if (input && document.activeElement !== input) input.value = text;
+      } else {
+        banner.innerText = "";
+        banner.classList.add('hidden');
+        if (input && document.activeElement !== input) input.value = "";
+      }
+    }
+
+    async function saveWelcomeText() {
+      const text = document.getElementById('welcome-text-input').value.trim();
+      localStorage.setItem('welcome_text', text);
+
+      if (dbClient) {
+        await dbClient
+          .from('settings')
+          .upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' });
+      }
+
+      loadWelcomeText();
+      toonPopup('Welkomsttekst bijgewerkt!');
+    }
+
+    async function clearWelcomeText() {
+      document.getElementById('welcome-text-input').value = "";
+      saveWelcomeText();
+    }
+
+    function toggleCustomForm() {
+      const form = document.getElementById('custom-form-container');
+      const btn = document.getElementById('toggle-custom-btn');
+      
+      if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+        btn.innerText = '➖ Sluit handmatig invoeren';
+      } else {
+        form.classList.add('hidden');
+        btn.innerText = '➕ Staat je nummer er niet tussen? Klik hier';
+      }
+    }
+
+    function toggleDjCustomForm() {
+      const form = document.getElementById('dj-custom-form-container');
+      const btn = document.getElementById('dj-toggle-custom-btn');
+      
+      if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+        btn.innerText = '➖ Sluit handmatig invoeren';
+      } else {
+        form.classList.add('hidden');
+        btn.innerText = '➕ Staat het nummer niet in de bibliotheek? Klik hier';
+      }
+    }
+
+    function showView(view) {
+      document.getElementById('party-code-view').classList.add('hidden');
+      document.getElementById('guest-view').classList.add('hidden');
+      document.getElementById('pin-view').classList.add('hidden');
+      document.getElementById('dj-view').classList.add('hidden');
+      
+      const loginBtn = document.getElementById('dj-login-btn');
+      const backBtn = document.getElementById('back-to-guest-btn');
+
+      if (view === 'guest') {
+        loginBtn.classList.remove('hidden');
+        backBtn.classList.add('hidden');
+        checkGuestAccess();
+      } else if (view === 'dj') {
+        loginBtn.classList.add('hidden');
+        backBtn.classList.add('hidden');
+        document.getElementById('dj-view').classList.remove('hidden');
+        loadActivePartyCode();
+        fetchOnlineCount();
+      } else {
+        loginBtn.classList.add('hidden');
+        backBtn.classList.add('hidden');
+        document.getElementById(view + '-view').classList.remove('hidden');
+      }
+    }
+
+    function checkDJPass() {
+      if (isDjLoggedIn) showView('dj');
+      else showView('pin');
+    }
+
+    function verifyPin() {
+      const enteredPin = document.getElementById('dj-pin-input').value;
+      if (enteredPin === DJ_PIN) {
+        isDjLoggedIn = true;
+        document.getElementById('dj-pin-input').value = '';
+        showView('dj');
+        toonPopup('Succesvol ingelogd als DJ!');
+      } else {
+        toonPopup('Onjuiste pincode!');
+        document.getElementById('dj-pin-input').value = '';
+      }
+    }
+
+    async function vote(id, optionalNote = null, isDjAction = false) {
+      const song = allSongs.find(s => s.id === id);
+      if (!song) return;
+      
+      const currentVotes = Number(song.votes) || 0;
+      const newVotes = isDjAction ? currentVotes : currentVotes + 1;
+
+      const updateData = { 
+        votes: newVotes, 
+        status: 'requested',
+        created_at: song.status === 'available' ? new Date().toISOString() : song.created_at
+      };
+
+      if (optionalNote) updateData.note = optionalNote;
+
+      const { error } = await dbClient
+        .from('requests')
+        .update(updateData)
+        .eq('id', id);
+
+      if (error) {
+        toonPopup('Fout bij toevoegen!');
+      } else {
+        if (!isDjAction) recordVote(id);
+        toonPopup(`Verzoekje voor "${song.title}" toegevoegd!`);
+        activeLibraryNoteId = null;
+        activeDjLibraryNoteId = null;
+        loadRequests();
+      }
+    }
+
+    async function loadRequests() {
+      if (!dbClient) return;
+      const { data, error } = await dbClient
+        .from('requests')
+        .select('*');
+
+      if (data && !error) {
+        allSongs = data;
+        renderAllViews();
+      }
+    }
+
+    function renderAllViews() {
+      renderGuestRequests();
+      renderDjRequests();
+      renderUploadedXmlFiles();
+      filterSongs();
+      filterDjSearchSongs();
+    }
+
+    function formatTime(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      return date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    }
+
+    function renderGuestRequests() {
+      const guestList = document.getElementById('guest-requested-list');
+      const guestDoneList = document.getElementById('guest-done-list');
+      guestList.innerHTML = '';
+      guestDoneList.innerHTML = '';
+
+      const requested = allSongs.filter(s => s.status === 'requested').sort((a,b) => (b.votes || 0) - (a.votes || 0));
+      const done = allSongs.filter(s => s.status === 'done');
+      const votedIds = getVotedSongIds();
+
+      if (requested.length === 0) {
+        guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>';
+      } else {
+        requested.forEach(song => {
+          const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : '';
+          const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
+          const hasVoted = votedIds.includes(song.id);
+          const btnText = hasVoted ? 'Gestemd ✅' : '+1 Stem';
+          const disabledAttr = hasVoted ? 'disabled' : '';
+
+          guestList.innerHTML += `
+            <div class="card">
+              <div>
+                <strong>${song.title}</strong> ${timeStr}<br>
+                <small style="color:var(--subtext-color);">${song.artist}</small>
+                ${noteText}
+              </div>
+              <div>
+                <span class="badge">👍 ${song.votes || 0}</span>
+                <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button>
+              </div>
+            </div>`;
         });
+      }
 
-        // Formulier opslaan en verwerken
-        if (settingsForm) {
-            settingsForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                
-                config.title = inputTitle.value;
-                config.subtitle = inputSubtitle.value;
+      if (done.length === 0) {
+        guestDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
+      } else {
+        done.forEach(song => {
+          const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : '';
+          guestDoneList.innerHTML += `
+            <div class="card done">
+              <div>
+                <strong>${song.title}</strong><br>
+                <small style="color:var(--subtext-color);">${song.artist}</small>
+                ${noteText}
+              </div>
+              <div><span class="badge">✅ Gedraaid</span></div>
+            </div>`;
+        });
+      }
+    }
 
-                for (let key in config.platforms) {
-                    let activeCheckbox = settingsForm.querySelector(`[name="${key}-active"]`);
-                    let valueInput = settingsForm.querySelector(`[name="${key}-value"]`);
+    function renderDjRequests() {
+      const djList = document.getElementById('request-list');
+      const djDoneList = document.getElementById('dj-done-list');
+      djList.innerHTML = '';
+      djDoneList.innerHTML = '';
+      
+      let requested = allSongs.filter(s => s.status === 'requested');
+      const done = allSongs.filter(s => s.status === 'done');
 
-                    if (activeCheckbox) config.platforms[key].active = activeCheckbox.checked;
-                    if (valueInput) config.platforms[key].value = valueInput.value;
-                }
+      const sortOption = document.getElementById('sort-select') ? document.getElementById('sort-select').value : 'votes';
+      if (sortOption === 'votes') {
+        requested.sort((a,b) => (b.votes || 0) - (a.votes || 0));
+      } else if (sortOption === 'newest') {
+        requested.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      } else if (sortOption === 'oldest') {
+        requested.sort((a,b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+      }
 
-                // Opslaan in browsergeheugen
-                localStorage.setItem('djDashboardConfig', JSON.stringify(config));
+      if (requested.length === 0) {
+        djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color); padding: 20px 0;">Geen verzoekjes in de wachtrij 🎉</p>';
+      } else {
+        requested.forEach(song => {
+          const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : '';
+          const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
+          djList.innerHTML += `
+            <div class="card" style="border-left: 4px solid var(--accent-color);">
+              <div>
+                <strong>${song.title}</strong> ${timeStr}<br>
+                <small style="color:var(--subtext-color);">${song.artist}</small>
+                ${noteText}
+              </div>
+              <div>
+                <span style="margin-right:10px; font-weight:bold; color:var(--accent-color);">👍 ${song.votes || 0}</span>
+                <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button>
+              </div>
+            </div>`;
+        });
+      }
 
-                renderDashboard();
-                modal.classList.remove('active');
+      if (done.length === 0) {
+        djDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
+      } else {
+        done.forEach(song => {
+          const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : '';
+          djDoneList.innerHTML += `
+            <div class="card done">
+              <div>
+                <strong>${song.title}</strong><br>
+                <small style="color:var(--subtext-color);">${song.artist}</small>
+                ${noteText}
+              </div>
+              <div>
+                <button class="vote-btn secondary-btn" onclick="unmarkDone(${song.id})">↩️ Terugzetten</button>
+              </div>
+            </div>`;
+        });
+      }
+    }
+
+    function renderUploadedXmlFiles() {
+      const xmlListContainer = document.getElementById('uploaded-xml-list');
+      xmlListContainer.innerHTML = '';
+
+      const xmlSongs = allSongs.filter(s => s.source_file);
+
+      if (xmlSongs.length === 0) {
+        xmlListContainer.innerHTML = '<p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>';
+        return;
+      }
+
+      const filesMap = {};
+      xmlSongs.forEach(song => {
+        const fileName = song.source_file || 'Onbekend XML Bestand';
+        if (!filesMap[fileName]) {
+          filesMap[fileName] = {
+            name: fileName,
+            count: 0,
+            date: song.created_at ? new Date(song.created_at).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' }) : 'Onbekend'
+          };
+        }
+        filesMap[fileName].count++;
+      });
+
+      Object.values(filesMap).forEach(file => {
+        xmlListContainer.innerHTML += `
+          <div class="xml-file-item">
+            <span>📄 <strong>${file.name}</strong> (${file.count} nummers)</span>
+            <span style="color:var(--subtext-color);">${file.date}</span>
+          </div>`;
+      });
+    }
+
+    function filterSongs() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const resultsSection = document.getElementById('search-results-section');
+      const songList = document.getElementById('song-list');
+      songList.innerHTML = '';
+
+      if (query.length < 2) {
+        resultsSection.classList.add('hidden');
+        return;
+      }
+
+      resultsSection.classList.remove('hidden');
+      const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
+      const votedIds = getVotedSongIds();
+
+      if (matches.length === 0) {
+        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>';
+        return;
+      }
+
+      matches.forEach(song => {
+        const hasVoted = votedIds.includes(song.id);
+        const disabledAttr = hasVoted ? 'disabled' : '';
+        const isAddingNote = activeLibraryNoteId === song.id;
+
+        if (isAddingNote) {
+          songList.innerHTML += `
+            <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;">
+              <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div>
+              <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;">
+              <div style="display:flex; gap:8px; width:100%;">
+                <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Verzoekje Versturen 🚀</button>
+                <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button>
+              </div>
+            </div>`;
+        } else {
+          songList.innerHTML += `
+            <div class="card">
+              <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
+              <div>
+                <button class="vote-btn" onclick="toggleLibraryNote(${song.id})" ${disabledAttr}>${hasVoted ? 'Gestemd ✅' : 'Aanvragen'}</button>
+              </div>
+            </div>`;
+        }
+      });
+    }
+
+    function filterDjSearchSongs() {
+      const queryInput = document.getElementById('dj-search-input');
+      if (!queryInput) return;
+      const query = queryInput.value.toLowerCase();
+      const resultsSection = document.getElementById('dj-search-results-section');
+      const songList = document.getElementById('dj-song-list');
+      songList.innerHTML = '';
+
+      if (query.length < 2) {
+        resultsSection.classList.add('hidden');
+        return;
+      }
+
+      resultsSection.classList.remove('hidden');
+      const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
+
+      if (matches.length === 0) {
+        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek.</p>';
+        return;
+      }
+
+      matches.forEach(song => {
+        const isAddingNote = activeDjLibraryNoteId === song.id;
+
+        if (isAddingNote) {
+          songList.innerHTML += `
+            <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;">
+              <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div>
+              <input type="text" id="dj-lib-note-${song.id}" placeholder="Opmerking (optioneel)..." style="margin:0;">
+              <div style="display:flex; gap:8px; width:100%;">
+                <button class="vote-btn" onclick="submitDjLibraryVote(${song.id})">Toevoegen aan Wachtrij 🚀</button>
+                <button class="vote-btn secondary-btn" onclick="toggleDjLibraryNote(null)">Annuleren</button>
+              </div>
+            </div>`;
+        } else {
+          songList.innerHTML += `
+            <div class="card">
+              <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
+              <div>
+                <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">Toevoegen</button>
+              </div>
+            </div>`;
+        }
+      });
+    }
+
+    function toggleLibraryNote(id) {
+      activeLibraryNoteId = id;
+      filterSongs();
+    }
+
+    function toggleDjLibraryNote(id) {
+      activeDjLibraryNoteId = id;
+      filterDjSearchSongs();
+    }
+
+    function submitLibraryVote(id) {
+      const noteInput = document.getElementById(`lib-note-${id}`);
+      const note = noteInput ? noteInput.value.trim() : null;
+      vote(id, note, false);
+    }
+
+    function submitDjLibraryVote(id) {
+      const noteInput = document.getElementById(`dj-lib-note-${id}`);
+      const note = noteInput ? noteInput.value.trim() : null;
+      vote(id, note, true);
+    }
+
+    async function submitCustomRequest() {
+      const titleInput = document.getElementById('custom-title');
+      const artistInput = document.getElementById('custom-artist');
+      const noteInput = document.getElementById('custom-note');
+
+      const title = titleInput.value.trim();
+      const artist = artistInput.value.trim() || 'Spotify Verzoek';
+      const note = noteInput.value.trim();
+
+      if (!title) return toonPopup('Vul alstublieft een titel in!');
+
+      const { data, error } = await dbClient.from('requests').insert([{
+        title: title,
+        artist: artist,
+        note: note,
+        votes: 1,
+        status: 'requested',
+        created_at: new Date().toISOString()
+      }]).select();
+
+      if (error) {
+        toonPopup('Er ging iets mis bij het verzenden!');
+      } else {
+        toonPopup(`Verzoekje "${title}" is verstuurd!`);
+        if (data && data[0]) {
+          recordVote(data[0].id);
+        }
+        titleInput.value = '';
+        artistInput.value = '';
+        noteInput.value = '';
+        toggleCustomForm();
+        loadRequests();
+      }
+    }
+
+    async function submitDjCustomRequest() {
+      const titleInput = document.getElementById('dj-custom-title');
+      const artistInput = document.getElementById('dj-custom-artist');
+      const noteInput = document.getElementById('dj-custom-note');
+
+      const title = titleInput.value.trim();
+      const artist = artistInput.value.trim() || 'DJ Verzoek';
+      const note = noteInput.value.trim();
+
+      if (!title) return toonPopup('Vul alstublieft een titel in!');
+
+      const { error } = await dbClient.from('requests').insert([{
+        title: title,
+        artist: artist,
+        note: note,
+        votes: 0,
+        status: 'requested',
+        created_at: new Date().toISOString()
+      }]);
+
+      if (error) {
+        toonPopup('Er ging iets mis bij het toevoegen!');
+      } else {
+        toonPopup(`Verzoekje "${title}" toegevoegd!`);
+        titleInput.value = '';
+        artistInput.value = '';
+        noteInput.value = '';
+        toggleDjCustomForm();
+        loadRequests();
+      }
+    }
+
+    async function markDone(id) {
+      const { error } = await dbClient.from('requests').update({ status: 'done' }).eq('id', id);
+      if (error) toonPopup('Fout bij afvinken!');
+      else {
+        toonPopup('Nummer gemarkeerd als gedraaid!');
+        loadRequests();
+      }
+    }
+
+    async function unmarkDone(id) {
+      const { error } = await dbClient.from('requests').update({ status: 'requested' }).eq('id', id);
+      if (error) toonPopup('Fout bij terugzetten!');
+      else {
+        toonPopup('Nummer teruggezet naar actieve lijst!');
+        loadRequests();
+      }
+    }
+
+    async function wipeRequests() {
+      const confirmWipe = confirm("Weet je ZEKER dat je alle actieve verzoekjes wilt wissen?");
+      if (!confirmWipe) return;
+
+      const { error } = await dbClient.from('requests').delete().eq('status', 'requested');
+      await dbClient.from('requests').delete().eq('status', 'done');
+
+      if (error) toonPopup('Fout bij het wissen!');
+      else {
+        toonPopup('Actieve verzoekjes zijn gewist!');
+        localStorage.removeItem('voted_song_ids');
+        loadRequests();
+      }
+    }
+
+    function downloadCSV() {
+      const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done');
+      if (requested.length === 0) return toonPopup('Geen verzoekjes om te exporteren!');
+
+      let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Tijd;Opmerking;Status\n";
+      requested.forEach(s => {
+        const note = (s.note || "").replace(/;/g, ",");
+        const time = formatTime(s.created_at);
+        csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${time}";"${note}";"${s.status}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `verzoekjes_export_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      toonPopup('Lijst gedownload!');
+    }
+
+    async function uploadXML() {
+      const fileInput = document.getElementById('xml-file');
+      const file = fileInput.files[0];
+      if (!file) return toonPopup('Kies eerst een .xml bestand!');
+      
+      const fileName = file.name;
+      const reader = new FileReader();
+      
+      reader.onload = async function(e) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+        const tracks = xmlDoc.getElementsByTagName("TRACK");
+        
+        let imported = [];
+        for (let i = 0; i < tracks.length; i++) {
+          const title = tracks[i].getAttribute("Name");
+          const artist = tracks[i].getAttribute("Artist");
+          if (title) {
+            imported.push({ 
+              title: title, 
+              artist: artist || "Onbekend", 
+              votes: 0, 
+              status: 'available',
+              source_file: fileName 
             });
+          }
         }
 
-        // Direct uitvoeren bij laden van de pagina
-        renderDashboard();
-    </script>
+        const { error } = await dbClient.from('requests').insert(imported);
+        if (error) toonPopup('Fout bij uploaden van XML!');
+        else {
+          toonPopup(`${imported.length} nummers geïmporteerd uit XML!`);
+          fileInput.value = '';
+          loadRequests();
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function listenToRealtime() {
+      if (!dbClient) return;
+      dbClient.channel('requests-change')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => {
+          loadRequests();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
+          loadActivePartyCode();
+          loadWelcomeText();
+        })
+        .subscribe();
+    }
+
+    window.onload = initSupabase;
+  </script>
 </body>
 </html>
