@@ -106,8 +106,8 @@
       margin-bottom: 25px; 
     }
 
-    /* TANDWIEL MENU STYLING */
-    .settings-panel {
+    /* TANDWIEL EN UITKLAPBARE MENUS */
+    .settings-panel, .xml-panel {
       background: #181818;
       border: 1px solid var(--accent-color);
       border-radius: 12px;
@@ -319,16 +319,26 @@
       <h3 style="margin-top: 25px;">🎉 Reeds Gedraaid</h3>
       <div id="dj-done-list"></div>
 
-      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-top:30px; border:1px solid var(--border-color);">
-        <h3>Upload Rekordbox / Spotify XML</h3>
-        <input type="file" id="xml-file" accept=".xml">
-        <button onclick="uploadXML()">Importeer Muzieklijst</button>
+      <!-- ONDERSTE UITKLAPBARE SECTIE: XML / MUZIEKBIBLIOTHEEK -->
+      <div style="margin-top: 30px;">
+        <button onclick="toggleXmlMenu()" class="secondary-btn" id="xml-toggle-btn" style="width: 100%; border-color: var(--accent-color); color: var(--accent-color); font-weight: bold;">
+          📂 Muziekbibliotheek / XML Beheren (Uitklappen)
+        </button>
 
-        <h4 style="margin-top:20px; color:var(--accent-color); margin-bottom:5px;">📂 Geüploade XML Bestanden</h4>
-        <div id="uploaded-xml-list">
-          <p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>
+        <div id="xml-panel" class="xml-panel hidden" style="margin-top: 10px;">
+          <h3 style="margin-top:0; color: var(--accent-color);">Rekordbox / Spotify XML Beheer</h3>
+          <p style="font-size: 0.85em; color: var(--subtext-color); margin-bottom: 10px;">Upload hier je muziekbestand zodat gasten uit je bibliotheek kunnen zoeken.</p>
+          
+          <input type="file" id="xml-file" accept=".xml">
+          <button onclick="uploadXML()">Importeer Muzieklijst</button>
+
+          <h4 style="margin-top:20px; color:var(--accent-color); margin-bottom:5px;">📂 Geüploade XML Bestanden</h4>
+          <div id="uploaded-xml-list">
+            <p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>
+          </div>
         </div>
       </div>
+
     </div>
   </div>
 
@@ -425,11 +435,9 @@
     async function fetchOnlineCount() {
       if (!dbClient || !currentPartyCode) return;
       
-      // Verwijder gasten die langer dan 15 seconden geen teken hebben gegeven
       const threshold = new Date(Date.now() - 15000).toISOString();
       await dbClient.from('presence').delete().lt('last_seen', threshold);
 
-      // Tel actieve sessies voor dit feest
       const { count, error } = await dbClient
         .from('presence')
         .select('*', { count: 'exact', head: true })
@@ -539,6 +547,18 @@
         panel.classList.add('hidden');
         btn.style.borderColor = 'var(--border-color)';
         btn.style.color = '#ffffff';
+      }
+    }
+
+    function toggleXmlMenu() {
+      const panel = document.getElementById('xml-panel');
+      const btn = document.getElementById('xml-toggle-btn');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Inklappen)';
+      } else {
+        panel.classList.add('hidden');
+        btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Uitklappen)';
       }
     }
 
