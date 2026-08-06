@@ -6,21 +6,70 @@
   <title>Drive-in Verzoekjes</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
-    body { font-family: sans-serif; background: #121212; color: white; padding: 20px; max-width: 600px; margin: auto; }
-    h1, h2, h3 { color: #00ff88; text-align: center; }
-    input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; box-sizing: border-box; }
-    input { background: #222; color: white; border: 1px solid #444; }
-    button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
-    .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --text-color: #ffffff;
+      --accent-color: #00ff88;
+      --border-color: #333333;
+      --subtext-color: #aaaaaa;
+    }
+
+    body.light-mode {
+      --bg-color: #f4f4f9;
+      --card-bg: #ffffff;
+      --text-color: #111111;
+      --accent-color: #00b359;
+      --border-color: #dddddd;
+      --subtext-color: #666666;
+    }
+
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: var(--bg-color); 
+      color: var(--text-color); 
+      padding: 20px; 
+      max-width: 600px; 
+      margin: auto; 
+      transition: background 0.3s, color 0.3s;
+    }
+
+    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    h1, h2, h3 { color: var(--accent-color); text-align: center; margin-top: 5px; }
+    
+    input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
+    input, textarea { background: var(--card-bg); color: var(--text-color); }
+    button { background: var(--accent-color); color: #000; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    
+    .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
     .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
+    .danger-btn { background: #ff4444; color: white; }
+    .secondary-btn { background: #444; color: white; }
+    body.light-mode .secondary-btn { background: #e0e0e0; color: #333; }
+    
     .hidden { display: none; }
-    .box { background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px dashed #00ff88; margin-top: 20px; }
-    .badge { background: #333; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: #00ff88; }
+    .box { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px dashed var(--accent-color); margin-top: 20px; }
+    .badge { background: var(--border-color); padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: var(--accent-color); }
+    
+    /* Visitekaartje Styling */
+    .promo-card { background: linear-gradient(135deg, #1e1e1e 0%, #2a2a2a 100%); border: 2px solid var(--accent-color); border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+    body.light-mode .promo-card { background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%); }
+    .promo-card h3 { margin-bottom: 5px; }
+    .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
+    .contact-link { display: inline-block; background: var(--accent-color); color: #000; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin: 5px; }
+
+    /* Modal / QR Overlay */
+    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; }
+    .modal-content { background: var(--card-bg); padding: 20px; border-radius: 12px; text-align: center; max-width: 90%; }
   </style>
 </head>
 <body>
 
-  <h1>🎵 Drive-in Verzoekjes</h1>
+  <div class="header-bar">
+    <h1 style="margin:0;">🎵 Drive-in Show</h1>
+    <button onclick="toggleTheme()" class="secondary-btn" style="width: auto; padding: 6px 12px; margin: 0;">🌓 Modus</button>
+  </div>
 
   <!-- HOOFDMENU -->
   <div id="app-section">
@@ -45,17 +94,27 @@
       <!-- HANDMATIG VERZOEK -->
       <div class="box">
         <h3>➕ Staat je nummer er niet tussen?</h3>
-        <p style="font-size: 0.9em; color: #aaa; text-align: center;">Vul hier de titel & artiest in van Spotify:</p>
         <input type="text" id="custom-title" placeholder="Nummer titel...">
         <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
+        <input type="text" id="custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
         <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
+      </div>
+
+      <!-- DJ VISITEKAARTJE / PROMO -->
+      <div class="promo-card">
+        <h3>🎉 Drive-in Show Boeken?</h3>
+        <p>Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
+        <div>
+          <a href="https://wa.me/31612345678" target="_blank" class="contact-link">💬 WhatsApp Mij</a>
+          <a href="mailto:info@jouwdriveinshow.nl" class="contact-link">✉️ E-mail Sturen</a>
+        </div>
       </div>
     </div>
 
     <!-- DJ PINCODE SCHERM -->
     <div id="pin-view" class="hidden">
       <h2>🎧 DJ Toegang</h2>
-      <p style="text-align: center; color: #aaa;">Voer de DJ-pincode in om in te loggen:</p>
+      <p style="text-align: center; color: var(--subtext-color);">Voer de DJ-pincode in om in te loggen:</p>
       <input type="password" id="dj-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
       <button onclick="verifyPin()">Inloggen</button>
     </div>
@@ -64,19 +123,36 @@
     <div id="dj-view" class="hidden">
       <h2>🎧 DJ Live Dashboard</h2>
       
-      <div style="background:#1e1e1e; padding:15px; border-radius:8px; margin-bottom:15px;">
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+        <button onclick="showQRCode()" class="secondary-btn">📱 Toon QR Code</button>
+        <button onclick="downloadCSV()" class="secondary-btn">📊 Download Sheets/CSV</button>
+      </div>
+
+      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin:15px 0; border:1px solid var(--border-color);">
         <h3>Upload Rekordbox / Spotify XML</h3>
         <input type="file" id="xml-file" accept=".xml">
         <button onclick="uploadXML()">Importeer Muzieklijst</button>
       </div>
 
-      <h3>Aangevraagde Nummers (Meeste stemmen)</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>Aangevraagde Nummers</h3>
+        <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alle Verzoekjes</button>
+      </div>
       <div id="request-list"></div>
     </div>
   </div>
 
+  <!-- QR CODE MODAL -->
+  <div id="qr-modal" class="modal hidden">
+    <div class="modal-content">
+      <h2>Scan om een nummer aan te vragen!</h2>
+      <img id="qr-image" src="" alt="QR Code" style="max-width:250px; width:100%; margin:15px 0; border-radius:8px;">
+      <button onclick="closeQRModal()" class="secondary-btn">Sluiten</button>
+    </div>
+  </div>
+
   <script>
-    // --- SUPABASE VASTE INSTELLINGEN ---
+    // --- SUPABASE INSTANTIËRING ---
     const SUPABASE_URL = "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
     const SUPABASE_KEY = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
 
@@ -94,6 +170,10 @@
       } catch (err) {
         alert('Fout bij verbinden met Supabase: ' + err.message);
       }
+    }
+
+    function toggleTheme() {
+      document.body.classList.toggle('light-mode');
     }
 
     function showView(view) {
@@ -118,6 +198,52 @@
         alert('Onjuiste pincode!');
         document.getElementById('dj-pin-input').value = '';
       }
+    }
+
+    // --- QR CODE GENERATOR ---
+    function showQRCode() {
+      const currentUrl = window.location.href;
+      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}`;
+      document.getElementById('qr-image').src = qrApiUrl;
+      document.getElementById('qr-modal').classList.remove('hidden');
+    }
+
+    function closeQRModal() {
+      document.getElementById('qr-modal').classList.add('hidden');
+    }
+
+    // --- WIPE PAGE / RESET VERZOEKJES ---
+    async function wipeRequests() {
+      const confirmWipe = confirm("Weet je ZEKER dat je alle verzoekjes en stemmen wilt wissen voor een nieuw feest?");
+      if (!confirmWipe) return;
+
+      const { error } = await dbClient.from('requests').delete().neq('id', 0);
+      if (error) {
+        alert('Er ging iets mis bij het wissen: ' + error.message);
+      } else {
+        alert('Alle verzoekjes zijn gewist! Je kunt schoon beginnen.');
+        loadRequests();
+      }
+    }
+
+    // --- DOWNLOAD EXCEL / GOOGLE SHEETS CSV ---
+    function downloadCSV() {
+      const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done');
+      if (requested.length === 0) return alert('Er zijn nog geen verzoekjes om te downloaden!');
+
+      let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Opmerking;Status\n";
+      requested.forEach(s => {
+        const note = (s.note || "").replace(/;/g, ",");
+        csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${note}";"${s.status}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `verzoekjes_export_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
     }
 
     // --- XML UPLOAD ---
@@ -168,7 +294,6 @@
       filterSongs();
     }
 
-    // Lijst op Gastenscherm
     function renderGuestRequests() {
       const guestList = document.getElementById('guest-requested-list');
       guestList.innerHTML = '';
@@ -176,16 +301,18 @@
       const requested = allSongs.filter(s => s.status === 'requested');
 
       if (requested.length === 0) {
-        guestList.innerHTML = '<p style="text-align:center; color:#888;">Er zijn nog geen verzoekjes aangevraagd. Wees de eerste!</p>';
+        guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen verzoekjes aangevraagd. Wees de eerste!</p>';
         return;
       }
 
       requested.forEach(song => {
+        const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
         guestList.innerHTML += `
           <div class="card">
             <div>
               <strong>${song.title}</strong><br>
               <small>${song.artist}</small>
+              ${noteText}
             </div>
             <div>
               <span class="badge">👍 ${song.votes}</span>
@@ -195,7 +322,6 @@
       });
     }
 
-    // Lijst op DJ Dashboard
     function renderDjRequests() {
       const djList = document.getElementById('request-list');
       djList.innerHTML = '';
@@ -203,14 +329,19 @@
       const requested = allSongs.filter(s => s.status === 'requested');
 
       if (requested.length === 0) {
-        djList.innerHTML = '<p style="text-align:center; color:#888;">Nog geen verzoekjes ontvangen.</p>';
+        djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen verzoekjes ontvangen.</p>';
         return;
       }
 
       requested.forEach(song => {
+        const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
         djList.innerHTML += `
           <div class="card">
-            <div><strong>${song.title}</strong><br><small>${song.artist}</small></div>
+            <div>
+              <strong>${song.title}</strong><br>
+              <small>${song.artist}</small>
+              ${noteText}
+            </div>
             <div>
               <span style="margin-right:10px;">👍 ${song.votes}</span>
               <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button>
@@ -219,7 +350,6 @@
       });
     }
 
-    // Zoeken in bibliotheek
     function filterSongs() {
       const query = document.getElementById('search-input').value.toLowerCase();
       const resultsSection = document.getElementById('search-results-section');
@@ -235,7 +365,7 @@
       const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
 
       if (matches.length === 0) {
-        songList.innerHTML = '<p style="color:#888; font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Vul hem hieronder handmatig in!</p>';
+        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Vul hem hieronder handmatig in!</p>';
         return;
       }
 
@@ -261,15 +391,18 @@
     async function submitCustomRequest() {
       const titleInput = document.getElementById('custom-title');
       const artistInput = document.getElementById('custom-artist');
+      const noteInput = document.getElementById('custom-note');
 
       const title = titleInput.value.trim();
       const artist = artistInput.value.trim() || 'Spotify Verzoek';
+      const note = noteInput.value.trim();
 
       if (!title) return alert('Vul alstublieft een titel in!');
 
       const { error } = await dbClient.from('requests').insert([{
         title: title,
         artist: artist,
+        note: note,
         votes: 1,
         status: 'requested'
       }]);
@@ -280,6 +413,7 @@
         alert('Verzoekje "' + title + '" is verstuurd!');
         titleInput.value = '';
         artistInput.value = '';
+        noteInput.value = '';
       }
     }
 
