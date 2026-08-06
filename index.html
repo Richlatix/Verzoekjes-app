@@ -151,6 +151,11 @@
         showView('guest');
         loadRequests();
         listenToRealtime();
+        
+        // Automatisch verversen elke 5 seconden voor de zekerheid
+        setInterval(() => {
+          loadRequests();
+        }, 5000);
       } catch (err) {
         alert('Fout bij verbinden met Supabase: ' + err.message);
       }
@@ -193,7 +198,7 @@
       if (error) {
         alert('Er ging iets mis bij het wissen: ' + error.message);
       } else {
-        alert('Alle verzoekjes zijn gewist! Je kunt schoon beginnen.');
+        alert('Alle verzoekjes zijn gewist!');
         loadRequests();
       }
     }
@@ -253,8 +258,8 @@
     // --- LADEN EN TONEN VAN VERZOEKJES ---
     async function loadRequests() {
       if (!dbClient) return;
-      const { data } = await dbClient.from('requests').select('*').order('votes', { ascending: false });
-      if (data) {
+      const { data, error } = await dbClient.from('requests').select('*').order('votes', { ascending: false });
+      if (data && !error) {
         allSongs = data;
         renderAllViews();
       }
@@ -358,6 +363,7 @@
       
       const newVotes = (song.votes || 0) + change;
       await dbClient.from('requests').update({ votes: newVotes, status: 'requested' }).eq('id', id);
+      loadRequests();
     }
 
     async function submitCustomRequest() {
@@ -386,11 +392,17 @@
         titleInput.value = '';
         artistInput.value = '';
         noteInput.value = '';
+        loadRequests();
       }
     }
 
     async function markDone(id) {
-      await dbClient.from('requests').update({ status: 'done' }).eq('id', id);
+      const { error } = await dbClient.from('requests').update({ status: 'done' }).eq('id', id);
+      if (error) {
+        alert('Fout bij afvinken: ' + error.message);
+      } else {
+        loadRequests();
+      }
     }
 
     function listenToRealtime() {
