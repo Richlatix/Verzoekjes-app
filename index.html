@@ -12,35 +12,35 @@
     input { background: #222; color: white; border: 1px solid #444; }
     button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
     .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-    .vote-btn { width: auto; padding: 5px 15px; margin: 0 2px; }
+    .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
     .hidden { display: none; }
-    .box { background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px dashed #00ff88; margin-top: 15px; }
+    .box { background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px dashed #00ff88; margin-top: 20px; }
+    .badge { background: #333; padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: #00ff88; }
   </style>
 </head>
 <body>
 
   <h1>🎵 Drive-in Verzoekjes</h1>
 
-  <!-- INSTELLINGEN -->
-  <div id="setup-section">
-    <h2>1. Vul je Supabase Gegevens in</h2>
-    <input type="text" id="supa-url" placeholder="Supabase Project URL (https://...)">
-    <input type="text" id="supa-key" placeholder="Supabase Publishable Key (sb_publishable_...)">
-    <button onclick="saveSetup()">Opslaan & Starten</button>
-  </div>
-
   <!-- HOOFDMENU -->
-  <div id="app-section" class="hidden">
+  <div id="app-section">
     <div style="display:flex; gap:10px;">
       <button onclick="showView('guest')">📱 Gastenscherm</button>
       <button onclick="checkDJPass()">🎧 DJ Dashboard 🔒</button>
     </div>
 
     <!-- GASTENSCHERM -->
-    <div id="guest-view" class="hidden">
+    <div id="guest-view">
       <h2>Vraag een nummer aan</h2>
       <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
-      <div id="song-list"></div>
+      
+      <h3>🔥 Aangevraagde Nummers</h3>
+      <div id="guest-requested-list"></div>
+
+      <div id="search-results-section" class="hidden">
+        <h3>🔍 Zoekresultaten uit bibliotheek</h3>
+        <div id="song-list"></div>
+      </div>
 
       <!-- HANDMATIG VERZOEK -->
       <div class="box">
@@ -60,7 +60,7 @@
       <button onclick="verifyPin()">Inloggen</button>
     </div>
 
-    <!-- DJ DASHBOARD & XML UPLOAD -->
+    <!-- DJ DASHBOARD -->
     <div id="dj-view" class="hidden">
       <h2>🎧 DJ Live Dashboard</h2>
       
@@ -76,34 +76,23 @@
   </div>
 
   <script>
+    // --- SUPABASE VASTE INSTELLINGEN ---
+    const SUPABASE_URL = "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
+
     let dbClient = null;
     let allSongs = [];
     let isDjLoggedIn = false;
     const DJ_PIN = "3977";
 
-    function saveSetup() {
-      const url = document.getElementById('supa-url').value.trim();
-      const key = document.getElementById('supa-key').value.trim();
-      if (!url || !key) return alert('Vul beide velden in!');
-      localStorage.setItem('supa_url', url);
-      localStorage.setItem('supa_key', key);
-      initSupabase();
-    }
-
     function initSupabase() {
-      const url = "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
-      const key = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
-      if (url && key) {
-        try {
-          dbClient = window.supabase.createClient(url, key);
-          document.getElementById('setup-section').classList.add('hidden');
-          document.getElementById('app-section').classList.remove('hidden');
-          showView('guest');
-          loadRequests();
-          listenToRealtime();
-        } catch (err) {
-          alert('Fout bij verbinden: ' + err.message);
-        }
+      try {
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        showView('guest');
+        loadRequests();
+        listenToRealtime();
+      } catch (err) {
+        alert('Fout bij verbinden met Supabase: ' + err.message);
       }
     }
 
@@ -115,11 +104,8 @@
     }
 
     function checkDJPass() {
-      if (isDjLoggedIn) {
-        showView('dj');
-      } else {
-        showView('pin');
-      }
+      if (isDjLoggedIn) showView('dj');
+      else showView('pin');
     }
 
     function verifyPin() {
@@ -134,7 +120,7 @@
       }
     }
 
-    // --- REKORDBOX / CSV / XML UPLOAD ---
+    // --- XML UPLOAD ---
     async function uploadXML() {
       const fileInput = document.getElementById('xml-file');
       if (!fileInput.files[0]) return alert('Kies eerst een .xml bestand!');
@@ -166,27 +152,62 @@
       reader.readAsText(fileInput.files[0]);
     }
 
-    // --- STEMMEN & VERZOEKJES ---
+    // --- LADEN EN TONEN VAN VERZOEKJES ---
     async function loadRequests() {
       if (!dbClient) return;
       const { data } = await dbClient.from('requests').select('*').order('votes', { ascending: false });
       if (data) {
         allSongs = data;
-        renderRequests();
+        renderAllViews();
       }
     }
 
-    function renderRequests() {
+    function renderAllViews() {
+      renderGuestRequests();
+      renderDjRequests();
+      filterSongs();
+    }
+
+    // Lijst op Gastenscherm
+    function renderGuestRequests() {
+      const guestList = document.getElementById('guest-requested-list');
+      guestList.innerHTML = '';
+
+      const requested = allSongs.filter(s => s.status === 'requested');
+
+      if (requested.length === 0) {
+        guestList.innerHTML = '<p style="text-align:center; color:#888;">Er zijn nog geen verzoekjes aangevraagd. Wees de eerste!</p>';
+        return;
+      }
+
+      requested.forEach(song => {
+        guestList.innerHTML += `
+          <div class="card">
+            <div>
+              <strong>${song.title}</strong><br>
+              <small>${song.artist}</small>
+            </div>
+            <div>
+              <span class="badge">👍 ${song.votes}</span>
+              <button class="vote-btn" onclick="vote(${song.id}, 1)">+1 Stem</button>
+            </div>
+          </div>`;
+      });
+    }
+
+    // Lijst op DJ Dashboard
+    function renderDjRequests() {
       const djList = document.getElementById('request-list');
       djList.innerHTML = '';
       
-      const requestedSongs = allSongs.filter(s => s.status === 'requested');
-      if (requestedSongs.length === 0) {
+      const requested = allSongs.filter(s => s.status === 'requested');
+
+      if (requested.length === 0) {
         djList.innerHTML = '<p style="text-align:center; color:#888;">Nog geen verzoekjes ontvangen.</p>';
         return;
       }
 
-      requestedSongs.forEach(song => {
+      requested.forEach(song => {
         djList.innerHTML += `
           <div class="card">
             <div><strong>${song.title}</strong><br><small>${song.artist}</small></div>
@@ -198,21 +219,32 @@
       });
     }
 
+    // Zoeken in bibliotheek
     function filterSongs() {
       const query = document.getElementById('search-input').value.toLowerCase();
+      const resultsSection = document.getElementById('search-results-section');
       const songList = document.getElementById('song-list');
       songList.innerHTML = '';
 
-      if (query.length < 2) return;
+      if (query.length < 2) {
+        resultsSection.classList.add('hidden');
+        return;
+      }
 
-      const matches = allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
-      
+      resultsSection.classList.remove('hidden');
+      const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
+
+      if (matches.length === 0) {
+        songList.innerHTML = '<p style="color:#888; font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Vul hem hieronder handmatig in!</p>';
+        return;
+      }
+
       matches.forEach(song => {
         songList.innerHTML += `
           <div class="card">
             <div><strong>${song.title}</strong><br><small>${song.artist}</small></div>
             <div>
-              <button class="vote-btn" onclick="vote(${song.id}, 1)">👍 Stem</button>
+              <button class="vote-btn" onclick="vote(${song.id}, 1)">Aanvragen</button>
             </div>
           </div>`;
       });
@@ -224,10 +256,8 @@
       
       const newVotes = (song.votes || 0) + change;
       await dbClient.from('requests').update({ votes: newVotes, status: 'requested' }).eq('id', id);
-      alert('Bedankt voor je stem op "' + song.title + '"!');
     }
 
-    // --- HANDMATIG VERZOEK ---
     async function submitCustomRequest() {
       const titleInput = document.getElementById('custom-title');
       const artistInput = document.getElementById('custom-artist');
@@ -247,7 +277,7 @@
       if (error) {
         alert('Er ging iets mis: ' + error.message);
       } else {
-        alert('Verzoekje "' + title + '" is verstuurd naar de DJ!');
+        alert('Verzoekje "' + title + '" is verstuurd!');
         titleInput.value = '';
         artistInput.value = '';
       }
