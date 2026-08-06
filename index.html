@@ -51,6 +51,7 @@
     /* HEADER & LOGO (DESKTOP FORMAT) */
     .header-bar { 
       display: flex; 
+      flex-direction: column;
       justify-content: center; 
       align-items: center; 
       margin-bottom: 20px; 
@@ -60,6 +61,19 @@
       width: auto; 
       object-fit: contain; 
       transition: max-height 0.3s ease;
+    }
+
+    /* WELKOMSTBERICHT ONDER LOGO */
+    .welcome-banner {
+      margin-top: 12px;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: var(--accent-color);
+      text-align: center;
+      padding: 8px 16px;
+      background: rgba(125, 255, 0, 0.08);
+      border: 1px solid rgba(125, 255, 0, 0.2);
+      border-radius: 20px;
     }
 
     /* LOGO KLEINER OP MOBIEL (SCHERMEN SMALLER DAN 600PX) */
@@ -121,9 +135,10 @@
     <button id="back-to-guest-btn" class="top-nav-btn hidden" style="margin-right:auto;" onclick="showView('guest')">← Gastenscherm</button>
   </div>
 
-  <!-- HEADER MET LOGO -->
+  <!-- HEADER MET LOGO & DYNAMISCHE WELKOMSTTEKST -->
   <div class="header-bar">
     <img src="Logo.png" alt="Drive-in Show Logo" id="app-logo">
+    <div id="welcome-banner" class="welcome-banner hidden"></div>
   </div>
 
   <!-- HOOFDSECTION -->
@@ -191,6 +206,16 @@
     <div id="dj-view" class="hidden">
       <h2>🎧 DJ Live Dashboard</h2>
 
+      <!-- WELKOMSTBERICHT INSTELEN -->
+      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--border-color);">
+        <h3 style="margin-bottom:8px;">📢 Welkomsttekst Gastenscherm</h3>
+        <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
+        <div style="display:flex; gap:10px; margin-top:5px;">
+          <button onclick="saveWelcomeText()">Opslaan & Tonen</button>
+          <button onclick="clearWelcomeText()" class="secondary-btn">Wis Tekst</button>
+        </div>
+      </div>
+
       <button onclick="downloadCSV()" class="secondary-btn">📊 Download Sheets/CSV</button>
 
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -248,14 +273,69 @@
         dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         showView('guest');
         loadRequests();
+        loadWelcomeText();
         listenToRealtime();
         
         setInterval(() => {
           loadRequests();
+          loadWelcomeText();
         }, 5000);
       } catch (err) {
         alert('Fout bij verbinden met Supabase: ' + err.message);
       }
+    }
+
+    /* WELKOMSTTEKST BEHEER */
+    async function loadWelcomeText() {
+      if (!dbClient) return;
+      const { data, error } = await dbClient
+        .from('settings')
+        .select('value')
+        .eq('key', 'welcome_text')
+        .single();
+
+      let text = "";
+      if (data && data.value) {
+        text = data.value;
+      } else {
+        text = localStorage.getItem('welcome_text') || "";
+      }
+
+      const banner = document.getElementById('welcome-banner');
+      const input = document.getElementById('welcome-text-input');
+
+      if (text.trim() !== "") {
+        banner.innerText = text;
+        banner.classList.remove('hidden');
+        if (input && document.activeElement !== input) input.value = text;
+      } else {
+        banner.innerText = "";
+        banner.classList.add('hidden');
+        if (input && document.activeElement !== input) input.value = "";
+      }
+    }
+
+    async function saveWelcomeText() {
+      const text = document.getElementById('welcome-text-input').value.trim();
+      localStorage.setItem('welcome_text', text);
+
+      if (dbClient) {
+        const { error } = await dbClient
+          .from('settings')
+          .upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' });
+
+        if (error) {
+          console.warn("Kon settings niet opslaan in Supabase (tabel 'settings' vereist), lokaal opgeslagen.", error);
+        }
+      }
+
+      loadWelcomeText();
+      alert('Welkomsttekst bijgewerkt!');
+    }
+
+    async function clearWelcomeText() {
+      document.getElementById('welcome-text-input').value = "";
+      saveWelcomeText();
     }
 
     function toggleCustomForm() {
@@ -646,6 +726,7 @@
       if (!dbClient) return;
       dbClient.channel('requests-change')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => loadRequests())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadWelcomeText())
         .subscribe();
     }
 
