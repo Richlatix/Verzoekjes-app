@@ -131,6 +131,32 @@
     .promo-card h3 { margin-bottom: 5px; }
     .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
     .contact-link { display: inline-block; background: var(--accent-color); color: #121212; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin: 5px; }
+
+    /* CUSTOM POPUP / TOAST NOTIFICATIE STYLING */
+    .toast-popup {
+      position: fixed;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e1e1e;
+      color: #ffffff;
+      border: 1.5px solid var(--accent-color);
+      padding: 12px 24px;
+      border-radius: 30px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      font-weight: bold;
+      text-align: center;
+      min-width: 250px;
+      animation: fadeInOut 3s ease forwards;
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translate(-50%, 20px); }
+      15% { opacity: 1; transform: translate(-50%, 0); }
+      85% { opacity: 1; transform: translate(-50%, 0); }
+      100% { opacity: 0; transform: translate(-50%, -10px); }
+    }
   </style>
 </head>
 <body>
@@ -207,17 +233,15 @@
     <div id="dj-view" class="hidden">
       <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
         <h2 style="margin:0; text-align:left;">🎧 DJ Live Dashboard</h2>
-        <!-- TANDWIEL KNOP -->
         <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 8px 14px; margin:0;" id="settings-toggle-btn">
           ⚙️ Instellingen
         </button>
       </div>
 
-      <!-- TANDWIEL INSTELLINGEN PANEL (KLAPT OPEN/DICHT) -->
+      <!-- TANDWIEL INSTELLINGEN PANEL -->
       <div id="settings-panel" class="settings-panel hidden">
         <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
         
-        <!-- 1. WELKOMSTTEKST -->
         <div style="margin-bottom: 15px;">
           <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📢 Welkomsttekst Gastenscherm:</label>
           <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
@@ -229,7 +253,6 @@
 
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
 
-        <!-- 2. EXPORTEREN -->
         <div>
           <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📊 Gegevens Exporteren:</label>
           <button onclick="downloadCSV()" class="secondary-btn" style="margin-top:6px;">📥 Exporteer Verzoekjes naar Excel/CSV</button>
@@ -246,7 +269,6 @@
       <h3>🎉 Reeds Gedraaid</h3>
       <div id="dj-done-list"></div>
 
-      <!-- XML UPLOAD -->
       <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-top:30px; border:1px solid var(--border-color);">
         <h3>Upload Rekordbox / Spotify XML</h3>
         <input type="file" id="xml-file" accept=".xml">
@@ -268,6 +290,23 @@
     let allSongs = [];
     let isDjLoggedIn = false;
     const DJ_PIN = "3977";
+
+    /* FUNCTION OM POPUPS/TOASTS TE TONEN */
+    function toonPopup(bericht) {
+      const oudePopup = document.getElementById('custom-toast');
+      if (oudePopup) oudePopup.remove();
+
+      const popup = document.createElement('div');
+      popup.id = 'custom-toast';
+      popup.className = 'toast-popup';
+      popup.innerText = bericht;
+
+      document.body.appendChild(popup);
+
+      setTimeout(() => {
+        if (popup) popup.remove();
+      }, 3000);
+    }
 
     function getVotedSongIds() {
       try {
@@ -298,11 +337,10 @@
           loadWelcomeText();
         }, 5000);
       } catch (err) {
-        alert('Fout bij verbinden met Supabase: ' + err.message);
+        toonPopup('Fout bij verbinden met Supabase!');
       }
     }
 
-    /* TOGGLE TANDWIEL MENU */
     function toggleSettingsMenu() {
       const panel = document.getElementById('settings-panel');
       const btn = document.getElementById('settings-toggle-btn');
@@ -317,10 +355,9 @@
       }
     }
 
-    /* WELKOMSTTEKST BEHEER */
     async function loadWelcomeText() {
       if (!dbClient) return;
-      const { data, error } = await dbClient
+      const { data } = await dbClient
         .from('settings')
         .select('value')
         .eq('key', 'welcome_text')
@@ -352,17 +389,13 @@
       localStorage.setItem('welcome_text', text);
 
       if (dbClient) {
-        const { error } = await dbClient
+        await dbClient
           .from('settings')
           .upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' });
-
-        if (error) {
-          console.warn("Kon settings niet opslaan in Supabase, lokaal opgeslagen.", error);
-        }
       }
 
       loadWelcomeText();
-      alert('Welkomsttekst bijgewerkt!');
+      toonPopup('Welkomsttekst bijgewerkt!');
     }
 
     async function clearWelcomeText() {
@@ -416,8 +449,9 @@
         isDjLoggedIn = true;
         document.getElementById('dj-pin-input').value = '';
         showView('dj');
+        toonPopup('Succesvol ingelogd als DJ!');
       } else {
-        alert('Onjuiste pincode!');
+        toonPopup('Onjuiste pincode!');
         document.getElementById('dj-pin-input').value = '';
       }
     }
@@ -425,7 +459,7 @@
     async function vote(id) {
       const votedIds = getVotedSongIds();
       if (votedIds.includes(id)) {
-        alert('Je hebt al op dit nummer gestemd!');
+        toonPopup('Je hebt al op dit nummer gestemd!');
         return;
       }
 
@@ -441,9 +475,10 @@
         .eq('id', id);
 
       if (error) {
-        alert('Fout bij stemmen: ' + error.message);
+        toonPopup('Fout bij stemmen!');
       } else {
         recordVote(id);
+        toonPopup(`Stem op "${song.title}" verwerkt!`);
         loadRequests();
       }
     }
@@ -646,7 +681,7 @@
       const artist = artistInput.value.trim() || 'Spotify Verzoek';
       const note = noteInput.value.trim();
 
-      if (!title) return alert('Vul alstublieft een titel in!');
+      if (!title) return toonPopup('Vul alstublieft een titel in!');
 
       const { data, error } = await dbClient.from('requests').insert([{
         title: title,
@@ -657,9 +692,9 @@
       }]).select();
 
       if (error) {
-        alert('Er ging iets mis: ' + error.message);
+        toonPopup('Er ging iets mis bij het verzenden!');
       } else {
-        alert('Verzoekje "' + title + '" is verstuurd!');
+        toonPopup(`Verzoekje "${title}" is verstuurd!`);
         if (data && data[0]) {
           recordVote(data[0].id);
         }
@@ -673,14 +708,20 @@
 
     async function markDone(id) {
       const { error } = await dbClient.from('requests').update({ status: 'done' }).eq('id', id);
-      if (error) alert('Fout bij afvinken: ' + error.message);
-      else loadRequests();
+      if (error) toonPopup('Fout bij afvinken!');
+      else {
+        toonPopup('Nummer gemarkeerd als gedraaid!');
+        loadRequests();
+      }
     }
 
     async function unmarkDone(id) {
       const { error } = await dbClient.from('requests').update({ status: 'requested' }).eq('id', id);
-      if (error) alert('Fout bij terugzetten: ' + error.message);
-      else loadRequests();
+      if (error) toonPopup('Fout bij terugzetten!');
+      else {
+        toonPopup('Nummer teruggezet naar actieve lijst!');
+        loadRequests();
+      }
     }
 
     async function wipeRequests() {
@@ -688,9 +729,9 @@
       if (!confirmWipe) return;
 
       const { error } = await dbClient.from('requests').delete().neq('id', 0);
-      if (error) alert('Er ging iets mis bij het wissen: ' + error.message);
+      if (error) toonPopup('Fout bij het wissen!');
       else {
-        alert('Alle verzoekjes zijn gewist!');
+        toonPopup('Alle verzoekjes zijn gewist!');
         localStorage.removeItem('voted_song_ids');
         loadRequests();
       }
@@ -698,7 +739,7 @@
 
     function downloadCSV() {
       const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done');
-      if (requested.length === 0) return alert('Er zijn nog geen verzoekjes om te downloaden!');
+      if (requested.length === 0) return toonPopup('Geen verzoekjes om te exporteren!');
 
       let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Opmerking;Status\n";
       requested.forEach(s => {
@@ -713,12 +754,13 @@
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
+      toonPopup('Lijst gedownload!');
     }
 
     async function uploadXML() {
       const fileInput = document.getElementById('xml-file');
       const file = fileInput.files[0];
-      if (!file) return alert('Kies eerst een .xml bestand!');
+      if (!file) return toonPopup('Kies eerst een .xml bestand!');
       
       const fileName = file.name;
       const reader = new FileReader();
@@ -744,9 +786,9 @@
         }
 
         const { error } = await dbClient.from('requests').insert(imported);
-        if (error) alert('Fout bij uploaden: ' + error.message);
+        if (error) toonPopup('Fout bij uploaden van XML!');
         else {
-          alert(imported.length + ' nummers van "' + fileName + '" succesvol geïmporteerd!');
+          toonPopup(`${imported.length} nummers geïmporteerd uit XML!`);
           fileInput.value = '';
           loadRequests();
         }
