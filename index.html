@@ -14,6 +14,7 @@
     .card { background: #1e1e1e; padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
     .vote-btn { width: auto; padding: 5px 15px; margin: 0 2px; }
     .hidden { display: none; }
+    .box { background: #1a1a1a; padding: 15px; border-radius: 8px; border: 1px dashed #00ff88; margin-top: 15px; }
   </style>
 </head>
 <body>
@@ -40,14 +41,26 @@
       <h2>Vraag een nummer aan</h2>
       <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
       <div id="song-list"></div>
+
+      <!-- HANDMATIG VERZOEK (BIJV. VIA SPOTIFY) -->
+      <div class="box">
+        <h3>➕ Staat je nummer er niet tussen?</h3>
+        <p style="font-size: 0.9em; color: #aaa; text-align: center;">Vul hier de titel & artiest in van Spotify:</p>
+        <input type="text" id="custom-title" placeholder="Nummer titel...">
+        <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
+        <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
+      </div>
     </div>
 
     <!-- DJ DASHBOARD & XML UPLOAD -->
     <div id="dj-view" class="hidden">
       <h2>🎧 DJ Live Dashboard</h2>
-      <h3>Upload Rekordbox XML</h3>
-      <input type="file" id="xml-file" accept=".xml">
-      <button onclick="uploadXML()">Importeer Rekordbox Lijst</button>
+      
+      <div style="background:#1e1e1e; padding:15px; border-radius:8px; margin-bottom:15px;">
+        <h3>Upload Rekordbox / Spotify XML</h3>
+        <input type="file" id="xml-file" accept=".xml">
+        <button onclick="uploadXML()">Importeer Muzieklijst</button>
+      </div>
 
       <h3>Aangevraagde Nummers (Meeste stemmen)</h3>
       <div id="request-list"></div>
@@ -79,7 +92,7 @@
           loadRequests();
           listenToRealtime();
         } catch (err) {
-          alert('Fout bij verbinden met Supabase: ' + err.message);
+          alert('Fout bij verbinden: ' + err.message);
         }
       }
     }
@@ -90,7 +103,7 @@
       document.getElementById(view + '-view').classList.remove('hidden');
     }
 
-    // --- REKORDBOX XML UPLOAD ---
+    // --- REKORDBOX / CSV / XML UPLOAD ---
     async function uploadXML() {
       const fileInput = document.getElementById('xml-file');
       if (!fileInput.files[0]) return alert('Kies eerst een .xml bestand!');
@@ -117,7 +130,7 @@
 
         const { error } = await dbClient.from('requests').insert(imported);
         if (error) alert('Fout bij uploaden: ' + error.message);
-        else alert(imported.length + ' nummers succesvol geïmporteerd uit Rekordbox!');
+        else alert(imported.length + ' nummers succesvol geïmporteerd!');
       };
       reader.readAsText(fileInput.files[0]);
     }
@@ -136,12 +149,18 @@
       const djList = document.getElementById('request-list');
       djList.innerHTML = '';
       
-      allSongs.filter(s => s.status === 'requested').forEach(song => {
+      const requestedSongs = allSongs.filter(s => s.status === 'requested');
+      if (requestedSongs.length === 0) {
+        djList.innerHTML = '<p style="text-align:center; color:#888;">Nog geen verzoekjes ontvangen.</p>';
+        return;
+      }
+
+      requestedSongs.forEach(song => {
         djList.innerHTML += `
           <div class="card">
             <div><strong>${song.title}</strong><br><small>${song.artist}</small></div>
             <div>
-              <span>👍 ${song.votes}</span>
+              <span style="margin-right:10px;">👍 ${song.votes}</span>
               <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button>
             </div>
           </div>`;
@@ -155,13 +174,14 @@
 
       if (query.length < 2) return;
 
-      allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10).forEach(song => {
+      const matches = allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
+      
+      matches.forEach(song => {
         songList.innerHTML += `
           <div class="card">
             <div><strong>${song.title}</strong><br><small>${song.artist}</small></div>
             <div>
-              <button class="vote-btn" onclick="vote(${song.id}, 1)">👍</button>
-              <button class="vote-btn" onclick="vote(${song.id}, -1)">👎</button>
+              <button class="vote-btn" onclick="vote(${song.id}, 1)">👍 Stem</button>
             </div>
           </div>`;
       });
@@ -173,6 +193,33 @@
       
       const newVotes = (song.votes || 0) + change;
       await dbClient.from('requests').update({ votes: newVotes, status: 'requested' }).eq('id', id);
+      alert('Bedankt voor je stem op "' + song.title + '"!');
+    }
+
+    // --- HANDMATIG VERZOEK (BIJV SPOTIFY NUMMER) ---
+    async function submitCustomRequest() {
+      const titleInput = document.getElementById('custom-title');
+      const artistInput = document.getElementById('custom-artist');
+
+      const title = titleInput.value.trim();
+      const artist = artistInput.value.trim() || 'Spotify Verzoek';
+
+      if (!title) return alert('Vul alstublieft een titel in!');
+
+      const { error } = await dbClient.from('requests').insert([{
+        title: title,
+        artist: artist,
+        votes: 1,
+        status: 'requested'
+      }]);
+
+      if (error) {
+        alert('Er ging iets mis: ' + error.message);
+      } else {
+        alert('Verzoekje "' + title + '" is verstuurd naar de DJ!');
+        titleInput.value = '';
+        artistInput.value = '';
+      }
     }
 
     async function markDone(id) {
