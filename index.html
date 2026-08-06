@@ -198,11 +198,6 @@
             margin-bottom: 8px;
         }
 
-        .platform-row span {
-            font-size: 0.95rem;
-            font-weight: 600;
-        }
-
         .save-btn {
             background: var(--accent-color);
             color: #000;
@@ -278,11 +273,11 @@
             title: "DJ Dashboard",
             subtitle: "Welkom terug, beheer hier jouw gegevens",
             platforms: {
-                mail: { name: "Mail", icon: "fa-solid fa-envelope", active: true, value: "mailto:jouw@email.com" },
-                whatsapp: { name: "WhatsApp", icon: "fa-brands fa-whatsapp", active: true, value: "https://wa.me/31612345678" },
-                instagram: { name: "Instagram", icon: "fa-brands fa-instagram", active: true, value: "https://instagram.com/jouwaccount" },
-                tiktok: { name: "TikTok", icon: "fa-brands fa-tiktok", active: true, value: "https://tiktok.com/@jouwaccount" },
-                facebook: { name: "Facebook", icon: "fa-brands fa-facebook", active: true, value: "https://facebook.com/jouwaccount" }
+                mail: { name: "Mail", icon: "fa-solid fa-envelope", active: true, value: "mailto:jouw@email.com", prefix: "" },
+                whatsapp: { name: "WhatsApp", icon: "fa-brands fa-whatsapp", active: true, value: "https://wa.me/31612345678", prefix: "" },
+                instagram: { name: "Instagram", icon: "fa-brands fa-instagram", active: true, value: "https://instagram.com/jouwaccount", prefix: "" },
+                tiktok: { name: "TikTok", icon: "fa-brands fa-tiktok", active: true, value: "https://tiktok.com/@jouwaccount", prefix: "" },
+                facebook: { name: "Facebook", icon: "fa-brands fa-facebook", active: true, value: "https://facebook.com/jouwaccount", prefix: "" }
             }
         };
 
@@ -337,9 +332,9 @@
                 div.className = 'platform-setting';
                 div.innerHTML = `
                     <div class="platform-row">
-                        <span><i class="${p.icon}"></i> ${p.name}</span>
-                        <label style="cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                            Tonen <input type="checkbox" name="${key}-active" ${p.active ? 'checked' : ''}>
+                        <label><i class="${p.icon}"></i> <strong>${p.name}</strong></label>
+                        <label>
+                            Tonen: <input type="checkbox" name="${key}-active" ${p.active ? 'checked' : ''}>
                         </label>
                     </div>
                     <input type="text" name="${key}-value" value="${p.value}" placeholder="Link / URL / Contactinfo">
@@ -386,7 +381,7 @@
             modal.classList.remove('active');
         });
 
-        // Initiële laadbeurt bij opstarten
+        // Initiële laadbeurt
         renderDashboard();
     </script>
 </body>
