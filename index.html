@@ -33,7 +33,7 @@
   <div id="app-section" class="hidden">
     <div style="display:flex; gap:10px;">
       <button onclick="showView('guest')">📱 Gastenscherm</button>
-      <button onclick="showView('dj')">🎧 DJ Dashboard</button>
+      <button onclick="checkDJPass()">🎧 DJ Dashboard 🔒</button>
     </div>
 
     <!-- GASTENSCHERM -->
@@ -42,7 +42,7 @@
       <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
       <div id="song-list"></div>
 
-      <!-- HANDMATIG VERZOEK (BIJV. VIA SPOTIFY) -->
+      <!-- HANDMATIG VERZOEK -->
       <div class="box">
         <h3>➕ Staat je nummer er niet tussen?</h3>
         <p style="font-size: 0.9em; color: #aaa; text-align: center;">Vul hier de titel & artiest in van Spotify:</p>
@@ -50,6 +50,14 @@
         <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
         <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
       </div>
+    </div>
+
+    <!-- DJ PINCODE SCHERM -->
+    <div id="pin-view" class="hidden">
+      <h2>🎧 DJ Toegang</h2>
+      <p style="text-align: center; color: #aaa;">Voer de DJ-pincode in om in te loggen:</p>
+      <input type="password" id="dj-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
+      <button onclick="verifyPin()">Inloggen</button>
     </div>
 
     <!-- DJ DASHBOARD & XML UPLOAD -->
@@ -70,6 +78,8 @@
   <script>
     let dbClient = null;
     let allSongs = [];
+    let isDjLoggedIn = false;
+    const DJ_PIN = "3977";
 
     function saveSetup() {
       const url = document.getElementById('supa-url').value.trim();
@@ -99,8 +109,29 @@
 
     function showView(view) {
       document.getElementById('guest-view').classList.add('hidden');
+      document.getElementById('pin-view').classList.add('hidden');
       document.getElementById('dj-view').classList.add('hidden');
       document.getElementById(view + '-view').classList.remove('hidden');
+    }
+
+    function checkDJPass() {
+      if (isDjLoggedIn) {
+        showView('dj');
+      } else {
+        showView('pin');
+      }
+    }
+
+    function verifyPin() {
+      const enteredPin = document.getElementById('dj-pin-input').value;
+      if (enteredPin === DJ_PIN) {
+        isDjLoggedIn = true;
+        document.getElementById('dj-pin-input').value = '';
+        showView('dj');
+      } else {
+        alert('Onjuiste pincode!');
+        document.getElementById('dj-pin-input').value = '';
+      }
     }
 
     // --- REKORDBOX / CSV / XML UPLOAD ---
@@ -196,7 +227,7 @@
       alert('Bedankt voor je stem op "' + song.title + '"!');
     }
 
-    // --- HANDMATIG VERZOEK (BIJV SPOTIFY NUMMER) ---
+    // --- HANDMATIG VERZOEK ---
     async function submitCustomRequest() {
       const titleInput = document.getElementById('custom-title');
       const artistInput = document.getElementById('custom-artist');
