@@ -48,14 +48,26 @@
       border-color: var(--accent-color) !important;
     }
 
-    /* HEADER & LOGO */
+    /* HEADER & LOGO (DESKTOP FORMAT) */
     .header-bar { 
       display: flex; 
       justify-content: center; 
       align-items: center; 
       margin-bottom: 20px; 
     }
-    .header-bar img { max-height: 140px; width: auto; object-fit: contain; }
+    .header-bar img { 
+      max-height: 140px; 
+      width: auto; 
+      object-fit: contain; 
+      transition: max-height 0.3s ease;
+    }
+
+    /* LOGO KLEINER OP MOBIEL (SCHERMEN SMALLER DAN 600PX) */
+    @media (max-width: 600px) {
+      .header-bar img {
+        max-height: 80px; /* Pas dit getal eventueel aan naar wens (bijv. 70px of 90px) */
+      }
+    }
 
     h1, h2, h3 { color: var(--accent-color); text-align: center; margin-top: 5px; }
     
@@ -72,7 +84,7 @@
     
     .hidden { display: none !important; }
     
-    /* MOOIE DASHED BOX OM GEHELE AANVRAAG SECTIE */
+    /* DASHED BOX OM GEHELE AANVRAAG SECTIE */
     .request-box { 
       background: var(--card-bg); 
       padding: 15px; 
@@ -504,7 +516,7 @@
         titleInput.value = '';
         artistInput.value = '';
         noteInput.value = '';
-        toggleCustomForm(); // Klapt het formulier weer in na versturen
+        toggleCustomForm();
         loadRequests();
       }
     }
