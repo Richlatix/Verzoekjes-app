@@ -7,7 +7,7 @@
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     body { font-family: sans-serif; background: #121212; color: white; padding: 20px; max-width: 600px; margin: auto; }
-    h1, h2 { color: #00ff88; text-align: center; }
+    h1, h2, h3 { color: #00ff88; text-align: center; }
     input, button { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: none; box-sizing: border-box; }
     input { background: #222; color: white; border: 1px solid #444; }
     button { background: #00ff88; color: black; font-weight: bold; cursor: pointer; }
@@ -20,11 +20,11 @@
 
   <h1>🎵 Drive-in Verzoekjes</h1>
 
-  <!-- INSTELLINGEN (Alleen eerste keer invullen) -->
+  <!-- INSTELLINGEN -->
   <div id="setup-section">
     <h2>1. Vul je Supabase Gegevens in</h2>
     <input type="text" id="supa-url" placeholder="Supabase Project URL (https://...)">
-    <input type="text" id="supa-key" placeholder="Supabase Anon Key">
+    <input type="text" id="supa-key" placeholder="Supabase Publishable Key (sb_publishable_...)">
     <button onclick="saveSetup()">Opslaan & Starten</button>
   </div>
 
@@ -55,12 +55,12 @@
   </div>
 
   <script>
-    let supabase = null;
+    let dbClient = null;
     let allSongs = [];
 
     function saveSetup() {
-      const url = document.getElementById('supa-url').value;
-      const key = document.getElementById('supa-key').value;
+      const url = document.getElementById('supa-url').value.trim();
+      const key = document.getElementById('supa-key').value.trim();
       if (!url || !key) return alert('Vul beide velden in!');
       localStorage.setItem('supa_url', url);
       localStorage.setItem('supa_key', key);
@@ -71,12 +71,16 @@
       const url = localStorage.getItem('supa_url');
       const key = localStorage.getItem('supa_key');
       if (url && key) {
-        supabase = window.supabase.createClient(url, key);
-        document.getElementById('setup-section').classList.add('hidden');
-        document.getElementById('app-section').classList.remove('hidden');
-        showView('guest');
-        loadRequests();
-        listenToRealtime();
+        try {
+          dbClient = window.supabase.createClient(url, key);
+          document.getElementById('setup-section').classList.add('hidden');
+          document.getElementById('app-section').classList.remove('hidden');
+          showView('guest');
+          loadRequests();
+          listenToRealtime();
+        } catch (err) {
+          alert('Fout bij verbinden met Supabase: ' + err.message);
+        }
       }
     }
 
@@ -99,15 +103,19 @@
         
         let imported = [];
         for (let i = 0; i < tracks.length; i++) {
-          imported.push({
-            title: tracks[i].getAttribute("Name"),
-            artist: tracks[i].getAttribute("Artist"),
-            votes: 0,
-            status: 'available'
-          });
+          const title = tracks[i].getAttribute("Name");
+          const artist = tracks[i].getAttribute("Artist");
+          if (title) {
+            imported.push({
+              title: title,
+              artist: artist || "Onbekend",
+              votes: 0,
+              status: 'available'
+            });
+          }
         }
 
-        const { error } = await supabase.from('requests').insert(imported);
+        const { error } = await dbClient.from('requests').insert(imported);
         if (error) alert('Fout bij uploaden: ' + error.message);
         else alert(imported.length + ' nummers succesvol geïmporteerd uit Rekordbox!');
       };
@@ -116,7 +124,8 @@
 
     // --- STEMMEN & VERZOEKJES ---
     async function loadRequests() {
-      const { data } = await supabase.from('requests').select('*').order('votes', { ascending: false });
+      if (!dbClient) return;
+      const { data } = await dbClient.from('requests').select('*').order('votes', { ascending: false });
       if (data) {
         allSongs = data;
         renderRequests();
@@ -163,15 +172,16 @@
       if (!song) return;
       
       const newVotes = (song.votes || 0) + change;
-      await supabase.from('requests').update({ votes: newVotes, status: 'requested' }).eq('id', id);
+      await dbClient.from('requests').update({ votes: newVotes, status: 'requested' }).eq('id', id);
     }
 
     async function markDone(id) {
-      await supabase.from('requests').update({ status: 'done' }).eq('id', id);
+      await dbClient.from('requests').update({ status: 'done' }).eq('id', id);
     }
 
     function listenToRealtime() {
-      supabase.channel('requests-change')
+      if (!dbClient) return;
+      dbClient.channel('requests-change')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => loadRequests())
         .subscribe();
     }
