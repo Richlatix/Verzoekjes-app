@@ -1401,7 +1401,7 @@
 
     function listenToRealtime() {
       if (!dbClient) return;
-      dbClient.channel('requests-change')
+      dbClient.channel('public-db-changes')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => {
           loadRequests();
         })
@@ -1409,6 +1409,9 @@
           loadActivePartyCode();
           loadWelcomeText();
           loadPromoCard();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'presence' }, () => {
+          fetchOnlineCount();
         })
         .subscribe();
     }
