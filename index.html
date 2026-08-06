@@ -3,27 +3,26 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MXT Productions - DJ Verzoekjes</title>
-
+  <title>MXT Productions Verzoekjes</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
   <style>
     :root {
+      /* Dark mode volgens brandguide */
       --bg-color: #121212;
       --card-bg: #1e1e1e;
       --text-color: #ffffff;
-      --subtext-color: #aaaaaa;
       --accent-color: #7dff00;
-      --border-color: #333333;
+      --border-color: #2a2a2a;
+      --subtext-color: #b0b0b0;
     }
 
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background: var(--bg-color);
-      color: var(--text-color);
-      padding: 20px;
-      max-width: 600px;
-      margin: auto;
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: var(--bg-color); 
+      color: var(--text-color); 
+      padding: 20px; 
+      max-width: 600px; 
+      margin: auto; 
     }
 
     /* NAVIGATIE BALK BOVENIN */
@@ -44,95 +43,27 @@
       border: 1px solid var(--border-color) !important;
       border-radius: 20px !important;
     }
-
     .top-nav-btn:hover {
       color: var(--accent-color) !important;
       border-color: var(--accent-color) !important;
     }
 
-    /* TANDWIEL MENU CONTAINER & DROPDOWN */
-    .settings-menu-container {
-      position: relative;
-      display: inline-block;
-      margin-left: 10px;
-    }
-
-    .gear-btn {
-      width: 38px !important;
-      height: 38px !important;
-      padding: 0 !important;
-      border-radius: 50% !important;
-      background: transparent !important;
-      border: 1px solid var(--border-color) !important;
-      color: var(--text-color) !important;
-      font-size: 1.2em;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-
-    .gear-btn:hover {
-      color: var(--accent-color) !important;
-      border-color: var(--accent-color) !important;
-      transform: rotate(30deg);
-    }
-
-    .dropdown-content {
-      display: none;
-      position: absolute;
-      right: 0;
-      top: 45px;
-      background-color: var(--card-bg);
-      min-width: 280px;
-      padding: 15px;
-      border-radius: 12px;
-      border: 1px solid var(--border-color);
-      box-shadow: 0 8px 24px rgba(0,0,0,0.6);
-      z-index: 1000;
-    }
-
-    .dropdown-content.show {
-      display: block;
-    }
-
-    .dropdown-section {
-      margin-bottom: 12px;
-      padding-bottom: 12px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
-    .dropdown-section:last-child {
-      margin-bottom: 0;
-      padding-bottom: 0;
-      border-bottom: none;
-    }
-
-    .dropdown-section h4 {
-      margin: 0 0 8px 0;
-      font-size: 0.85em;
-      color: var(--accent-color);
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* HEADER & LOGO */
-    .header-bar {
-      display: flex;
+    /* HEADER & LOGO (DESKTOP FORMAT) */
+    .header-bar { 
+      display: flex; 
       flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      margin-bottom: 20px;
+      justify-content: center; 
+      align-items: center; 
+      margin-bottom: 20px; 
     }
-
-    .header-bar img {
-      max-height: 140px;
-      width: auto;
-      object-fit: contain;
+    .header-bar img { 
+      max-height: 140px; 
+      width: auto; 
+      object-fit: contain; 
       transition: max-height 0.3s ease;
     }
 
+    /* WELKOMSTBERICHT ONDER LOGO */
     .welcome-banner {
       margin-top: 12px;
       font-size: 1.2em;
@@ -145,99 +76,39 @@
       border-radius: 20px;
     }
 
+    /* LOGO KLEINER OP MOBIEL (SCHERMEN SMALLER DAN 600PX) */
     @media (max-width: 600px) {
       .header-bar img {
         max-height: 80px;
       }
     }
 
-    h1, h2, h3 {
-      color: var(--accent-color);
-      text-align: center;
-      margin-top: 5px;
+    h1, h2, h3 { color: var(--accent-color); text-align: center; margin-top: 5px; }
+    
+    input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
+    input, textarea { background: var(--card-bg); color: var(--text-color); }
+    button { background: var(--accent-color); color: #121212; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; opacity: 0.7; }
+    
+    .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
+    .card.done { opacity: 0.6; text-decoration: line-through; border-style: dashed; }
+    .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
+    .danger-btn { background: #ff4444; color: #ffffff; }
+    .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
+    
+    .hidden { display: none !important; }
+    
+    /* DASHED BOX OM GEHELE AANVRAAG SECTIE */
+    .request-box { 
+      background: var(--card-bg); 
+      padding: 15px; 
+      border-radius: 12px; 
+      border: 1px dashed var(--accent-color); 
+      margin-bottom: 25px; 
     }
 
-    input, button, textarea {
-      width: 100%;
-      padding: 12px;
-      margin: 8px 0;
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
-      box-sizing: border-box;
-      font-family: inherit;
-    }
-
-    input, textarea {
-      background: var(--card-bg);
-      color: var(--text-color);
-    }
-
-    button {
-      background: var(--accent-color);
-      color: #121212;
-      font-weight: bold;
-      cursor: pointer;
-      border: none;
-      transition: opacity 0.2s;
-    }
-
-    button:hover {
-      opacity: 0.9;
-    }
-
-    button:disabled {
-      background: #444;
-      color: #888;
-      cursor: not-allowed;
-      opacity: 0.7;
-    }
-
-    .card {
-      background: var(--card-bg);
-      padding: 15px;
-      border-radius: 8px;
-      margin-bottom: 10px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      border: 1px solid var(--border-color);
-    }
-
-    .card.done {
-      opacity: 0.6;
-      text-decoration: line-through;
-      border-style: dashed;
-    }
-
-    .vote-btn {
-      width: auto;
-      padding: 8px 15px;
-      margin: 0 2px;
-    }
-
-    .danger-btn {
-      background: #ff4444;
-      color: #ffffff;
-    }
-
-    .secondary-btn {
-      background: #2a2a2a;
-      color: #ffffff;
-      border: 1px solid var(--border-color);
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    .request-box {
-      background: var(--card-bg);
-      padding: 15px;
-      border-radius: 12px;
-      border: 1px dashed var(--accent-color);
-      margin-bottom: 25px;
-    }
-
+    /* XML Lijst Styling */
     .xml-file-item {
       background: #121212;
       padding: 10px 12px;
@@ -249,162 +120,138 @@
       border: 1px solid var(--border-color);
     }
 
-    .promo-card {
-      background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%);
-      border: 2px solid var(--accent-color);
-      border-radius: 12px;
-      padding: 20px;
-      margin-top: 30px;
-      text-align: center;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.5);
-    }
-
-    .promo-card h3 {
-      margin-bottom: 5px;
-    }
-
-    .promo-card p {
-      color: var(--subtext-color);
-      font-size: 0.9em;
-      margin-bottom: 15px;
-    }
-
-    .contact-link {
-      display: inline-block;
-      background: var(--accent-color);
-      color: #121212;
-      padding: 10px 20px;
-      border-radius: 20px;
-      text-decoration: none;
-      font-weight: bold;
-      margin: 5px;
-    }
+    /* Visitekaartje Styling */
+    .promo-card { background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%); border: 2px solid var(--accent-color); border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .promo-card h3 { margin-bottom: 5px; }
+    .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
+    .contact-link { display: inline-block; background: var(--accent-color); color: #121212; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin: 5px; }
   </style>
 </head>
 <body>
 
-  <div class="top-nav">
-    <button id="back-to-guest-btn" class="top-nav-btn hidden" onclick="showView('guest')">⬅️ Naar Gastenscherm</button>
-    <button id="dj-login-btn" class="top-nav-btn" onclick="checkDJPass()">🎧 DJ Log In</button>
-    
-    <div class="settings-menu-container">
-      <button class="gear-btn" onclick="toggleSettingsMenu()" title="Instellingen">⚙️</button>
-      
-      <div id="settings-dropdown" class="dropdown-content">
-        <div class="dropdown-section">
-          <h4>📢 Welkomsttekst</h4>
-          <input type="text" id="welcome-text-input" placeholder="Bijv: Welkom! Vraag je plaat aan!">
-          <button onclick="saveWelcomeText()">Opslaan & Tonen</button>
-          <button class="secondary-btn" onclick="clearWelcomeText()">Wis Tekst</button>
-        </div>
-
-        <div class="dropdown-section">
-          <h4>📊 Exporteren</h4>
-          <button class="secondary-btn" onclick="downloadCSV()">📊 Download Sheets/CSV</button>
-        </div>
-
-        <div class="dropdown-section">
-          <h4>⚠️ Beheer</h4>
-          <button class="danger-btn" onclick="wipeRequests()">🗑️ Wis alle verzoekjes</button>
-        </div>
-      </div>
-    </div>
+  <!-- TOP NAVIGATIE BALK -->
+  <div class="top-nav" id="top-nav-bar">
+    <button id="dj-login-btn" class="top-nav-btn" onclick="checkDJPass()">🎧 DJ Inloggen</button>
+    <button id="back-to-guest-btn" class="top-nav-btn hidden" style="margin-right:auto;" onclick="showView('guest')">← Gastenscherm</button>
   </div>
 
+  <!-- HEADER MET LOGO & DYNAMISCHE WELKOMSTTEKST -->
   <div class="header-bar">
-    <img src="logo.png" alt="MXT Productions Logo" onerror="this.style.display='none'">
+    <img src="Logo.png" alt="Drive-in Show Logo" id="app-logo">
     <div id="welcome-banner" class="welcome-banner hidden"></div>
   </div>
 
-  <div id="guest-view">
-    <h2>🎵 Vraag een nummer aan</h2>
-    
-    <div class="request-box">
-      <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." oninput="filterSongs()">
+  <!-- HOOFDSECTION -->
+  <div id="app-section">
+
+    <!-- GASTENSCHERM (STANDAARD ZICHTBAAR) -->
+    <div id="guest-view">
+
+      <!-- AANVRAAG BLOK MET RAND EN UITKLAPBARE INVOER -->
+      <div class="request-box">
+        <h2>Vraag een nummer aan</h2>
+        <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
+
+        <div id="search-results-section" class="hidden" style="margin-top: 15px;">
+          <h3>🔍 Zoekresultaten uit bibliotheek</h3>
+          <div id="song-list"></div>
+        </div>
+
+        <!-- HANDMATIGE INVOER (UITKLAPBAAR) -->
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="secondary-btn" onclick="toggleCustomForm()" id="toggle-custom-btn">
+            ➕ Staat je nummer er niet tussen? Klik hier
+          </button>
+
+          <div id="custom-form-container" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="custom-title" placeholder="Nummer titel...">
+            <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
+            <input type="text" id="custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
+            <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
+          </div>
+        </div>
+      </div>
       
-      <div id="search-results-section" class="hidden">
-        <h3>Zoekresultaten</h3>
-        <div id="song-list"></div>
+      <!-- AANGEVRAAGDE NUMMERS -->
+      <h3>🔥 Aangevraagde Nummers</h3>
+      <div id="guest-requested-list"></div>
+
+      <!-- KOPJE GEDRAAID GASTEN -->
+      <div id="guest-done-section" style="margin-top: 30px;">
+        <h3>🎉 Reeds Gedraaid</h3>
+        <div id="guest-done-list"></div>
       </div>
 
-      <button id="toggle-custom-btn" class="secondary-btn" onclick="toggleCustomForm()">➕ Staat je nummer er niet tussen? Klik hier</button>
-
-      <div id="custom-form-container" class="hidden">
-        <h3>Handmatig nummer invoeren</h3>
-        <input type="text" id="custom-title" placeholder="Titel van het nummer *">
-        <input type="text" id="custom-artist" placeholder="Artiest (optioneel)">
-        <textarea id="custom-note" placeholder="Opmerking voor de DJ (bijv: Voor de jarige!)" rows="2"></textarea>
-        <button onclick="submitCustomRequest()">Verzoekje Versturen 🚀</button>
+      <!-- DJ VISITEKAARTJE / PROMO -->
+      <div class="promo-card">
+        <h3>🎉 Drive-in Show Boeken?</h3>
+        <p>Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
+        <div>
+          <a href="https://wa.me/31612345678" target="_blank" class="contact-link">💬 WhatsApp Mij</a>
+          <a href="mailto:info@jouwdriveinshow.nl" class="contact-link">✉️ E-mail Sturen</a>
+        </div>
       </div>
     </div>
 
-    <h3>🔥 Actieve Verzoekjes</h3>
-    <div id="guest-requested-list"></div>
-
-    <h3>✅ Al Gedraaid</h3>
-    <div id="guest-done-list"></div>
-  </div>
-
-  <div id="pin-view" class="hidden">
-    <h2>🎧 DJ Inloggen</h2>
-    <p style="text-align: center; color: var(--subtext-color);">Voer de pincode in om toegang te krijgen tot het DJ-dashboard.</p>
-    <input type="password" id="dj-pin-input" placeholder="Voer pincode in...">
-    <button onclick="verifyPin()">Inloggen</button>
-    <button class="secondary-btn" onclick="showView('guest')">Annuleren</button>
-  </div>
-
-  <div id="dj-view" class="hidden">
-    <h2>🎧 DJ Dashboard</h2>
-
-    <h3>📋 Binnengekomen Verzoekjes</h3>
-    <div id="request-list"></div>
-
-    <h3>✅ Afgevinkt / Gedraaid</h3>
-    <div id="dj-done-list"></div>
-
-    <div class="request-box" style="margin-top: 30px;">
-      <h3>📁 XML Bibliotheek Importeren</h3>
-      <input type="file" id="xml-file" accept=".xml">
-      <button class="secondary-btn" onclick="uploadXML()">Upload XML Bestand</button>
-      
-      <h4>Geïmporteerde Bestanden:</h4>
-      <div id="uploaded-xml-list"></div>
+    <!-- DJ PINCODE SCHERM -->
+    <div id="pin-view" class="hidden">
+      <h2>🎧 DJ Toegang</h2>
+      <p style="text-align: center; color: var(--subtext-color);">Voer de DJ-pincode in om in te loggen:</p>
+      <input type="password" id="dj-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
+      <button onclick="verifyPin()">Inloggen</button>
+      <button onclick="showView('guest')" class="secondary-btn" style="margin-top:10px;">Annuleren</button>
     </div>
-  </div>
 
-  <div class="promo-card">
-    <h3>MXT Productions</h3>
-    <p>Licht, Geluid & DJ Services voor elk feest of evenement!</p>
-    <a href="https://mxtproductions.nl" target="_blank" class="contact-link">🌐 Bezoek Website</a>
+    <!-- DJ DASHBOARD -->
+    <div id="dj-view" class="hidden">
+      <h2>🎧 DJ Live Dashboard</h2>
+
+      <!-- WELKOMSTBERICHT INSTELEN -->
+      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--border-color);">
+        <h3 style="margin-bottom:8px;">📢 Welkomsttekst Gastenscherm</h3>
+        <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
+        <div style="display:flex; gap:10px; margin-top:5px;">
+          <button onclick="saveWelcomeText()">Opslaan & Tonen</button>
+          <button onclick="clearWelcomeText()" class="secondary-btn">Wis Tekst</button>
+        </div>
+      </div>
+
+      <button onclick="downloadCSV()" class="secondary-btn">📊 Download Sheets/CSV</button>
+
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>Aangevraagde Nummers</h3>
+        <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alle Verzoekjes</button>
+      </div>
+      <div id="request-list"></div>
+
+      <!-- KOPJE GEDRAAID DJ -->
+      <h3>🎉 Reeds Gedraaid</h3>
+      <div id="dj-done-list"></div>
+
+      <!-- XML UPLOAD & OVERZICHT -->
+      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-top:30px; border:1px solid var(--border-color);">
+        <h3>Upload Rekordbox / Spotify XML</h3>
+        <input type="file" id="xml-file" accept=".xml">
+        <button onclick="uploadXML()">Importeer Muzieklijst</button>
+
+        <h4 style="margin-top:20px; color:var(--accent-color); margin-bottom:5px;">📂 Geüploade XML Bestanden</h4>
+        <div id="uploaded-xml-list">
+          <p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>
+        </div>
+      </div>
+    </div>
   </div>
 
   <script>
-    // SUPABASE CONFIGURATIE
-    const SUPABASE_URL = 'JOUW_SUPABASE_URL_HIER';
-    const SUPABASE_KEY = 'JOUW_SUPABASE_ANON_KEY_HIER';
-    const DJ_PIN = '3977';
+    const SUPABASE_URL = "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
 
     let dbClient = null;
     let allSongs = [];
     let isDjLoggedIn = false;
+    const DJ_PIN = "3977";
 
-    // TANDWIEL MENU FUNCTIONALITEIT
-    function toggleSettingsMenu() {
-      const dropdown = document.getElementById('settings-dropdown');
-      dropdown.classList.toggle('show');
-    }
-
-    // Sluit het tandwielmenu bij een klik buiten het menu
-    window.addEventListener('click', function(event) {
-      const dropdown = document.getElementById('settings-dropdown');
-      const gearBtn = document.querySelector('.gear-btn');
-      
-      if (dropdown && gearBtn && !gearBtn.contains(event.target) && !dropdown.contains(event.target)) {
-        dropdown.classList.remove('show');
-      }
-    });
-
-    // HELPER FUNCTIES VOOR LOCALSTORAGE (STEMMEN)
+    // Helper functies voor stemmen in localStorage
     function getVotedSongIds() {
       try {
         return JSON.parse(localStorage.getItem('voted_song_ids')) || [];
@@ -421,7 +268,6 @@
       }
     }
 
-    // INIT SUPABASE
     function initSupabase() {
       try {
         dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -472,15 +318,17 @@
     async function saveWelcomeText() {
       const text = document.getElementById('welcome-text-input').value.trim();
       localStorage.setItem('welcome_text', text);
+
       if (dbClient) {
         const { error } = await dbClient
           .from('settings')
           .upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' });
 
         if (error) {
-          console.warn("Kon settings niet opslaan in Supabase, lokaal opgeslagen.", error);
+          console.warn("Kon settings niet opslaan in Supabase (tabel 'settings' vereist), lokaal opgeslagen.", error);
         }
       }
+
       loadWelcomeText();
       alert('Welkomsttekst bijgewerkt!');
     }
@@ -548,7 +396,7 @@
         alert('Je hebt al op dit nummer gestemd!');
         return;
       }
-      
+
       const song = allSongs.find(s => s.id === id);
       if (!song) return;
       
@@ -599,10 +447,10 @@
       const votedIds = getVotedSongIds();
 
       if (requested.length === 0) {
-        guestList.innerHTML = '<p style="color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>';
+        guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>';
       } else {
         requested.forEach(song => {
-          const noteText = song.note ? `<br><small style="color:var(--subtext-color)">💬 "${song.note}"</small>` : '';
+          const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
           const hasVoted = votedIds.includes(song.id);
           const btnText = hasVoted ? 'Gestemd ✅' : '+1 Stem';
           const disabledAttr = hasVoted ? 'disabled' : '';
@@ -611,31 +459,31 @@
             <div class="card">
               <div>
                 <strong>${song.title}</strong><br>
-                <small>${song.artist}</small>${noteText}
+                <small style="color:var(--subtext-color);">${song.artist}</small>
+                ${noteText}
               </div>
-              <div style="display:flex; align-items:center;">
-                <span style="margin-right:10px;">👍 ${song.votes || 0}</span>
+              <div>
+                <span class="badge">👍 ${song.votes || 0}</span>
                 <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button>
               </div>
-            </div>
-          `;
+            </div>`;
         });
       }
 
       if (done.length === 0) {
-        guestDoneList.innerHTML = '<p style="color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
+        guestDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
       } else {
         done.forEach(song => {
-          const noteText = song.note ? `<br><small style="color:var(--subtext-color)">💬 "${song.note}"</small>` : '';
+          const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : '';
           guestDoneList.innerHTML += `
             <div class="card done">
               <div>
                 <strong>${song.title}</strong><br>
-                <small>${song.artist}</small>${noteText}
+                <small style="color:var(--subtext-color);">${song.artist}</small>
+                ${noteText}
               </div>
-              <div>✅ Gedraaid</div>
-            </div>
-          `;
+              <div><span class="badge">✅ Gedraaid</span></div>
+            </div>`;
         });
       }
     }
@@ -645,46 +493,46 @@
       const djDoneList = document.getElementById('dj-done-list');
       djList.innerHTML = '';
       djDoneList.innerHTML = '';
-
+      
       const requested = allSongs.filter(s => s.status === 'requested');
       const done = allSongs.filter(s => s.status === 'done');
 
       if (requested.length === 0) {
-        djList.innerHTML = '<p style="color:var(--subtext-color);">Nog geen actieve verzoekjes ontvangen.</p>';
+        djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen actieve verzoekjes ontvangen.</p>';
       } else {
         requested.forEach(song => {
-          const noteText = song.note ? `<br><small style="color:var(--subtext-color)">💬 "${song.note}"</small>` : '';
+          const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
           djList.innerHTML += `
             <div class="card">
               <div>
                 <strong>${song.title}</strong><br>
-                <small>${song.artist}</small>${noteText}
+                <small style="color:var(--subtext-color);">${song.artist}</small>
+                ${noteText}
               </div>
               <div>
                 <span style="margin-right:10px;">👍 ${song.votes || 0}</span>
                 <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button>
               </div>
-            </div>
-          `;
+            </div>`;
         });
       }
 
       if (done.length === 0) {
-        djDoneList.innerHTML = '<p style="color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
+        djDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
       } else {
         done.forEach(song => {
-          const noteText = song.note ? `<br><small style="color:var(--subtext-color)">💬 "${song.note}"</small>` : '';
+          const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : '';
           djDoneList.innerHTML += `
             <div class="card done">
               <div>
                 <strong>${song.title}</strong><br>
-                <small>${song.artist}</small>${noteText}
+                <small style="color:var(--subtext-color);">${song.artist}</small>
+                ${noteText}
               </div>
               <div>
                 <button class="vote-btn secondary-btn" onclick="unmarkDone(${song.id})">↩️ Terugzetten</button>
               </div>
-            </div>
-          `;
+            </div>`;
         });
       }
     }
@@ -692,10 +540,11 @@
     function renderUploadedXmlFiles() {
       const xmlListContainer = document.getElementById('uploaded-xml-list');
       xmlListContainer.innerHTML = '';
+
       const xmlSongs = allSongs.filter(s => s.source_file);
 
       if (xmlSongs.length === 0) {
-        xmlListContainer.innerHTML = '<p style="color:var(--subtext-color);">Geen bestanden geüpload.</p>';
+        xmlListContainer.innerHTML = '<p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>';
         return;
       }
 
@@ -715,10 +564,9 @@
       Object.values(filesMap).forEach(file => {
         xmlListContainer.innerHTML += `
           <div class="xml-file-item">
-            <span>📄 ${file.name} (${file.count} nummers)</span>
+            <span>📄 <strong>${file.name}</strong> (${file.count} nummers)</span>
             <span style="color:var(--subtext-color);">${file.date}</span>
-          </div>
-        `;
+          </div>`;
       });
     }
 
@@ -734,12 +582,11 @@
       }
 
       resultsSection.classList.remove('hidden');
-
       const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
       const votedIds = getVotedSongIds();
 
       if (matches.length === 0) {
-        songList.innerHTML = '<p style="color:var(--subtext-color);">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>';
+        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>';
         return;
       }
 
@@ -750,13 +597,11 @@
 
         songList.innerHTML += `
           <div class="card">
+            <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
             <div>
-              <strong>${song.title}</strong><br>
-              <small>${song.artist}</small>
+              <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button>
             </div>
-            <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button>
-          </div>
-        `;
+          </div>`;
       });
     }
 
@@ -842,26 +687,26 @@
       const fileInput = document.getElementById('xml-file');
       const file = fileInput.files[0];
       if (!file) return alert('Kies eerst een .xml bestand!');
-
+      
       const fileName = file.name;
       const reader = new FileReader();
-
+      
       reader.onload = async function(e) {
         const parser = new DOMParser();
         const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
         const tracks = xmlDoc.getElementsByTagName("TRACK");
+        
         let imported = [];
-
         for (let i = 0; i < tracks.length; i++) {
           const title = tracks[i].getAttribute("Name");
           const artist = tracks[i].getAttribute("Artist");
           if (title) {
-            imported.push({
-              title: title,
-              artist: artist || "Onbekend",
-              votes: 0,
+            imported.push({ 
+              title: title, 
+              artist: artist || "Onbekend", 
+              votes: 0, 
               status: 'available',
-              source_file: fileName
+              source_file: fileName 
             });
           }
         }
@@ -874,10 +719,18 @@
           loadRequests();
         }
       };
-
       reader.readAsText(file);
     }
 
     function listenToRealtime() {
       if (!dbClient) return;
       dbClient.channel('requests-change')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => loadRequests())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadWelcomeText())
+        .subscribe();
+    }
+
+    window.onload = initSupabase;
+  </script>
+</body>
+</html>
