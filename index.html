@@ -242,16 +242,25 @@
     <!-- DJ DASHBOARD -->
     <div id="dj-view" class="hidden">
       
-      <!-- HEADER MET DE COMPACTE FEESTCODE RECHTSBOVEN -->
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; background: #1a1a1a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+      <!-- HEADER MET DE AANWEZIGEN-TELLER & COMPACTE FEESTCODE -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; background: #1a1a1a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
         <div>
           <h2 style="margin:0; text-align:left; font-size: 1.3em;">🎧 DJ Live Dashboard</h2>
         </div>
+        
         <div style="display:flex; align-items:center; gap: 10px;">
+          <!-- LIVE GASTEN TELLER -->
+          <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 6px; text-align: center;">
+            <span style="font-size:0.7em; color:var(--subtext-color); display:block; line-height:1;">INGELOGD</span>
+            <strong id="dj-online-count" style="font-size:1.1em; color:#ffffff;">👥 0</strong>
+          </div>
+
+          <!-- FEESTCODE BADGE -->
           <div style="background: rgba(125,255,0,0.1); border: 1px solid var(--accent-color); padding: 4px 10px; border-radius: 6px; text-align: center;">
             <span style="font-size:0.7em; color:var(--subtext-color); display:block; line-height:1;">CODE</span>
             <strong id="dj-active-code-display" style="font-size:1.2em; color:var(--accent-color);">----</strong>
           </div>
+
           <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 6px 10px; margin:0;" id="settings-toggle-btn">⚙️</button>
         </div>
       </div>
@@ -331,7 +340,8 @@
     let allSongs = [];
     let isDjLoggedIn = false;
     let currentPartyCode = null;
-    let activeLibraryNoteId = null; // Voor opmerkingen bij bibliotheek-nummers
+    let activeLibraryNoteId = null;
+    let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
     const DJ_PIN = "3977";
 
     function toonPopup(bericht) {
@@ -383,13 +393,53 @@
         loadWelcomeText();
         listenToRealtime();
         
+        // Start heartbeat als gast is ingelogd
         setInterval(() => {
           loadActivePartyCode();
           loadRequests();
           loadWelcomeText();
+          pingPresence();
         }, 3000);
+
+        setInterval(() => {
+          fetchOnlineCount();
+        }, 5000);
+
       } catch (err) {
         toonPopup('Fout bij verbinden met Supabase!');
+      }
+    }
+
+    /* HEARTBEAT VOOR ACTIEVE GASTEN TELLER */
+    async function pingPresence() {
+      const savedGuestCode = localStorage.getItem('entered_party_code');
+      if (!savedGuestCode || !currentPartyCode || savedGuestCode !== currentPartyCode || isDjLoggedIn) return;
+
+      await dbClient.from('presence').upsert({
+        session_id: guestSessionId,
+        party_code: currentPartyCode,
+        last_seen: new Date().toISOString()
+      }, { onConflict: 'session_id' });
+    }
+
+    async function fetchOnlineCount() {
+      if (!dbClient || !currentPartyCode) return;
+      
+      // Verwijder gasten die langer dan 15 seconden geen teken hebben gegeven
+      const threshold = new Date(Date.now() - 15000).toISOString();
+      await dbClient.from('presence').delete().lt('last_seen', threshold);
+
+      // Tel actieve sessies voor dit feest
+      const { count, error } = await dbClient
+        .from('presence')
+        .select('*', { count: 'exact', head: true })
+        .eq('party_code', currentPartyCode);
+
+      if (!error && count !== null) {
+        const countDisplay = document.getElementById('dj-online-count');
+        if (countDisplay) {
+          countDisplay.innerText = `👥 ${count}`;
+        }
       }
     }
 
@@ -425,6 +475,7 @@
       if (savedGuestCode && currentPartyCode && savedGuestCode === currentPartyCode) {
         document.getElementById('party-code-view').classList.add('hidden');
         document.getElementById('guest-view').classList.remove('hidden');
+        pingPresence();
       } else {
         document.getElementById('guest-view').classList.add('hidden');
         document.getElementById('party-code-view').classList.remove('hidden');
@@ -441,6 +492,7 @@
       if (inputCode === currentPartyCode) {
         localStorage.setItem('entered_party_code', inputCode);
         checkGuestAccess();
+        pingPresence();
         toonPopup('Succesvol ingelogd op het feest!');
       } else {
         toonPopup('Onjuiste feestcode! Kijk op het scherm of de poster.');
@@ -456,6 +508,7 @@
       try {
         await dbClient.from('requests').delete().eq('status', 'requested');
         await dbClient.from('requests').delete().eq('status', 'done');
+        await dbClient.from('presence').delete();
 
         await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).eq('status', 'available');
 
@@ -468,6 +521,7 @@
 
         toonPopup(`Nieuw feest gestart! Nieuwe code: ${newCode}`);
         loadRequests();
+        fetchOnlineCount();
       } catch (err) {
         console.error(err);
         toonPopup("Fout bij starten van nieuw feest.");
@@ -564,9 +618,10 @@
         checkGuestAccess();
       } else if (view === 'dj') {
         loginBtn.classList.add('hidden');
-        backBtn.classList.remove('hidden');
+        backBtn.classList.add('hidden');
         document.getElementById('dj-view').classList.remove('hidden');
-        loadActivePartyCode(); // Zorg voor weergave bij switchen
+        loadActivePartyCode();
+        fetchOnlineCount();
       } else {
         loginBtn.classList.add('hidden');
         backBtn.classList.add('hidden');
@@ -647,7 +702,6 @@
       filterSongs();
     }
 
-    /* FORMATTEER AANVRAAG TIJD (bijv 14:32) */
     function formatTime(isoString) {
       if (!isoString) return '';
       const date = new Date(isoString);
@@ -707,7 +761,6 @@
       }
     }
 
-    /* DJ DASHBOARD INCLUSIEF SORTERING EN TIJD */
     function renderDjRequests() {
       const djList = document.getElementById('request-list');
       const djDoneList = document.getElementById('dj-done-list');
@@ -717,7 +770,6 @@
       let requested = allSongs.filter(s => s.status === 'requested');
       const done = allSongs.filter(s => s.status === 'done');
 
-      // SORTERING TOEPASSEN
       const sortOption = document.getElementById('sort-select') ? document.getElementById('sort-select').value : 'votes';
       if (sortOption === 'votes') {
         requested.sort((a,b) => (b.votes || 0) - (a.votes || 0));
@@ -801,7 +853,6 @@
       });
     }
 
-    /* BIBLIOTHEEK FILTER MET OPMERKING MOGELIJKHEID */
     function filterSongs() {
       const query = document.getElementById('search-input').value.toLowerCase();
       const resultsSection = document.getElementById('search-results-section');
