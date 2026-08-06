@@ -130,7 +130,8 @@
     .promo-card { background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%); border: 2px solid var(--accent-color); border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     .promo-card h3 { margin-bottom: 5px; }
     .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
-    .contact-link { display: inline-block; background: var(--accent-color); color: #121212; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin: 5px; }
+    .contact-links-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+    .contact-link { display: inline-block; background: var(--accent-color); color: #121212; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 0.9em; }
 
     /* CUSTOM POPUP / TOAST NOTIFICATIE STYLING */
     .toast-popup {
@@ -220,12 +221,12 @@
         <div id="guest-done-list"></div>
       </div>
 
-      <div class="promo-card">
-        <h3>🎉 Drive-in Show Boeken?</h3>
-        <p>Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
-        <div>
-          <a href="https://wa.me/31612345678" target="_blank" class="contact-link">💬 WhatsApp Mij</a>
-          <a href="mailto:info@jouwdriveinshow.nl" class="contact-link">✉️ E-mail Sturen</a>
+      <!-- DYNAMISCH VISITEKAARTJE / PROMO-KAART -->
+      <div class="promo-card" id="guest-promo-card">
+        <h3 id="promo-display-title">🎉 Drive-in Show Boeken?</h3>
+        <p id="promo-display-subtitle">Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
+        <div class="contact-links-container" id="promo-display-links">
+          <!-- Dynamische knoppen komen hier -->
         </div>
       </div>
     </div>
@@ -281,7 +282,64 @@
 
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
 
-        <!-- 2. EXPORTEREN -->
+        <!-- 2. VISITEKAARTJE / PROMO-KAART BEHEER -->
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🏷️ Visitekaartje (Promo-kaart) Aanpassen:</label>
+          
+          <div style="margin-top: 8px;">
+            <label style="font-size:0.8em; color:var(--subtext-color);">Titel:</label>
+            <input type="text" id="promo-title-input" placeholder="Bijv. 🎉 Drive-in Show Boeken?">
+          </div>
+          <div style="margin-top: 4px;">
+            <label style="font-size:0.8em; color:var(--subtext-color);">Subtitel / Beschrijving:</label>
+            <textarea id="promo-subtitle-input" placeholder="Bijv. Vond je het een tof feest..." style="height: 60px;"></textarea>
+          </div>
+
+          <div style="margin-top: 10px; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; background: #121212;">
+            <span style="font-size:0.85em; font-weight:bold; color:var(--accent-color);">Platforms & Knoppen:</span>
+            
+            <!-- WhatsApp -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">💬 WhatsApp</label>
+              <input type="text" id="promo-whatsapp-input" placeholder="https://wa.me/316..." style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-whatsapp-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+
+            <!-- E-mail -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">✉️ E-mail</label>
+              <input type="text" id="promo-email-input" placeholder="info@jouwshow.nl" style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-email-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+
+            <!-- Instagram -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">📸 Instagram</label>
+              <input type="text" id="promo-instagram-input" placeholder="https://instagram.com/..." style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-instagram-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+
+            <!-- TikTok -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">🎵 TikTok</label>
+              <input type="text" id="promo-tiktok-input" placeholder="https://tiktok.com/@..." style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-tiktok-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+
+            <!-- Facebook -->
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">👥 Facebook</label>
+              <input type="text" id="promo-facebook-input" placeholder="https://facebook.com/..." style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-facebook-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+          </div>
+
+          <button onclick="savePromoCard()" style="margin-top: 10px;">Visitekaartje Opslaan</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
+        <!-- 3. EXPORTEREN -->
         <div style="margin-bottom: 15px;">
           <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📊 Gegevens Exporteren:</label>
           <button onclick="downloadCSV()" class="secondary-btn" style="margin-top:6px;">📥 Exporteer Verzoekjes naar Excel/CSV</button>
@@ -289,7 +347,7 @@
 
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
 
-        <!-- 3. FEEST SESSIE BEHEER -->
+        <!-- 4. FEEST SESSIE BEHEER -->
         <div>
           <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚀 Nieuw Evenement Starten:</label>
           <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">
@@ -381,6 +439,22 @@
     let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
     const DJ_PIN = "3977";
 
+    // Standaard instellingen voor het visitekaartje
+    const defaultPromoCard = {
+      title: "🎉 Drive-in Show Boeken?",
+      subtitle: "Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?",
+      whatsapp: "https://wa.me/31612345678",
+      whatsapp_active: true,
+      email: "info@jouwdriveinshow.nl",
+      email_active: true,
+      instagram: "",
+      instagram_active: false,
+      tiktok: "",
+      tiktok_active: false,
+      facebook: "",
+      facebook_active: false
+    };
+
     function toonPopup(bericht) {
       const oudePopup = document.getElementById('custom-toast');
       if (oudePopup) oudePopup.remove();
@@ -428,12 +502,14 @@
 
         loadRequests();
         loadWelcomeText();
+        loadPromoCard();
         listenToRealtime();
         
         setInterval(() => {
           loadActivePartyCode();
           loadRequests();
           loadWelcomeText();
+          loadPromoCard();
           pingPresence();
         }, 3000);
 
@@ -647,6 +723,113 @@
     async function clearWelcomeText() {
       document.getElementById('welcome-text-input').value = "";
       saveWelcomeText();
+    }
+
+    // --- VISITEKAARTJE / PROMO LOGICA ---
+    async function loadPromoCard() {
+      if (!dbClient) return;
+      const { data } = await dbClient
+        .from('settings')
+        .select('value')
+        .eq('key', 'promo_card')
+        .maybeSingle();
+
+      let promoData = defaultPromoCard;
+      if (data && data.value) {
+        try {
+          promoData = JSON.parse(data.value);
+        } catch (e) {
+          promoData = defaultPromoCard;
+        }
+      } else {
+        const local = localStorage.getItem('promo_card_data');
+        if (local) {
+          try { promoData = JSON.parse(local); } catch (e) {}
+        }
+      }
+
+      // Vorm de DJ formuliervelden als ze niet actief gefocust zijn
+      const titleInput = document.getElementById('promo-title-input');
+      const subtitleInput = document.getElementById('promo-subtitle-input');
+      
+      if (titleInput && document.activeElement !== titleInput) titleInput.value = promoData.title || "";
+      if (subtitleInput && document.activeElement !== subtitleInput) subtitleInput.value = promoData.subtitle || "";
+
+      ['whatsapp', 'email', 'instagram', 'tiktok', 'facebook'].forEach(platform => {
+        const inputEl = document.getElementById(`promo-${platform}-input`);
+        const toggleEl = document.getElementById(`promo-${platform}-toggle`);
+        if (inputEl && document.activeElement !== inputEl) inputEl.value = promoData[platform] || "";
+        if (toggleEl) toggleEl.checked = !!promoData[`${platform}_active`];
+      });
+
+      // Render gastenscherm visitekaartje
+      const displayTitle = document.getElementById('promo-display-title');
+      const displaySubtitle = document.getElementById('promo-display-subtitle');
+      const displayLinks = document.getElementById('promo-display-links');
+
+      if (displayTitle) displayTitle.innerText = promoData.title || defaultPromoCard.title;
+      if (displaySubtitle) displaySubtitle.innerText = promoData.subtitle || defaultPromoCard.subtitle;
+      
+      if (displayLinks) {
+        displayLinks.innerHTML = '';
+        const platforms = [
+          { key: 'whatsapp', label: '💬 WhatsApp', isLink: true, prefix: '' },
+          { key: 'email', label: '✉️ E-mail Sturen', isLink: false, prefix: 'mailto:' },
+          { key: 'instagram', label: '📸 Instagram', isLink: true, prefix: '' },
+          { key: 'tiktok', label: '🎵 TikTok', isLink: true, prefix: '' },
+          { key: 'facebook', label: '👥 Facebook', isLink: true, prefix: '' }
+        ];
+
+        platforms.forEach(p => {
+          if (promoData[`${p.key}_active`] && promoData[p.key]) {
+            let val = promoData[p.key].trim();
+            let href = val;
+            if (!p.isLink && !href.startsWith('mailto:')) {
+              href = 'mailto:' + href;
+            } else if (p.isLink && !href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('wa.me/')) {
+              // Als het een kaal nummer of link is
+              if (p.key === 'whatsapp' && !href.includes('wa.me/')) {
+                href = 'https://wa.me/' + href.replace(/[^0-9]/g, '');
+              } else {
+                href = 'https://' + href;
+              }
+            } else if (p.key === 'whatsapp' && href.startsWith('wa.me/')) {
+              href = 'https://' + href;
+            }
+
+            displayLinks.innerHTML += `<a href="${href}" target="_blank" class="contact-link">${p.label}</a>`;
+          }
+        });
+      }
+    }
+
+    async function savePromoCard() {
+      const promoData = {
+        title: document.getElementById('promo-title-input').value.trim(),
+        subtitle: document.getElementById('promo-subtitle-input').value.trim(),
+        whatsapp: document.getElementById('promo-whatsapp-input').value.trim(),
+        whatsapp_active: document.getElementById('promo-whatsapp-toggle').checked,
+        email: document.getElementById('promo-email-input').value.trim(),
+        email_active: document.getElementById('promo-email-toggle').checked,
+        instagram: document.getElementById('promo-instagram-input').value.trim(),
+        instagram_active: document.getElementById('promo-instagram-toggle').checked,
+        tiktok: document.getElementById('promo-tiktok-input').value.trim(),
+        tiktok_active: document.getElementById('promo-tiktok-toggle').checked,
+        facebook: document.getElementById('promo-facebook-input').value.trim(),
+        facebook_active: document.getElementById('promo-facebook-toggle').checked,
+      };
+
+      const jsonStr = JSON.stringify(promoData);
+      localStorage.setItem('promo_card_data', jsonStr);
+
+      if (dbClient) {
+        await dbClient
+          .from('settings')
+          .upsert({ key: 'promo_card', value: jsonStr }, { onConflict: 'key' });
+      }
+
+      loadPromoCard();
+      toonPopup('Visitekaartje succesvol bijgewerkt!');
     }
 
     function toggleCustomForm() {
@@ -1205,6 +1388,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
           loadActivePartyCode();
           loadWelcomeText();
+          loadPromoCard();
         })
         .subscribe();
     }
