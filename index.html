@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MXT Productions Verzoekjes</title>
+  <title>Drive-in Verzoekjes</title>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg-color: #121212;
       --card-bg: #1e1e1e;
-      --text-color: #7dff00;
+      --text-color: #ffffff;
       --accent-color: #00ff88;
       --border-color: #333333;
       --subtext-color: #aaaaaa;
@@ -18,7 +18,7 @@
     body.light-mode {
       --bg-color: #f4f4f9;
       --card-bg: #ffffff;
-      --text-color: #7dff00;
+      --text-color: #111111;
       --accent-color: #00b359;
       --border-color: #dddddd;
       --subtext-color: #666666;
@@ -64,7 +64,7 @@
 <body>
 
   <div class="header-bar">
-    <h1 style="margin:0;">🎵 MXT Productions Verzoekjes</h1>
+    <h1 style="margin:0;">🎵 Drive-in Show</h1>
     <button onclick="toggleTheme()" class="secondary-btn" style="width: auto; padding: 6px 12px; margin: 0;">🌓 Modus</button>
   </div>
 
@@ -128,12 +128,6 @@
       
       <button onclick="downloadCSV()" class="secondary-btn">📊 Download Sheets/CSV</button>
 
-      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin:15px 0; border:1px solid var(--border-color);">
-        <h3>Upload Rekordbox / Spotify XML</h3>
-        <input type="file" id="xml-file" accept=".xml">
-        <button onclick="uploadXML()">Importeer Muzieklijst</button>
-      </div>
-
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h3>Aangevraagde Nummers</h3>
         <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alle Verzoekjes</button>
@@ -143,6 +137,13 @@
       <!-- KOPJE GEDRAAID DJ -->
       <h3>🎉 Reeds Gedraaid</h3>
       <div id="dj-done-list"></div>
+
+      <!-- XML UPLOAD HELEMAAL ONDERAAN -->
+      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-top:30px; border:1px solid var(--border-color);">
+        <h3>Upload Rekordbox / Spotify XML</h3>
+        <input type="file" id="xml-file" accept=".xml">
+        <button onclick="uploadXML()">Importeer Muzieklijst</button>
+      </div>
     </div>
   </div>
 
@@ -361,7 +362,7 @@
         });
       }
 
-      // Gedraaide nummers voor DJ (optie om terug te zetten naar verzoekjes)
+      // Gedraaide nummers voor DJ
       if (done.length === 0) {
         djDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
       } else {
