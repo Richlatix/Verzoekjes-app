@@ -25,10 +25,38 @@
       margin: auto; 
     }
 
-    /* LOGO GROTTE AANGEPAST NAAR 140PX */
-    .header-bar { display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
+    /* HEADER & LOGO */
+    .header-bar { 
+      position: relative;
+      display: flex; 
+      justify-content: center; 
+      align-items: center; 
+      margin-bottom: 20px; 
+    }
     .header-bar img { max-height: 140px; width: auto; object-fit: contain; }
     
+    /* SUBTIELE KNOPPEN BOVENIN */
+    .top-nav-btn {
+      position: absolute;
+      right: 0;
+      top: 0;
+      width: auto !important;
+      padding: 6px 12px !important;
+      font-size: 0.8em;
+      background: transparent !important;
+      color: var(--subtext-color) !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 20px !important;
+    }
+    .top-nav-btn:hover {
+      color: var(--accent-color) !important;
+      border-color: var(--accent-color) !important;
+    }
+    .top-nav-btn.left {
+      right: auto;
+      left: 0;
+    }
+
     h1, h2, h3 { color: var(--accent-color); text-align: center; margin-top: 5px; }
     
     input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
@@ -55,18 +83,17 @@
 </head>
 <body>
 
+  <!-- HEADER MET LOGO EN SUBTIELE INLOGKNOP -->
   <div class="header-bar">
     <img src="Logo.png" alt="Drive-in Show Logo" id="app-logo">
+    <button id="dj-login-btn" class="top-nav-btn" onclick="checkDJPass()">🎧 DJ Inloggen</button>
+    <button id="back-to-guest-btn" class="top-nav-btn left hidden" onclick="showView('guest')">← Gastenscherm</button>
   </div>
 
-  <!-- HOOFDMENU -->
+  <!-- HOOFDSECTION -->
   <div id="app-section">
-    <div style="display:flex; gap:10px;">
-      <button onclick="showView('guest')">📱 Gastenscherm</button>
-      <button onclick="checkDJPass()">🎧 DJ Dashboard 🔒</button>
-    </div>
 
-    <!-- GASTENSCHERM -->
+    <!-- GASTENSCHERM (STANDAARD ZICHTBAAR) -->
     <div id="guest-view">
       <h2>Vraag een nummer aan</h2>
       <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
@@ -111,6 +138,7 @@
       <p style="text-align: center; color: var(--subtext-color);">Voer de DJ-pincode in om in te loggen:</p>
       <input type="password" id="dj-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
       <button onclick="verifyPin()">Inloggen</button>
+      <button onclick="showView('guest')" class="secondary-btn" style="margin-top:10px;">Annuleren</button>
     </div>
 
     <!-- DJ DASHBOARD -->
@@ -166,6 +194,21 @@
       document.getElementById('guest-view').classList.add('hidden');
       document.getElementById('pin-view').classList.add('hidden');
       document.getElementById('dj-view').classList.add('hidden');
+      
+      const loginBtn = document.getElementById('dj-login-btn');
+      const backBtn = document.getElementById('back-to-guest-btn');
+
+      if (view === 'guest') {
+        loginBtn.classList.remove('hidden');
+        backBtn.classList.add('hidden');
+      } else if (view === 'dj') {
+        loginBtn.classList.add('hidden');
+        backBtn.classList.remove('hidden');
+      } else {
+        loginBtn.classList.add('hidden');
+        backBtn.classList.add('hidden');
+      }
+
       document.getElementById(view + '-view').classList.remove('hidden');
     }
 
