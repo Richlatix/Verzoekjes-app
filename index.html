@@ -1,12 +1,325 @@
-<script>
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MXT Productions Verzoekjes</title>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      /* Dark mode volgens brandguide */
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --text-color: #ffffff;
+      --accent-color: #7dff00;
+      --border-color: #2a2a2a;
+      --subtext-color: #b0b0b0;
+    }
+
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: var(--bg-color); 
+      color: var(--text-color); 
+      padding: 20px; 
+      max-width: 600px; 
+      margin: auto; 
+    }
+
+    /* NAVIGATIE BALK BOVENIN */
+    .top-nav {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      min-height: 35px;
+      margin-bottom: 10px;
+    }
+
+    .top-nav-btn {
+      width: auto !important;
+      padding: 6px 14px !important;
+      font-size: 0.85em;
+      background: transparent !important;
+      color: var(--subtext-color) !important;
+      border: 1px solid var(--border-color) !important;
+      border-radius: 20px !important;
+    }
+    .top-nav-btn:hover {
+      color: var(--accent-color) !important;
+      border-color: var(--accent-color) !important;
+    }
+
+    /* HEADER & LOGO */
+    .header-bar { 
+      display: flex; 
+      flex-direction: column;
+      justify-content: center; 
+      align-items: center; 
+      margin-bottom: 20px; 
+    }
+    .header-bar img { 
+      max-height: 140px; 
+      width: auto; 
+      object-fit: contain; 
+      transition: max-height 0.3s ease;
+    }
+
+    /* WELKOMSTBERICHT ONDER LOGO */
+    .welcome-banner {
+      margin-top: 12px;
+      font-size: 1.2em;
+      font-weight: bold;
+      color: var(--accent-color);
+      text-align: center;
+      padding: 8px 16px;
+      background: rgba(125, 255, 0, 0.08);
+      border: 1px solid rgba(125, 255, 0, 0.2);
+      border-radius: 20px;
+    }
+
+    @media (max-width: 600px) {
+      .header-bar img {
+        max-height: 80px;
+      }
+    }
+
+    h1, h2, h3, h4 { color: var(--accent-color); text-align: center; margin-top: 5px; }
+    
+    input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
+    input, textarea { background: var(--card-bg); color: var(--text-color); }
+    button { background: var(--accent-color); color: #121212; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; opacity: 0.7; }
+    
+    .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
+    .card.done { opacity: 0.6; text-decoration: line-through; border-style: dashed; }
+    .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
+    .danger-btn { background: #ff4444; color: #ffffff; }
+    .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
+    
+    .hidden { display: none !important; }
+    
+    .request-box { 
+      background: var(--card-bg); 
+      padding: 15px; 
+      border-radius: 12px; 
+      border: 1px dashed var(--accent-color); 
+      margin-bottom: 25px; 
+    }
+
+    /* TANDWIEL MENU STYLING */
+    .settings-panel {
+      background: #181818;
+      border: 1px solid var(--accent-color);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
+    .xml-file-item {
+      background: #121212;
+      padding: 10px 12px;
+      border-radius: 6px;
+      margin-top: 6px;
+      font-size: 0.85em;
+      display: flex;
+      justify-content: space-between;
+      border: 1px solid var(--border-color);
+    }
+
+    .promo-card { background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%); border: 2px solid var(--accent-color); border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .promo-card h3 { margin-bottom: 5px; }
+    .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
+    .contact-link { display: inline-block; background: var(--accent-color); color: #121212; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin: 5px; }
+
+    /* CUSTOM POPUP / TOAST NOTIFICATIE STYLING */
+    .toast-popup {
+      position: fixed;
+      bottom: 25px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #1e1e1e;
+      color: #ffffff;
+      border: 1.5px solid var(--accent-color);
+      padding: 12px 24px;
+      border-radius: 30px;
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7);
+      z-index: 9999;
+      font-weight: bold;
+      text-align: center;
+      min-width: 250px;
+      animation: fadeInOut 3s ease forwards;
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translate(-50%, 20px); }
+      15% { opacity: 1; transform: translate(-50%, 0); }
+      85% { opacity: 1; transform: translate(-50%, 0); }
+      100% { opacity: 0; transform: translate(-50%, -10px); }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- TOP NAVIGATIE BALK -->
+  <div class="top-nav" id="top-nav-bar">
+    <button id="dj-login-btn" class="top-nav-btn" onclick="checkDJPass()">🎧 DJ Inloggen</button>
+    <button id="back-to-guest-btn" class="top-nav-btn hidden" style="margin-right:auto;" onclick="showView('guest')">← Gastenscherm</button>
+  </div>
+
+  <!-- HEADER MET LOGO & WELKOMSTTEKST -->
+  <div class="header-bar">
+    <img src="Logo.png" alt="Drive-in Show Logo" id="app-logo">
+    <div id="welcome-banner" class="welcome-banner hidden"></div>
+  </div>
+
+  <!-- HOOFDSECTION -->
+  <div id="app-section">
+
+    <!-- GAST FEESTCODE INVOERSCHERM -->
+    <div id="party-code-view" class="card hidden" style="max-width: 400px; margin: 20px auto; text-align: center; flex-direction: column;">
+      <h2>🎉 Welkom op het feest!</h2>
+      <p style="color:var(--subtext-color); font-size: 0.9em;">Voer de 4-cijferige feestcode in die op de QR-poster of het DJ-scherm staat:</p>
+      
+      <input type="number" id="guest-party-code-input" placeholder="0000" maxlength="4" style="font-size: 2em; letter-spacing: 6px; text-align: center; width: 80%; margin: 15px auto;">
+      
+      <button onclick="submitPartyCode()" style="width: 100%; padding: 12px; font-size: 1.1em;">Deelnemen aan Feest 🚀</button>
+    </div>
+
+    <!-- GASTENSCHERM -->
+    <div id="guest-view" class="hidden">
+
+      <div class="request-box">
+        <h2>Vraag een nummer aan</h2>
+        <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
+
+        <div id="search-results-section" class="hidden" style="margin-top: 15px;">
+          <h3>🔍 Zoekresultaten uit bibliotheek</h3>
+          <div id="song-list"></div>
+        </div>
+
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="secondary-btn" onclick="toggleCustomForm()" id="toggle-custom-btn">
+            ➕ Staat je nummer er niet tussen? Klik hier
+          </button>
+
+          <div id="custom-form-container" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="custom-title" placeholder="Nummer titel...">
+            <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
+            <input type="text" id="custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
+            <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
+          </div>
+        </div>
+      </div>
+      
+      <h3>🔥 Aangevraagde Nummers</h3>
+      <div id="guest-requested-list"></div>
+
+      <div id="guest-done-section" style="margin-top: 30px;">
+        <h3>🎉 Reeds Gedraaid</h3>
+        <div id="guest-done-list"></div>
+      </div>
+
+      <div class="promo-card">
+        <h3>🎉 Drive-in Show Boeken?</h3>
+        <p>Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
+        <div>
+          <a href="https://wa.me/31612345678" target="_blank" class="contact-link">💬 WhatsApp Mij</a>
+          <a href="mailto:info@jouwdriveinshow.nl" class="contact-link">✉️ E-mail Sturen</a>
+        </div>
+      </div>
+    </div>
+
+    <!-- DJ PINCODE SCHERM -->
+    <div id="pin-view" class="hidden">
+      <h2>🎧 DJ Toegang</h2>
+      <p style="text-align: center; color: var(--subtext-color);">Voer de DJ-pincode in om in te loggen:</p>
+      <input type="password" id="dj-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
+      <button onclick="verifyPin()">Inloggen</button>
+      <button onclick="showView('guest')" class="secondary-btn" style="margin-top:10px;">Annuleren</button>
+    </div>
+
+    <!-- DJ DASHBOARD -->
+    <div id="dj-view" class="hidden">
+      
+      <!-- FEESTCODE WEERGAVE VOOR DJ -->
+      <div class="card" style="background: rgba(125, 255, 0, 0.05); border: 1px solid var(--accent-color); text-align: center; flex-direction: column; margin-bottom: 20px; padding: 15px;">
+        <small style="color:var(--subtext-color); font-weight: bold; letter-spacing: 1px;">ACTIEVE FEESTCODE VOOR GASTEN:</small>
+        <h1 id="dj-active-code-display" style="font-size: 3em; color: var(--accent-color); margin: 5px 0;">----</h1>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <h2 style="margin:0; text-align:left;">🎧 DJ Live Dashboard</h2>
+        <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 8px 14px; margin:0;" id="settings-toggle-btn">
+          ⚙️ Instellingen
+        </button>
+      </div>
+
+      <!-- TANDWIEL INSTELLINGEN PANEL -->
+      <div id="settings-panel" class="settings-panel hidden">
+        <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
+        
+        <!-- 1. WELKOMSTTEKST -->
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📢 Welkomsttekst Gastenscherm:</label>
+          <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
+          <div style="display:flex; gap:10px; margin-top:4px;">
+            <button onclick="saveWelcomeText()">Opslaan & Tonen</button>
+            <button onclick="clearWelcomeText()" class="secondary-btn">Wis Tekst</button>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
+        <!-- 2. EXPORTEREN -->
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📊 Gegevens Exporteren:</label>
+          <button onclick="downloadCSV()" class="secondary-btn" style="margin-top:6px;">📥 Exporteer Verzoekjes naar Excel/CSV</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
+        <!-- 3. FEEST SESSIE BEHEER -->
+        <div>
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚀 Nieuw Evenement Starten:</label>
+          <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">
+            Dit wist alle verzoekjes, genereert een nieuwe 4-cijferige Feestcode en blokkeert telefoons van het vorige feest.
+          </p>
+          <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest (Nieuwe Code)</button>
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 20px;">
+        <h3 style="margin:0;">Aangevraagde Nummers</h3>
+        <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alleen Verzoekjes</button>
+      </div>
+      
+      <div id="request-list"></div>
+
+      <h3>🎉 Reeds Gedraaid</h3>
+      <div id="dj-done-list"></div>
+
+      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-top:30px; border:1px solid var(--border-color);">
+        <h3>Upload Rekordbox / Spotify XML</h3>
+        <input type="file" id="xml-file" accept=".xml">
+        <button onclick="uploadXML()">Importeer Muzieklijst</button>
+
+        <h4 style="margin-top:20px; color:var(--accent-color); margin-bottom:5px;">📂 Geüploade XML Bestanden</h4>
+        <div id="uploaded-xml-list">
+          <p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
     const SUPABASE_URL = "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
     const SUPABASE_KEY = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
 
     let dbClient = null;
     let allSongs = [];
     let isDjLoggedIn = false;
-    // Sla op welke sessie de telefoon DINKT dat actief is
-    let localSessionId = localStorage.getItem('active_session_id') || null;
+    let currentPartyCode = null;
     const DJ_PIN = "3977";
 
     /* CUSTOM POPUP / TOAST NOTIFICATIE */
@@ -45,14 +358,23 @@
     async function initSupabase() {
       try {
         dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-        showView('guest');
-        await checkActiveSession();
+        
+        // Controleer of er een code meegegeven is via de URL (?code=1234)
+        const urlParams = new URLSearchParams(window.location.search);
+        const codeFromUrl = urlParams.get('code');
+        if (codeFromUrl) {
+          localStorage.setItem('entered_party_code', codeFromUrl);
+        }
+
+        await loadActivePartyCode();
+        checkGuestAccess();
+
         loadRequests();
         loadWelcomeText();
         listenToRealtime();
         
         setInterval(() => {
-          checkActiveSession();
+          loadActivePartyCode();
           loadRequests();
           loadWelcomeText();
         }, 3000);
@@ -61,59 +383,92 @@
       }
     }
 
-    /* GECORRIGEERDE SESSIE BEHEER LOGICA */
-    async function checkActiveSession() {
-      if (!dbClient || isDjLoggedIn) return;
-
+    /* HAAL ACTIEVE FEESTCODE OP UIT SUPABASE */
+    async function loadActivePartyCode() {
+      if (!dbClient) return;
       const { data } = await dbClient
         .from('settings')
         .select('value')
-        .eq('key', 'session_id')
+        .eq('key', 'party_code')
         .maybeSingle();
 
       if (data && data.value) {
-        const activeServerSession = data.value;
+        currentPartyCode = data.value;
+        
+        const djCodeDisplay = document.getElementById('dj-active-code-display');
+        if (djCodeDisplay) djCodeDisplay.innerText = currentPartyCode;
 
-        // Eerste keer dat de telefoon de pagina laadt: koppel aan de huidige sessie
-        if (!localSessionId) {
-          localSessionId = activeServerSession;
-          localStorage.setItem('active_session_id', activeServerSession);
-          return;
-        }
-
-        // Als de sessie op de server verandert t.o.v. de telefoon: BLOKKEER TELEFOON!
-        if (localSessionId !== activeServerSession) {
-          document.getElementById('guest-view').classList.add('hidden');
-          document.getElementById('event-ended-view').classList.remove('hidden');
+        // Controleer of de gast-code nog wel klopt met het actieve feest op de server
+        const savedGuestCode = localStorage.getItem('entered_party_code');
+        if (savedGuestCode && savedGuestCode !== currentPartyCode && !isDjLoggedIn) {
+          localStorage.removeItem('entered_party_code');
+          checkGuestAccess();
+          toonPopup('Het vorige feest is afgelopen! Voer de nieuwe code in.');
         }
       }
     }
 
+    /* CONTROLEER OF GAST INGELOGD IS MET DE JUISTE CODE */
+    function checkGuestAccess() {
+      if (isDjLoggedIn) return; 
+
+      const savedGuestCode = localStorage.getItem('entered_party_code');
+      
+      if (savedGuestCode && currentPartyCode && savedGuestCode === currentPartyCode) {
+        document.getElementById('party-code-view').classList.add('hidden');
+        document.getElementById('guest-view').classList.remove('hidden');
+      } else {
+        document.getElementById('guest-view').classList.add('hidden');
+        document.getElementById('party-code-view').classList.remove('hidden');
+      }
+    }
+
+    /* VERIFIEER FEESTCODE INVOER DOOR GAST */
+    function submitPartyCode() {
+      const inputCode = document.getElementById('guest-party-code-input').value.trim();
+      
+      if (!currentPartyCode) {
+        return toonPopup('Er is momenteel geen actief feest gestart door de DJ.');
+      }
+
+      if (inputCode === currentPartyCode) {
+        localStorage.setItem('entered_party_code', inputCode);
+        checkGuestAccess();
+        toonPopup('Succesvol ingelogd op het feest!');
+      } else {
+        toonPopup('Onjuiste feestcode! Kijk op het scherm of de poster.');
+      }
+    }
+
+    /* START NIEUW FEEST (GENEREER NIEUWE CODE) */
     async function startNewSession() {
-      const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Geopende telefoons van het vorige feest worden direct geblokkeerd.");
+      const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Er wordt een nieuwe feestcode gegenereerd en verzoekjes worden gewist.");
       if (!confirmStart) return;
 
-      const newSessionId = "feest_" + Date.now();
+      const newCode = Math.floor(1000 + Math.random() * 9000).toString();
 
-      // 1. Wis de los ingestuurde verzoekjes
-      await dbClient.from('requests').delete().eq('status', 'requested');
-      await dbClient.from('requests').delete().eq('status', 'done');
+      try {
+        // 1. Wis de ingestuurde verzoekjes
+        await dbClient.from('requests').delete().eq('status', 'requested');
+        await dbClient.from('requests').delete().eq('status', 'done');
 
-      // 2. Reset XML nummers
-      await dbClient.from('requests').update({ votes: 0, status: 'available' }).eq('status', 'available');
+        // 2. Reset XML nummers naar 0 stemmen
+        await dbClient.from('requests').update({ votes: 0, status: 'available' }).eq('status', 'available');
 
-      // 3. Update het sessie-ID in Supabase (dit triggert de telefoons!)
-      await dbClient
-        .from('settings')
-        .upsert({ key: 'session_id', value: newSessionId }, { onConflict: 'key' });
+        // 3. Update de feestcode in Supabase
+        await dbClient.from('settings').delete().eq('key', 'party_code');
+        await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]);
 
-      // 4. Update lokale status op de laptop zelf
-      localSessionId = newSessionId;
-      localStorage.setItem('active_session_id', newSessionId);
-      localStorage.removeItem('voted_song_ids');
+        currentPartyCode = newCode;
+        const djCodeDisplay = document.getElementById('dj-active-code-display');
+        if (djCodeDisplay) djCodeDisplay.innerText = newCode;
 
-      toonPopup("Nieuw feest gestart! Oude telefoons zijn geblokkeerd.");
-      loadRequests();
+        toonPopup(`Nieuw feest gestart! Nieuwe code: ${newCode}`);
+        loadRequests();
+      } catch (err) {
+        console.error(err);
+        toonPopup("Fout bij starten van nieuw feest.");
+      }
     }
 
     /* TOGGLE TANDWIEL MENU */
@@ -194,6 +549,7 @@
     }
 
     function showView(view) {
+      document.getElementById('party-code-view').classList.add('hidden');
       document.getElementById('guest-view').classList.add('hidden');
       document.getElementById('pin-view').classList.add('hidden');
       document.getElementById('dj-view').classList.add('hidden');
@@ -204,15 +560,16 @@
       if (view === 'guest') {
         loginBtn.classList.remove('hidden');
         backBtn.classList.add('hidden');
+        checkGuestAccess();
       } else if (view === 'dj') {
         loginBtn.classList.add('hidden');
         backBtn.classList.remove('hidden');
+        document.getElementById('dj-view').classList.remove('hidden');
       } else {
         loginBtn.classList.add('hidden');
         backBtn.classList.add('hidden');
+        document.getElementById(view + '-view').classList.remove('hidden');
       }
-
-      document.getElementById(view + '-view').classList.remove('hidden');
     }
 
     function checkDJPass() {
@@ -579,11 +936,10 @@
       if (!dbClient) return;
       dbClient.channel('requests-change')
         .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => {
-          checkActiveSession();
           loadRequests();
         })
         .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
-          checkActiveSession();
+          loadActivePartyCode();
           loadWelcomeText();
         })
         .subscribe();
@@ -591,3 +947,5 @@
 
     window.onload = initSupabase;
   </script>
+</body>
+</html>
