@@ -43,6 +43,7 @@
     button:hover { opacity: 0.9; }
     
     .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
+    .card.done { opacity: 0.6; text-decoration: line-through; border-style: dashed; }
     .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
     .danger-btn { background: #ff4444; color: white; }
     .secondary-btn { background: #444; color: white; }
@@ -96,6 +97,12 @@
         <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
       </div>
 
+      <!-- KOPJE GEDRAAID GASTEN -->
+      <div id="guest-done-section">
+        <h3>🎉 Reeds Gedraaid</h3>
+        <div id="guest-done-list"></div>
+      </div>
+
       <!-- DJ VISITEKAARTJE / PROMO -->
       <div class="promo-card">
         <h3>🎉 Drive-in Show Boeken?</h3>
@@ -132,6 +139,10 @@
         <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alle Verzoekjes</button>
       </div>
       <div id="request-list"></div>
+
+      <!-- KOPJE GEDRAAID DJ -->
+      <h3>🎉 Reeds Gedraaid</h3>
+      <div id="dj-done-list"></div>
     </div>
   </div>
 
@@ -152,7 +163,7 @@
         loadRequests();
         listenToRealtime();
         
-        // Automatisch verversen elke 5 seconden voor de zekerheid
+        // Automatisch verversen elke 5 seconden
         setInterval(() => {
           loadRequests();
         }, 5000);
@@ -273,58 +284,102 @@
 
     function renderGuestRequests() {
       const guestList = document.getElementById('guest-requested-list');
+      const guestDoneList = document.getElementById('guest-done-list');
       guestList.innerHTML = '';
+      guestDoneList.innerHTML = '';
 
       const requested = allSongs.filter(s => s.status === 'requested');
+      const done = allSongs.filter(s => s.status === 'done');
 
+      // Actieve verzoekjes
       if (requested.length === 0) {
-        guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen verzoekjes aangevraagd. Wees de eerste!</p>';
-        return;
+        guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>';
+      } else {
+        requested.forEach(song => {
+          const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
+          guestList.innerHTML += `
+            <div class="card">
+              <div>
+                <strong>${song.title}</strong><br>
+                <small>${song.artist}</small>
+                ${noteText}
+              </div>
+              <div>
+                <span class="badge">👍 ${song.votes}</span>
+                <button class="vote-btn" onclick="vote(${song.id}, 1)">+1 Stem</button>
+              </div>
+            </div>`;
+        });
       }
 
-      requested.forEach(song => {
-        const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
-        guestList.innerHTML += `
-          <div class="card">
-            <div>
-              <strong>${song.title}</strong><br>
-              <small>${song.artist}</small>
-              ${noteText}
-            </div>
-            <div>
-              <span class="badge">👍 ${song.votes}</span>
-              <button class="vote-btn" onclick="vote(${song.id}, 1)">+1 Stem</button>
-            </div>
-          </div>`;
-      });
+      // Gedraaide nummers
+      if (done.length === 0) {
+        guestDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
+      } else {
+        done.forEach(song => {
+          const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : '';
+          guestDoneList.innerHTML += `
+            <div class="card done">
+              <div>
+                <strong>${song.title}</strong><br>
+                <small>${song.artist}</small>
+                ${noteText}
+              </div>
+              <div><span class="badge">✅ Gedraaid</span></div>
+            </div>`;
+        });
+      }
     }
 
     function renderDjRequests() {
       const djList = document.getElementById('request-list');
+      const djDoneList = document.getElementById('dj-done-list');
       djList.innerHTML = '';
+      djDoneList.innerHTML = '';
       
       const requested = allSongs.filter(s => s.status === 'requested');
+      const done = allSongs.filter(s => s.status === 'done');
 
+      // Actieve verzoekjes voor DJ
       if (requested.length === 0) {
-        djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen verzoekjes ontvangen.</p>';
-        return;
+        djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen actieve verzoekjes ontvangen.</p>';
+      } else {
+        requested.forEach(song => {
+          const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
+          djList.innerHTML += `
+            <div class="card">
+              <div>
+                <strong>${song.title}</strong><br>
+                <small>${song.artist}</small>
+                ${noteText}
+              </div>
+              <div>
+                <span style="margin-right:10px;">👍 ${song.votes}</span>
+                <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button>
+              </div>
+            </div>`;
+        });
       }
 
-      requested.forEach(song => {
-        const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
-        djList.innerHTML += `
-          <div class="card">
-            <div>
-              <strong>${song.title}</strong><br>
-              <small>${song.artist}</small>
-              ${noteText}
-            </div>
-            <div>
-              <span style="margin-right:10px;">👍 ${song.votes}</span>
-              <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button>
-            </div>
-          </div>`;
-      });
+      // Gedraaide nummers voor DJ (optie om terug te zetten naar verzoekjes)
+      if (done.length === 0) {
+        djDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
+      } else {
+        done.forEach(song => {
+          const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : '';
+          djDoneList.innerHTML += `
+            <div class="card done">
+              <div>
+                <strong>${song.title}</strong><br>
+                <small>${song.artist}</small>
+                ${noteText}
+              </div>
+              <div>
+                <button class="vote-btn secondary-btn" onclick="unmarkDone(${song.id})">↩️ Terugzetten</button>
+              </div>
+            </div>`;
+        });
+      }
     }
 
     function filterSongs() {
@@ -398,11 +453,14 @@
 
     async function markDone(id) {
       const { error } = await dbClient.from('requests').update({ status: 'done' }).eq('id', id);
-      if (error) {
-        alert('Fout bij afvinken: ' + error.message);
-      } else {
-        loadRequests();
-      }
+      if (error) alert('Fout bij afvinken: ' + error.message);
+      else loadRequests();
+    }
+
+    async function unmarkDone(id) {
+      const { error } = await dbClient.from('requests').update({ status: 'requested' }).eq('id', id);
+      if (error) alert('Fout bij terugzetten: ' + error.message);
+      else loadRequests();
     }
 
     function listenToRealtime() {
