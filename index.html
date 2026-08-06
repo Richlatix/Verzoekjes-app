@@ -299,11 +299,37 @@
         </div>
       </div>
 
+      <!-- DJ ZOEKMENU (VERBORGEN TOTDAT VERGROOTGLAS WORDT AANGEKLIKT) -->
+      <div id="dj-search-panel" class="request-box hidden" style="margin-top: 15px;">
+        <h3 style="margin-top:0;">🔍 Verzoekje Toevoegen (Bibliotheek / Handmatig)</h3>
+        <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()">
+
+        <div id="dj-search-results-section" class="hidden" style="margin-top: 10px;">
+          <div id="dj-song-list"></div>
+        </div>
+
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="secondary-btn" onclick="toggleDjCustomForm()" id="dj-toggle-custom-btn">
+            ➕ Staat het nummer niet in de bibliotheek? Klik hier
+          </button>
+
+          <div id="dj-custom-form-container" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="dj-custom-title" placeholder="Nummer titel...">
+            <input type="text" id="dj-custom-artist" placeholder="Artiest (optioneel)...">
+            <input type="text" id="dj-custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
+            <button onclick="submitDjCustomRequest()">Direct Toevoegen aan Verzoekjes</button>
+          </div>
+        </div>
+      </div>
+
       <!-- DE FOCUS: VERZOEKJES & SORTEERFILTER -->
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px; flex-wrap: wrap; gap: 8px;">
         <h3 style="margin:0; text-align:left;">🔥 Live Verzoekjes</h3>
         
         <div style="display:flex; gap:6px; align-items:center;">
+          <!-- VERGROOTGLAS KNOP OM DJ ZOEKMENU TE OPENEN -->
+          <button onclick="toggleDjSearchMenu()" class="secondary-btn vote-btn" id="dj-search-toggle-btn" style="padding: 6px 10px; font-size:0.85em; margin:0;" title="Verzoekje toevoegen">🔍</button>
+
           <!-- FILTER VOOR ZOEKEN EN SORTEREN -->
           <select id="sort-select" onchange="renderDjRequests()" style="width:auto; padding: 6px 10px; margin:0; font-size:0.85em;">
             <option value="votes">🔥 Meeste stemmen</option>
@@ -351,6 +377,7 @@
     let isDjLoggedIn = false;
     let currentPartyCode = null;
     let activeLibraryNoteId = null;
+    let activeDjLibraryNoteId = null;
     let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
     const DJ_PIN = "3977";
 
@@ -403,7 +430,6 @@
         loadWelcomeText();
         listenToRealtime();
         
-        // Start heartbeat als gast is ingelogd
         setInterval(() => {
           loadActivePartyCode();
           loadRequests();
@@ -420,7 +446,6 @@
       }
     }
 
-    /* HEARTBEAT VOOR ACTIEVE GASTEN TELLER */
     async function pingPresence() {
       const savedGuestCode = localStorage.getItem('entered_party_code');
       if (!savedGuestCode || !currentPartyCode || savedGuestCode !== currentPartyCode || isDjLoggedIn) return;
@@ -451,7 +476,6 @@
       }
     }
 
-    /* HAAL ACTIEVE FEESTCODE OP UIT SUPABASE */
     async function loadActivePartyCode() {
       if (!dbClient) return;
       const { data } = await dbClient
@@ -550,6 +574,21 @@
       }
     }
 
+    function toggleDjSearchMenu() {
+      const panel = document.getElementById('dj-search-panel');
+      const btn = document.getElementById('dj-search-toggle-btn');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btn.style.borderColor = 'var(--accent-color)';
+        btn.style.color = 'var(--accent-color)';
+        document.getElementById('dj-search-input').focus();
+      } else {
+        panel.classList.add('hidden');
+        btn.style.borderColor = 'var(--border-color)';
+        btn.style.color = '#ffffff';
+      }
+    }
+
     function toggleXmlMenu() {
       const panel = document.getElementById('xml-panel');
       const btn = document.getElementById('xml-toggle-btn');
@@ -623,6 +662,19 @@
       }
     }
 
+    function toggleDjCustomForm() {
+      const form = document.getElementById('dj-custom-form-container');
+      const btn = document.getElementById('dj-toggle-custom-btn');
+      
+      if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+        btn.innerText = '➖ Sluit handmatig invoeren';
+      } else {
+        form.classList.add('hidden');
+        btn.innerText = '➕ Staat het nummer niet in de bibliotheek? Klik hier';
+      }
+    }
+
     function showView(view) {
       document.getElementById('party-code-view').classList.add('hidden');
       document.getElementById('guest-view').classList.add('hidden');
@@ -667,18 +719,12 @@
       }
     }
 
-    async function vote(id, optionalNote = null) {
-      const votedIds = getVotedSongIds();
-      if (votedIds.includes(id)) {
-        toonPopup('Je hebt al op dit nummer gestemd!');
-        return;
-      }
-
+    async function vote(id, optionalNote = null, isDjAction = false) {
       const song = allSongs.find(s => s.id === id);
       if (!song) return;
       
       const currentVotes = Number(song.votes) || 0;
-      const newVotes = currentVotes + 1;
+      const newVotes = isDjAction ? currentVotes : currentVotes + 1;
 
       const updateData = { 
         votes: newVotes, 
@@ -694,11 +740,12 @@
         .eq('id', id);
 
       if (error) {
-        toonPopup('Fout bij stemmen!');
+        toonPopup('Fout bij toevoegen!');
       } else {
-        recordVote(id);
-        toonPopup(`Verzoekje voor "${song.title}" verstuurd!`);
+        if (!isDjAction) recordVote(id);
+        toonPopup(`Verzoekje voor "${song.title}" toegevoegd!`);
         activeLibraryNoteId = null;
+        activeDjLibraryNoteId = null;
         loadRequests();
       }
     }
@@ -720,6 +767,7 @@
       renderDjRequests();
       renderUploadedXmlFiles();
       filterSongs();
+      filterDjSearchSongs();
     }
 
     function formatTime(isoString) {
@@ -896,7 +944,6 @@
       matches.forEach(song => {
         const hasVoted = votedIds.includes(song.id);
         const disabledAttr = hasVoted ? 'disabled' : '';
-
         const isAddingNote = activeLibraryNoteId === song.id;
 
         if (isAddingNote) {
@@ -921,15 +968,72 @@
       });
     }
 
+    function filterDjSearchSongs() {
+      const queryInput = document.getElementById('dj-search-input');
+      if (!queryInput) return;
+      const query = queryInput.value.toLowerCase();
+      const resultsSection = document.getElementById('dj-search-results-section');
+      const songList = document.getElementById('dj-song-list');
+      songList.innerHTML = '';
+
+      if (query.length < 2) {
+        resultsSection.classList.add('hidden');
+        return;
+      }
+
+      resultsSection.classList.remove('hidden');
+      const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
+
+      if (matches.length === 0) {
+        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek.</p>';
+        return;
+      }
+
+      matches.forEach(song => {
+        const isAddingNote = activeDjLibraryNoteId === song.id;
+
+        if (isAddingNote) {
+          songList.innerHTML += `
+            <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;">
+              <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div>
+              <input type="text" id="dj-lib-note-${song.id}" placeholder="Opmerking (optioneel)..." style="margin:0;">
+              <div style="display:flex; gap:8px; width:100%;">
+                <button class="vote-btn" onclick="submitDjLibraryVote(${song.id})">Toevoegen aan Wachtrij 🚀</button>
+                <button class="vote-btn secondary-btn" onclick="toggleDjLibraryNote(null)">Annuleren</button>
+              </div>
+            </div>`;
+        } else {
+          songList.innerHTML += `
+            <div class="card">
+              <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
+              <div>
+                <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">Toevoegen</button>
+              </div>
+            </div>`;
+        }
+      });
+    }
+
     function toggleLibraryNote(id) {
       activeLibraryNoteId = id;
       filterSongs();
     }
 
+    function toggleDjLibraryNote(id) {
+      activeDjLibraryNoteId = id;
+      filterDjSearchSongs();
+    }
+
     function submitLibraryVote(id) {
       const noteInput = document.getElementById(`lib-note-${id}`);
       const note = noteInput ? noteInput.value.trim() : null;
-      vote(id, note);
+      vote(id, note, false);
+    }
+
+    function submitDjLibraryVote(id) {
+      const noteInput = document.getElementById(`dj-lib-note-${id}`);
+      const note = noteInput ? noteInput.value.trim() : null;
+      vote(id, note, true);
     }
 
     async function submitCustomRequest() {
@@ -963,6 +1067,38 @@
         artistInput.value = '';
         noteInput.value = '';
         toggleCustomForm();
+        loadRequests();
+      }
+    }
+
+    async function submitDjCustomRequest() {
+      const titleInput = document.getElementById('dj-custom-title');
+      const artistInput = document.getElementById('dj-custom-artist');
+      const noteInput = document.getElementById('dj-custom-note');
+
+      const title = titleInput.value.trim();
+      const artist = artistInput.value.trim() || 'DJ Verzoek';
+      const note = noteInput.value.trim();
+
+      if (!title) return toonPopup('Vul alstublieft een titel in!');
+
+      const { error } = await dbClient.from('requests').insert([{
+        title: title,
+        artist: artist,
+        note: note,
+        votes: 0,
+        status: 'requested',
+        created_at: new Date().toISOString()
+      }]);
+
+      if (error) {
+        toonPopup('Er ging iets mis bij het toevoegen!');
+      } else {
+        toonPopup(`Verzoekje "${title}" toegevoegd!`);
+        titleInput.value = '';
+        artistInput.value = '';
+        noteInput.value = '';
+        toggleDjCustomForm();
         loadRequests();
       }
     }
