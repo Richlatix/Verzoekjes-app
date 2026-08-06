@@ -58,10 +58,6 @@
     .promo-card h3 { margin-bottom: 5px; }
     .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
     .contact-link { display: inline-block; background: var(--accent-color); color: #000; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin: 5px; }
-
-    /* Modal / QR Overlay */
-    .modal { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; }
-    .modal-content { background: var(--card-bg); padding: 20px; border-radius: 12px; text-align: center; max-width: 90%; }
   </style>
 </head>
 <body>
@@ -123,10 +119,7 @@
     <div id="dj-view" class="hidden">
       <h2>🎧 DJ Live Dashboard</h2>
       
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-        <button onclick="showQRCode()" class="secondary-btn">📱 Toon QR Code</button>
-        <button onclick="downloadCSV()" class="secondary-btn">📊 Download Sheets/CSV</button>
-      </div>
+      <button onclick="downloadCSV()" class="secondary-btn">📊 Download Sheets/CSV</button>
 
       <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin:15px 0; border:1px solid var(--border-color);">
         <h3>Upload Rekordbox / Spotify XML</h3>
@@ -139,15 +132,6 @@
         <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alle Verzoekjes</button>
       </div>
       <div id="request-list"></div>
-    </div>
-  </div>
-
-  <!-- QR CODE MODAL -->
-  <div id="qr-modal" class="modal hidden">
-    <div class="modal-content">
-      <h2>Scan om een nummer aan te vragen!</h2>
-      <img id="qr-image" src="" alt="QR Code" style="max-width:250px; width:100%; margin:15px 0; border-radius:8px;">
-      <button onclick="closeQRModal()" class="secondary-btn">Sluiten</button>
     </div>
   </div>
 
@@ -198,18 +182,6 @@
         alert('Onjuiste pincode!');
         document.getElementById('dj-pin-input').value = '';
       }
-    }
-
-    // --- QR CODE GENERATOR ---
-    function showQRCode() {
-      const currentUrl = window.location.href;
-      const qrApiUrl = `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(currentUrl)}`;
-      document.getElementById('qr-image').src = qrApiUrl;
-      document.getElementById('qr-modal').classList.remove('hidden');
-    }
-
-    function closeQRModal() {
-      document.getElementById('qr-modal').classList.add('hidden');
     }
 
     // --- WIPE PAGE / RESET VERZOEKJES ---
