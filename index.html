@@ -84,8 +84,8 @@
 
     h1, h2, h3, h4 { color: var(--accent-color); text-align: center; margin-top: 5px; }
     
-    input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
-    input, textarea { background: var(--card-bg); color: var(--text-color); }
+    input, button, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
+    input, textarea, select { background: var(--card-bg); color: var(--text-color); }
     button { background: var(--accent-color); color: #121212; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
     button:hover { opacity: 0.9; }
     button:disabled { background: #444; color: #888; cursor: not-allowed; opacity: 0.7; }
@@ -242,17 +242,18 @@
     <!-- DJ DASHBOARD -->
     <div id="dj-view" class="hidden">
       
-      <!-- FEESTCODE WEERGAVE VOOR DJ -->
-      <div class="card" style="background: rgba(125, 255, 0, 0.05); border: 1px solid var(--accent-color); text-align: center; flex-direction: column; margin-bottom: 20px; padding: 15px;">
-        <small style="color:var(--subtext-color); font-weight: bold; letter-spacing: 1px;">ACTIEVE FEESTCODE VOOR GASTEN:</small>
-        <h1 id="dj-active-code-display" style="font-size: 3em; color: var(--accent-color); margin: 5px 0;">----</h1>
-      </div>
-
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
-        <h2 style="margin:0; text-align:left;">🎧 DJ Live Dashboard</h2>
-        <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 8px 14px; margin:0;" id="settings-toggle-btn">
-          ⚙️ Instellingen
-        </button>
+      <!-- HEADER MET DE COMPACTE FEESTCODE RECHTSBOVEN -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; background: #1a1a1a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color);">
+        <div>
+          <h2 style="margin:0; text-align:left; font-size: 1.3em;">🎧 DJ Live Dashboard</h2>
+        </div>
+        <div style="display:flex; align-items:center; gap: 10px;">
+          <div style="background: rgba(125,255,0,0.1); border: 1px solid var(--accent-color); padding: 4px 10px; border-radius: 6px; text-align: center;">
+            <span style="font-size:0.7em; color:var(--subtext-color); display:block; line-height:1;">CODE</span>
+            <strong id="dj-active-code-display" style="font-size:1.2em; color:var(--accent-color);">----</strong>
+          </div>
+          <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 6px 10px; margin:0;" id="settings-toggle-btn">⚙️</button>
+        </div>
       </div>
 
       <!-- TANDWIEL INSTELLINGEN PANEL -->
@@ -289,14 +290,24 @@
         </div>
       </div>
 
-      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 20px;">
-        <h3 style="margin:0;">Aangevraagde Nummers</h3>
-        <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alleen Verzoekjes</button>
+      <!-- DE FOCUS: VERZOEKJES & SORTEERFILTER -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px; flex-wrap: wrap; gap: 8px;">
+        <h3 style="margin:0; text-align:left;">🔥 Live Verzoekjes</h3>
+        
+        <div style="display:flex; gap:6px; align-items:center;">
+          <!-- FILTER VOOR ZOEKEN EN SORTEREN -->
+          <select id="sort-select" onchange="renderDjRequests()" style="width:auto; padding: 6px 10px; margin:0; font-size:0.85em;">
+            <option value="votes">🔥 Meeste stemmen</option>
+            <option value="newest">⏱️ Nieuwste aanvragen</option>
+            <option value="oldest">⌛ Oudste aanvragen</option>
+          </select>
+          <button onclick="wipeRequests()" class="danger-btn vote-btn" style="padding: 6px 10px; font-size:0.85em;">🧹 Wis</button>
+        </div>
       </div>
       
-      <div id="request-list"></div>
+      <div id="request-list" style="margin-top: 10px;"></div>
 
-      <h3>🎉 Reeds Gedraaid</h3>
+      <h3 style="margin-top: 25px;">🎉 Reeds Gedraaid</h3>
       <div id="dj-done-list"></div>
 
       <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-top:30px; border:1px solid var(--border-color);">
@@ -320,9 +331,9 @@
     let allSongs = [];
     let isDjLoggedIn = false;
     let currentPartyCode = null;
+    let activeLibraryNoteId = null; // Voor opmerkingen bij bibliotheek-nummers
     const DJ_PIN = "3977";
 
-    /* CUSTOM POPUP / TOAST NOTIFICATIE */
     function toonPopup(bericht) {
       const oudePopup = document.getElementById('custom-toast');
       if (oudePopup) oudePopup.remove();
@@ -359,7 +370,6 @@
       try {
         dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         
-        // Controleer of er een code meegegeven is via de URL (?code=1234)
         const urlParams = new URLSearchParams(window.location.search);
         const codeFromUrl = urlParams.get('code');
         if (codeFromUrl) {
@@ -398,7 +408,6 @@
         const djCodeDisplay = document.getElementById('dj-active-code-display');
         if (djCodeDisplay) djCodeDisplay.innerText = currentPartyCode;
 
-        // Controleer of de gast-code nog wel klopt met het actieve feest op de server
         const savedGuestCode = localStorage.getItem('entered_party_code');
         if (savedGuestCode && savedGuestCode !== currentPartyCode && !isDjLoggedIn) {
           localStorage.removeItem('entered_party_code');
@@ -408,7 +417,6 @@
       }
     }
 
-    /* CONTROLEER OF GAST INGELOGD IS MET DE JUISTE CODE */
     function checkGuestAccess() {
       if (isDjLoggedIn) return; 
 
@@ -423,7 +431,6 @@
       }
     }
 
-    /* VERIFIEER FEESTCODE INVOER DOOR GAST */
     function submitPartyCode() {
       const inputCode = document.getElementById('guest-party-code-input').value.trim();
       
@@ -440,7 +447,6 @@
       }
     }
 
-    /* START NIEUW FEEST (GENEREER NIEUWE CODE) */
     async function startNewSession() {
       const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Er wordt een nieuwe feestcode gegenereerd en verzoekjes worden gewist.");
       if (!confirmStart) return;
@@ -448,14 +454,11 @@
       const newCode = Math.floor(1000 + Math.random() * 9000).toString();
 
       try {
-        // 1. Wis de ingestuurde verzoekjes
         await dbClient.from('requests').delete().eq('status', 'requested');
         await dbClient.from('requests').delete().eq('status', 'done');
 
-        // 2. Reset XML nummers naar 0 stemmen
-        await dbClient.from('requests').update({ votes: 0, status: 'available' }).eq('status', 'available');
+        await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).eq('status', 'available');
 
-        // 3. Update de feestcode in Supabase
         await dbClient.from('settings').delete().eq('key', 'party_code');
         await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]);
 
@@ -471,7 +474,6 @@
       }
     }
 
-    /* TOGGLE TANDWIEL MENU */
     function toggleSettingsMenu() {
       const panel = document.getElementById('settings-panel');
       const btn = document.getElementById('settings-toggle-btn');
@@ -486,7 +488,6 @@
       }
     }
 
-    /* WELKOMSTTEKST BEHEER */
     async function loadWelcomeText() {
       if (!dbClient) return;
       const { data } = await dbClient
@@ -565,6 +566,7 @@
         loginBtn.classList.add('hidden');
         backBtn.classList.remove('hidden');
         document.getElementById('dj-view').classList.remove('hidden');
+        loadActivePartyCode(); // Zorg voor weergave bij switchen
       } else {
         loginBtn.classList.add('hidden');
         backBtn.classList.add('hidden');
@@ -590,7 +592,7 @@
       }
     }
 
-    async function vote(id) {
+    async function vote(id, optionalNote = null) {
       const votedIds = getVotedSongIds();
       if (votedIds.includes(id)) {
         toonPopup('Je hebt al op dit nummer gestemd!');
@@ -603,16 +605,25 @@
       const currentVotes = Number(song.votes) || 0;
       const newVotes = currentVotes + 1;
 
+      const updateData = { 
+        votes: newVotes, 
+        status: 'requested',
+        created_at: song.status === 'available' ? new Date().toISOString() : song.created_at
+      };
+
+      if (optionalNote) updateData.note = optionalNote;
+
       const { error } = await dbClient
         .from('requests')
-        .update({ votes: newVotes, status: 'requested' })
+        .update(updateData)
         .eq('id', id);
 
       if (error) {
         toonPopup('Fout bij stemmen!');
       } else {
         recordVote(id);
-        toonPopup(`Stem op "${song.title}" verwerkt!`);
+        toonPopup(`Verzoekje voor "${song.title}" verstuurd!`);
+        activeLibraryNoteId = null;
         loadRequests();
       }
     }
@@ -621,8 +632,7 @@
       if (!dbClient) return;
       const { data, error } = await dbClient
         .from('requests')
-        .select('*')
-        .order('votes', { ascending: false });
+        .select('*');
 
       if (data && !error) {
         allSongs = data;
@@ -637,13 +647,20 @@
       filterSongs();
     }
 
+    /* FORMATTEER AANVRAAG TIJD (bijv 14:32) */
+    function formatTime(isoString) {
+      if (!isoString) return '';
+      const date = new Date(isoString);
+      return date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' });
+    }
+
     function renderGuestRequests() {
       const guestList = document.getElementById('guest-requested-list');
       const guestDoneList = document.getElementById('guest-done-list');
       guestList.innerHTML = '';
       guestDoneList.innerHTML = '';
 
-      const requested = allSongs.filter(s => s.status === 'requested');
+      const requested = allSongs.filter(s => s.status === 'requested').sort((a,b) => (b.votes || 0) - (a.votes || 0));
       const done = allSongs.filter(s => s.status === 'done');
       const votedIds = getVotedSongIds();
 
@@ -651,6 +668,7 @@
         guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>';
       } else {
         requested.forEach(song => {
+          const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : '';
           const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
           const hasVoted = votedIds.includes(song.id);
           const btnText = hasVoted ? 'Gestemd ✅' : '+1 Stem';
@@ -659,7 +677,7 @@
           guestList.innerHTML += `
             <div class="card">
               <div>
-                <strong>${song.title}</strong><br>
+                <strong>${song.title}</strong> ${timeStr}<br>
                 <small style="color:var(--subtext-color);">${song.artist}</small>
                 ${noteText}
               </div>
@@ -689,29 +707,41 @@
       }
     }
 
+    /* DJ DASHBOARD INCLUSIEF SORTERING EN TIJD */
     function renderDjRequests() {
       const djList = document.getElementById('request-list');
       const djDoneList = document.getElementById('dj-done-list');
       djList.innerHTML = '';
       djDoneList.innerHTML = '';
       
-      const requested = allSongs.filter(s => s.status === 'requested');
+      let requested = allSongs.filter(s => s.status === 'requested');
       const done = allSongs.filter(s => s.status === 'done');
 
+      // SORTERING TOEPASSEN
+      const sortOption = document.getElementById('sort-select') ? document.getElementById('sort-select').value : 'votes';
+      if (sortOption === 'votes') {
+        requested.sort((a,b) => (b.votes || 0) - (a.votes || 0));
+      } else if (sortOption === 'newest') {
+        requested.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      } else if (sortOption === 'oldest') {
+        requested.sort((a,b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+      }
+
       if (requested.length === 0) {
-        djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen actieve verzoekjes ontvangen.</p>';
+        djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color); padding: 20px 0;">Geen verzoekjes in de wachtrij 🎉</p>';
       } else {
         requested.forEach(song => {
+          const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : '';
           const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
           djList.innerHTML += `
-            <div class="card">
+            <div class="card" style="border-left: 4px solid var(--accent-color);">
               <div>
-                <strong>${song.title}</strong><br>
+                <strong>${song.title}</strong> ${timeStr}<br>
                 <small style="color:var(--subtext-color);">${song.artist}</small>
                 ${noteText}
               </div>
               <div>
-                <span style="margin-right:10px;">👍 ${song.votes || 0}</span>
+                <span style="margin-right:10px; font-weight:bold; color:var(--accent-color);">👍 ${song.votes || 0}</span>
                 <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button>
               </div>
             </div>`;
@@ -771,6 +801,7 @@
       });
     }
 
+    /* BIBLIOTHEEK FILTER MET OPMERKING MOGELIJKHEID */
     function filterSongs() {
       const query = document.getElementById('search-input').value.toLowerCase();
       const resultsSection = document.getElementById('search-results-section');
@@ -793,17 +824,41 @@
 
       matches.forEach(song => {
         const hasVoted = votedIds.includes(song.id);
-        const btnText = hasVoted ? 'Gestemd ✅' : 'Aanvragen';
         const disabledAttr = hasVoted ? 'disabled' : '';
 
-        songList.innerHTML += `
-          <div class="card">
-            <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
-            <div>
-              <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button>
-            </div>
-          </div>`;
+        const isAddingNote = activeLibraryNoteId === song.id;
+
+        if (isAddingNote) {
+          songList.innerHTML += `
+            <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;">
+              <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div>
+              <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;">
+              <div style="display:flex; gap:8px; width:100%;">
+                <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Verzoekje Versturen 🚀</button>
+                <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button>
+              </div>
+            </div>`;
+        } else {
+          songList.innerHTML += `
+            <div class="card">
+              <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
+              <div>
+                <button class="vote-btn" onclick="toggleLibraryNote(${song.id})" ${disabledAttr}>${hasVoted ? 'Gestemd ✅' : 'Aanvragen'}</button>
+              </div>
+            </div>`;
+        }
       });
+    }
+
+    function toggleLibraryNote(id) {
+      activeLibraryNoteId = id;
+      filterSongs();
+    }
+
+    function submitLibraryVote(id) {
+      const noteInput = document.getElementById(`lib-note-${id}`);
+      const note = noteInput ? noteInput.value.trim() : null;
+      vote(id, note);
     }
 
     async function submitCustomRequest() {
@@ -822,7 +877,8 @@
         artist: artist,
         note: note,
         votes: 1,
-        status: 'requested'
+        status: 'requested',
+        created_at: new Date().toISOString()
       }]).select();
 
       if (error) {
@@ -877,10 +933,11 @@
       const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done');
       if (requested.length === 0) return toonPopup('Geen verzoekjes om te exporteren!');
 
-      let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Opmerking;Status\n";
+      let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Tijd;Opmerking;Status\n";
       requested.forEach(s => {
         const note = (s.note || "").replace(/;/g, ",");
-        csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${note}";"${s.status}"\n`;
+        const time = formatTime(s.created_at);
+        csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${time}";"${note}";"${s.status}"\n`;
       });
 
       const encodedUri = encodeURI(csvContent);
