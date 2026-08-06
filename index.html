@@ -25,7 +25,7 @@
       margin: auto; 
     }
 
-    /* NAVIGATIE BALK BOVENIN (EVOLVED: GEEN OVERLAP MEER) */
+    /* NAVIGATIE BALK BOVENIN */
     .top-nav {
       display: flex;
       justify-content: flex-end;
@@ -71,9 +71,16 @@
     .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
     
     .hidden { display: none !important; }
-    .box { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px dashed var(--accent-color); margin-top: 20px; }
-    .badge { background: var(--border-color); padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: var(--accent-color); }
     
+    /* MOOIE DASHED BOX OM GEHELE AANVRAAG SECTIE */
+    .request-box { 
+      background: var(--card-bg); 
+      padding: 15px; 
+      border-radius: 12px; 
+      border: 1px dashed var(--accent-color); 
+      margin-bottom: 25px; 
+    }
+
     /* XML Lijst Styling */
     .xml-file-item {
       background: #121212;
@@ -95,7 +102,7 @@
 </head>
 <body>
 
-  <!-- TOP NAVIGATIE BALK (VOOR KNOPPEN ZONDER LOGO OVERLAP) -->
+  <!-- TOP NAVIGATIE BALK -->
   <div class="top-nav" id="top-nav-bar">
     <button id="dj-login-btn" class="top-nav-btn" onclick="checkDJPass()">🎧 DJ Inloggen</button>
     <button id="back-to-guest-btn" class="top-nav-btn hidden" style="margin-right:auto;" onclick="showView('guest')">← Gastenscherm</button>
@@ -111,28 +118,38 @@
 
     <!-- GASTENSCHERM (STANDAARD ZICHTBAAR) -->
     <div id="guest-view">
-      <h2>Vraag een nummer aan</h2>
-      <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
+
+      <!-- AANVRAAG BLOK MET RAND EN UITKLAPBARE INVOER -->
+      <div class="request-box">
+        <h2>Vraag een nummer aan</h2>
+        <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
+
+        <div id="search-results-section" class="hidden" style="margin-top: 15px;">
+          <h3>🔍 Zoekresultaten uit bibliotheek</h3>
+          <div id="song-list"></div>
+        </div>
+
+        <!-- HANDMATIGE INVOER (UITKLAPBAAR) -->
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="secondary-btn" onclick="toggleCustomForm()" id="toggle-custom-btn">
+            ➕ Staat je nummer er niet tussen? Klik hier
+          </button>
+
+          <div id="custom-form-container" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="custom-title" placeholder="Nummer titel...">
+            <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
+            <input type="text" id="custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
+            <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
+          </div>
+        </div>
+      </div>
       
+      <!-- AANGEVRAAGDE NUMMERS -->
       <h3>🔥 Aangevraagde Nummers</h3>
       <div id="guest-requested-list"></div>
 
-      <div id="search-results-section" class="hidden">
-        <h3>🔍 Zoekresultaten uit bibliotheek</h3>
-        <div id="song-list"></div>
-      </div>
-
-      <!-- HANDMATIG VERZOEK -->
-      <div class="box">
-        <h3>➕ Staat je nummer er niet tussen?</h3>
-        <input type="text" id="custom-title" placeholder="Nummer titel...">
-        <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
-        <input type="text" id="custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
-        <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
-      </div>
-
       <!-- KOPJE GEDRAAID GASTEN -->
-      <div id="guest-done-section">
+      <div id="guest-done-section" style="margin-top: 30px;">
         <h3>🎉 Reeds Gedraaid</h3>
         <div id="guest-done-list"></div>
       </div>
@@ -208,6 +225,19 @@
         }, 5000);
       } catch (err) {
         alert('Fout bij verbinden met Supabase: ' + err.message);
+      }
+    }
+
+    function toggleCustomForm() {
+      const form = document.getElementById('custom-form-container');
+      const btn = document.getElementById('toggle-custom-btn');
+      
+      if (form.classList.contains('hidden')) {
+        form.classList.remove('hidden');
+        btn.innerText = '➖ Sluit handmatig invoeren';
+      } else {
+        form.classList.add('hidden');
+        btn.innerText = '➕ Staat je nummer er niet tussen? Klik hier';
       }
     }
 
@@ -433,7 +463,7 @@
       const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
 
       if (matches.length === 0) {
-        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Vul hem hieronder handmatig in!</p>';
+        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>';
         return;
       }
 
@@ -474,6 +504,7 @@
         titleInput.value = '';
         artistInput.value = '';
         noteInput.value = '';
+        toggleCustomForm(); // Klapt het formulier weer in na versturen
         loadRequests();
       }
     }
