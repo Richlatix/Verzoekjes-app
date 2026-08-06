@@ -16,15 +16,6 @@
       --subtext-color: #b0b0b0;
     }
 
-    body.light-mode {
-      --bg-color: #d8ffb3;
-      --card-bg: #ffffff;
-      --text-color: #121212;
-      --accent-color: #62c700;
-      --border-color: #dddddd;
-      --subtext-color: #666666;
-    }
-
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
       background: var(--bg-color); 
@@ -32,10 +23,10 @@
       padding: 20px; 
       max-width: 600px; 
       margin: auto; 
-      transition: background 0.3s, color 0.3s;
     }
 
-    .header-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .header-bar { display: flex; justify-content: center; align-items: center; margin-bottom: 15px; }
+    .header-bar img { max-height: 60px; width: auto; object-fit: contain; }
     h1, h2, h3 { color: var(--accent-color); text-align: center; margin-top: 5px; }
     
     input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
@@ -48,15 +39,13 @@
     .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
     .danger-btn { background: #ff4444; color: #ffffff; }
     .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
-    body.light-mode .secondary-btn { background: #e0e0e0; color: #121212; border: none; }
     
-    .hidden { display: none; }
+    .hidden { display: none !important; }
     .box { background: var(--card-bg); padding: 15px; border-radius: 8px; border: 1px dashed var(--accent-color); margin-top: 20px; }
     .badge { background: var(--border-color); padding: 3px 8px; border-radius: 4px; font-size: 0.8em; color: var(--accent-color); }
     
     /* Visitekaartje Styling */
     .promo-card { background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%); border: 2px solid var(--accent-color); border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
-    body.light-mode .promo-card { background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
     .promo-card h3 { margin-bottom: 5px; }
     .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
     .contact-link { display: inline-block; background: var(--accent-color); color: #121212; padding: 10px 20px; border-radius: 20px; text-decoration: none; font-weight: bold; margin: 5px; }
@@ -65,8 +54,7 @@
 <body>
 
   <div class="header-bar">
-    <img src="Logo.png" alt="Drive-in Show Logo" style="max-height: 150px; width: auto;">
-    <button onclick="toggleTheme()" class="secondary-btn" style="width: auto; padding: 6px 12px; margin: 0;">🌓 Modus</button>
+    <img src="Logo.png" alt="Drive-in Show Logo" id="app-logo">
   </div>
 
   <!-- HOOFDMENU -->
@@ -126,7 +114,7 @@
     <!-- DJ DASHBOARD -->
     <div id="dj-view" class="hidden">
       <h2>🎧 DJ Live Dashboard</h2>
-      
+
       <button onclick="downloadCSV()" class="secondary-btn">📊 Download Sheets/CSV</button>
 
       <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -149,7 +137,6 @@
   </div>
 
   <script>
-    // --- SUPABASE INSTANTIËRING ---
     const SUPABASE_URL = "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
     const SUPABASE_KEY = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
 
@@ -165,17 +152,12 @@
         loadRequests();
         listenToRealtime();
         
-        // Automatisch verversen elke 5 seconden
         setInterval(() => {
           loadRequests();
         }, 5000);
       } catch (err) {
         alert('Fout bij verbinden met Supabase: ' + err.message);
       }
-    }
-
-    function toggleTheme() {
-      document.body.classList.toggle('light-mode');
     }
 
     function showView(view) {
@@ -202,76 +184,35 @@
       }
     }
 
-    // --- WIPE PAGE / RESET VERZOEKJES ---
-    async function wipeRequests() {
-      const confirmWipe = confirm("Weet je ZEKER dat je alle verzoekjes en stemmen wilt wissen voor een nieuw feest?");
-      if (!confirmWipe) return;
+    // --- STEMMEN (+1) GECORRIGEERD EN ROBUUST GEMAAKT ---
+    async function vote(id) {
+      const song = allSongs.find(s => s.id === id);
+      if (!song) return;
+      
+      const currentVotes = Number(song.votes) || 0;
+      const newVotes = currentVotes + 1;
 
-      const { error } = await dbClient.from('requests').delete().neq('id', 0);
+      // Update de stemmen en zorg dat status op 'requested' staat
+      const { error } = await dbClient
+        .from('requests')
+        .update({ votes: newVotes, status: 'requested' })
+        .eq('id', id);
+
       if (error) {
-        alert('Er ging iets mis bij het wissen: ' + error.message);
+        alert('Fout bij stemmen: ' + error.message);
       } else {
-        alert('Alle verzoekjes zijn gewist!');
         loadRequests();
       }
-    }
-
-    // --- DOWNLOAD EXCEL / GOOGLE SHEETS CSV ---
-    function downloadCSV() {
-      const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done');
-      if (requested.length === 0) return alert('Er zijn nog geen verzoekjes om te downloaden!');
-
-      let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Opmerking;Status\n";
-      requested.forEach(s => {
-        const note = (s.note || "").replace(/;/g, ",");
-        csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${note}";"${s.status}"\n`;
-      });
-
-      const encodedUri = encodeURI(csvContent);
-      const link = document.createElement("a");
-      link.setAttribute("href", encodedUri);
-      link.setAttribute("download", `verzoekjes_export_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    }
-
-    // --- XML UPLOAD ---
-    async function uploadXML() {
-      const fileInput = document.getElementById('xml-file');
-      if (!fileInput.files[0]) return alert('Kies eerst een .xml bestand!');
-      
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-        const tracks = xmlDoc.getElementsByTagName("TRACK");
-        
-        let imported = [];
-        for (let i = 0; i < tracks.length; i++) {
-          const title = tracks[i].getAttribute("Name");
-          const artist = tracks[i].getAttribute("Artist");
-          if (title) {
-            imported.push({
-              title: title,
-              artist: artist || "Onbekend",
-              votes: 0,
-              status: 'available'
-            });
-          }
-        }
-
-        const { error } = await dbClient.from('requests').insert(imported);
-        if (error) alert('Fout bij uploaden: ' + error.message);
-        else alert(imported.length + ' nummers succesvol geïmporteerd!');
-      };
-      reader.readAsText(fileInput.files[0]);
     }
 
     // --- LADEN EN TONEN VAN VERZOEKJES ---
     async function loadRequests() {
       if (!dbClient) return;
-      const { data, error } = await dbClient.from('requests').select('*').order('votes', { ascending: false });
+      const { data, error } = await dbClient
+        .from('requests')
+        .select('*')
+        .order('votes', { ascending: false });
+
       if (data && !error) {
         allSongs = data;
         renderAllViews();
@@ -293,7 +234,6 @@
       const requested = allSongs.filter(s => s.status === 'requested');
       const done = allSongs.filter(s => s.status === 'done');
 
-      // Actieve verzoekjes
       if (requested.length === 0) {
         guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>';
       } else {
@@ -307,14 +247,13 @@
                 ${noteText}
               </div>
               <div>
-                <span class="badge">👍 ${song.votes}</span>
-                <button class="vote-btn" onclick="vote(${song.id}, 1)">+1 Stem</button>
+                <span class="badge">👍 ${song.votes || 0}</span>
+                <button class="vote-btn" onclick="vote(${song.id})">+1 Stem</button>
               </div>
             </div>`;
         });
       }
 
-      // Gedraaide nummers
       if (done.length === 0) {
         guestDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
       } else {
@@ -342,7 +281,6 @@
       const requested = allSongs.filter(s => s.status === 'requested');
       const done = allSongs.filter(s => s.status === 'done');
 
-      // Actieve verzoekjes voor DJ
       if (requested.length === 0) {
         djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen actieve verzoekjes ontvangen.</p>';
       } else {
@@ -356,14 +294,13 @@
                 ${noteText}
               </div>
               <div>
-                <span style="margin-right:10px;">👍 ${song.votes}</span>
+                <span style="margin-right:10px;">👍 ${song.votes || 0}</span>
                 <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button>
               </div>
             </div>`;
         });
       }
 
-      // Gedraaide nummers voor DJ
       if (done.length === 0) {
         djDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>';
       } else {
@@ -408,19 +345,10 @@
           <div class="card">
             <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
             <div>
-              <button class="vote-btn" onclick="vote(${song.id}, 1)">Aanvragen</button>
+              <button class="vote-btn" onclick="vote(${song.id})">Aanvragen</button>
             </div>
           </div>`;
       });
-    }
-
-    async function vote(id, change) {
-      const song = allSongs.find(s => s.id === id);
-      if (!song) return;
-      
-      const newVotes = (song.votes || 0) + change;
-      await dbClient.from('requests').update({ votes: newVotes, status: 'requested' }).eq('id', id);
-      loadRequests();
     }
 
     async function submitCustomRequest() {
@@ -463,6 +391,63 @@
       const { error } = await dbClient.from('requests').update({ status: 'requested' }).eq('id', id);
       if (error) alert('Fout bij terugzetten: ' + error.message);
       else loadRequests();
+    }
+
+    async function wipeRequests() {
+      const confirmWipe = confirm("Weet je ZEKER dat je alle verzoekjes wilt wissen voor een nieuw feest?");
+      if (!confirmWipe) return;
+
+      const { error } = await dbClient.from('requests').delete().neq('id', 0);
+      if (error) alert('Er ging iets mis bij het wissen: ' + error.message);
+      else {
+        alert('Alle verzoekjes zijn gewist!');
+        loadRequests();
+      }
+    }
+
+    function downloadCSV() {
+      const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done');
+      if (requested.length === 0) return alert('Er zijn nog geen verzoekjes om te downloaden!');
+
+      let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Opmerking;Status\n";
+      requested.forEach(s => {
+        const note = (s.note || "").replace(/;/g, ",");
+        csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${note}";"${s.status}"\n`;
+      });
+
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", `verzoekjes_export_${new Date().toISOString().slice(0,10)}.csv`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    async function uploadXML() {
+      const fileInput = document.getElementById('xml-file');
+      if (!fileInput.files[0]) return alert('Kies eerst een .xml bestand!');
+      
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        const parser = new DOMParser();
+        const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+        const tracks = xmlDoc.getElementsByTagName("TRACK");
+        
+        let imported = [];
+        for (let i = 0; i < tracks.length; i++) {
+          const title = tracks[i].getAttribute("Name");
+          const artist = tracks[i].getAttribute("Artist");
+          if (title) {
+            imported.push({ title: title, artist: artist || "Onbekend", votes: 0, status: 'available' });
+          }
+        }
+
+        const { error } = await dbClient.from('requests').insert(imported);
+        if (error) alert('Fout bij uploaden: ' + error.message);
+        else alert(imported.length + ' nummers succesvol geïmporteerd!');
+      };
+      reader.readAsText(fileInput.files[0]);
     }
 
     function listenToRealtime() {
