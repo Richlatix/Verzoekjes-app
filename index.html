@@ -176,6 +176,15 @@
   <!-- HOOFDSECTION -->
   <div id="app-section">
 
+    <!-- MELDING VOOR AFGELOPEN / VERLOPEN FEEST -->
+    <div id="event-ended-view" class="hidden" style="text-align: center; padding: 30px 10px;">
+      <h2>🎉 Dit feest is afgelopen!</h2>
+      <p style="color: var(--subtext-color); margin-bottom: 20px;">
+        De DJ is gestart met een nieuw evenement. Klik op onderstaande knop om mee te doen met het huidige feest!
+      </p>
+      <button onclick="window.location.reload()" style="max-width: 250px; margin: auto;">🔄 Pagina Verversen</button>
+    </div>
+
     <!-- GASTENSCHERM -->
     <div id="guest-view">
 
@@ -242,6 +251,7 @@
       <div id="settings-panel" class="settings-panel hidden">
         <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
         
+        <!-- 1. WELKOMSTTEKST -->
         <div style="margin-bottom: 15px;">
           <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📢 Welkomsttekst Gastenscherm:</label>
           <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
@@ -253,15 +263,27 @@
 
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
 
-        <div>
+        <!-- 2. EXPORTEREN -->
+        <div style="margin-bottom: 15px;">
           <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📊 Gegevens Exporteren:</label>
           <button onclick="downloadCSV()" class="secondary-btn" style="margin-top:6px;">📥 Exporteer Verzoekjes naar Excel/CSV</button>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
+        <!-- 3. FEEST SESSIE BEHEER -->
+        <div>
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚀 Nieuw Evenement Starten:</label>
+          <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">
+            Dit wist alle losse verzoekjes, reset de XML-bibliotheek stemmen en blokkeert geopende schermen van vorige feesten.
+          </p>
+          <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest</button>
         </div>
       </div>
 
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 20px;">
         <h3 style="margin:0;">Aangevraagde Nummers</h3>
-        <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alle Verzoekjes</button>
+        <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alleen Verzoekjes</button>
       </div>
       
       <div id="request-list"></div>
@@ -289,9 +311,10 @@
     let dbClient = null;
     let allSongs = [];
     let isDjLoggedIn = false;
+    let currentSessionId = localStorage.getItem('active_session_id') || null;
     const DJ_PIN = "3977";
 
-    /* FUNCTION OM POPUPS/TOASTS TE TONEN */
+    /* CUSTOM POPUP / TOAST NOTIFICATIE */
     function toonPopup(bericht) {
       const oudePopup = document.getElementById('custom-toast');
       if (oudePopup) oudePopup.remove();
@@ -328,11 +351,13 @@
       try {
         dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         showView('guest');
+        checkActiveSession();
         loadRequests();
         loadWelcomeText();
         listenToRealtime();
         
         setInterval(() => {
+          checkActiveSession();
           loadRequests();
           loadWelcomeText();
         }, 5000);
@@ -341,6 +366,59 @@
       }
     }
 
+    /* SESSIE BEHEER (BLOKKEER OUDEC TABS) */
+    async function checkActiveSession() {
+      if (!dbClient) return;
+
+      const { data } = await dbClient
+        .from('settings')
+        .select('value')
+        .eq('key', 'session_id')
+        .single();
+
+      if (data && data.value) {
+        const activeServerSession = data.value;
+
+        if (!currentSessionId) {
+          currentSessionId = activeServerSession;
+          localStorage.setItem('active_session_id', activeServerSession);
+        }
+
+        if (currentSessionId !== activeServerSession && !isDjLoggedIn) {
+          document.getElementById('guest-view').classList.add('hidden');
+          document.getElementById('event-ended-view').classList.remove('hidden');
+        }
+      }
+    }
+
+    async function startNewSession() {
+      const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Alle losse verzoekjes worden gewist, stemmen gereset en openstaande pagina's van gasten geblokkeerd. De XML-bibliotheek blijft wel behouden!");
+      if (!confirmStart) return;
+
+      const newSessionId = "feest_" + Date.now();
+
+      // 1. Wis de handmatige verzoekjes van gasten
+      await dbClient.from('requests').delete().eq('status', 'requested');
+      await dbClient.from('requests').delete().eq('status', 'done');
+
+      // 2. Zet de XML bibliotheek nummers weer klaar met 0 stemmen
+      await dbClient.from('requests').update({ votes: 0, status: 'available' }).eq('status', 'available');
+
+      // 3. Update actieve sessie op de server
+      await dbClient
+        .from('settings')
+        .upsert({ key: 'session_id', value: newSessionId }, { onConflict: 'key' });
+
+      // 4. Update lokale sessie
+      currentSessionId = newSessionId;
+      localStorage.setItem('active_session_id', newSessionId);
+      localStorage.removeItem('voted_song_ids');
+
+      toonPopup("Nieuw feest gestart! Oude schermen zijn geblokkeerd.");
+      loadRequests();
+    }
+
+    /* TOGGLE TANDWIEL MENU */
     function toggleSettingsMenu() {
       const panel = document.getElementById('settings-panel');
       const btn = document.getElementById('settings-toggle-btn');
@@ -355,6 +433,7 @@
       }
     }
 
+    /* WELKOMSTTEKST BEHEER */
     async function loadWelcomeText() {
       if (!dbClient) return;
       const { data } = await dbClient
@@ -725,13 +804,15 @@
     }
 
     async function wipeRequests() {
-      const confirmWipe = confirm("Weet je ZEKER dat je alle verzoekjes wilt wissen voor een nieuw feest?");
+      const confirmWipe = confirm("Weet je ZEKER dat je alle actieve verzoekjes wilt wissen?");
       if (!confirmWipe) return;
 
-      const { error } = await dbClient.from('requests').delete().neq('id', 0);
+      const { error } = await dbClient.from('requests').delete().eq('status', 'requested');
+      await dbClient.from('requests').delete().eq('status', 'done');
+
       if (error) toonPopup('Fout bij het wissen!');
       else {
-        toonPopup('Alle verzoekjes zijn gewist!');
+        toonPopup('Actieve verzoekjes zijn gewist!');
         localStorage.removeItem('voted_song_ids');
         loadRequests();
       }
@@ -799,8 +880,14 @@
     function listenToRealtime() {
       if (!dbClient) return;
       dbClient.channel('requests-change')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => loadRequests())
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadWelcomeText())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => {
+          checkActiveSession();
+          loadRequests();
+        })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => {
+          checkActiveSession();
+          loadWelcomeText();
+        })
         .subscribe();
     }
 
