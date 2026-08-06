@@ -178,13 +178,24 @@
   <div id="app-section">
 
     <!-- GAST FEESTCODE INVOERSCHERM -->
-    <div id="party-code-view" class="card hidden" style="max-width: 400px; margin: 20px auto; text-align: center; flex-direction: column;">
-      <h2>🎉 Welkom op het feest!</h2>
-      <p style="color:var(--subtext-color); font-size: 0.9em;">Voer de 4-cijferige feestcode in die op de QR-poster of het DJ-scherm staat:</p>
-      
-      <input type="number" id="guest-party-code-input" placeholder="0000" maxlength="4" style="font-size: 2em; letter-spacing: 6px; text-align: center; width: 80%; margin: 15px auto;">
-      
-      <button onclick="submitPartyCode()" style="width: 100%; padding: 12px; font-size: 1.1em;">Deelnemen aan Feest 🚀</button>
+    <div id="party-code-view" class="hidden" style="max-width: 400px; margin: 20px auto; text-align: center; flex-direction: column;">
+      <div class="card" style="text-align: center; flex-direction: column; display: block; margin-bottom: 0;">
+        <h2>🎉 Welkom op het feest!</h2>
+        <p style="color:var(--subtext-color); font-size: 0.9em;">Voer de 4-cijferige feestcode in die op de QR-poster of het DJ-scherm staat:</p>
+        
+        <input type="number" id="guest-party-code-input" placeholder="0000" maxlength="4" style="font-size: 2em; letter-spacing: 6px; text-align: center; width: 80%; margin: 15px auto;">
+        
+        <button onclick="submitPartyCode()" style="width: 100%; padding: 12px; font-size: 1.1em;">Deelnemen aan Feest 🚀</button>
+      </div>
+
+      <!-- VISITEKAARTJE / PROMO-KAART OOK ZICHTBAAR BIJ INLOGMENU -->
+      <div class="promo-card" id="login-promo-card">
+        <h3 id="promo-display-title-login">🎉 Drive-in Show Boeken?</h3>
+        <p id="promo-display-subtitle-login">Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
+        <div class="contact-links-container" id="promo-display-links-login">
+          <!-- Dynamische knoppen komen hier -->
+        </div>
+      </div>
     </div>
 
     <!-- GASTENSCHERM -->
@@ -762,45 +773,54 @@
         if (toggleEl) toggleEl.checked = !!promoData[`${platform}_active`];
       });
 
-      // Render gastenscherm visitekaartje
+      // Render gastenscherm visitekaartjes (beide locaties: inlogscherm & hoofdgastenscherm)
       const displayTitle = document.getElementById('promo-display-title');
       const displaySubtitle = document.getElementById('promo-display-subtitle');
       const displayLinks = document.getElementById('promo-display-links');
 
-      if (displayTitle) displayTitle.innerText = promoData.title || defaultPromoCard.title;
-      if (displaySubtitle) displaySubtitle.innerText = promoData.subtitle || defaultPromoCard.subtitle;
-      
-      if (displayLinks) {
-        displayLinks.innerHTML = '';
-        const platforms = [
-          { key: 'whatsapp', label: '💬 WhatsApp', isLink: true, prefix: '' },
-          { key: 'email', label: '✉️ E-mail Sturen', isLink: false, prefix: 'mailto:' },
-          { key: 'instagram', label: '📸 Instagram', isLink: true, prefix: '' },
-          { key: 'tiktok', label: '🎵 TikTok', isLink: true, prefix: '' },
-          { key: 'facebook', label: '👥 Facebook', isLink: true, prefix: '' }
-        ];
+      const displayTitleLogin = document.getElementById('promo-display-title-login');
+      const displaySubtitleLogin = document.getElementById('promo-display-subtitle-login');
+      const displayLinksLogin = document.getElementById('promo-display-links-login');
 
-        platforms.forEach(p => {
-          if (promoData[`${p.key}_active`] && promoData[p.key]) {
-            let val = promoData[p.key].trim();
-            let href = val;
-            if (!p.isLink && !href.startsWith('mailto:')) {
-              href = 'mailto:' + href;
-            } else if (p.isLink && !href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('wa.me/')) {
-              // Als het een kaal nummer of link is
-              if (p.key === 'whatsapp' && !href.includes('wa.me/')) {
-                href = 'https://wa.me/' + href.replace(/[^0-9]/g, '');
-              } else {
-                href = 'https://' + href;
-              }
-            } else if (p.key === 'whatsapp' && href.startsWith('wa.me/')) {
+      const cardTitle = promoData.title || defaultPromoCard.title;
+      const cardSubtitle = promoData.subtitle || defaultPromoCard.subtitle;
+
+      if (displayTitle) displayTitle.innerText = cardTitle;
+      if (displaySubtitle) displaySubtitle.innerText = cardSubtitle;
+      if (displayTitleLogin) displayTitleLogin.innerText = cardTitle;
+      if (displaySubtitleLogin) displaySubtitleLogin.innerText = cardSubtitle;
+      
+      const platforms = [
+        { key: 'whatsapp', label: '💬 WhatsApp', isLink: true, prefix: '' },
+        { key: 'email', label: '✉️ E-mail Sturen', isLink: false, prefix: 'mailto:' },
+        { key: 'instagram', label: '📸 Instagram', isLink: true, prefix: '' },
+        { key: 'tiktok', label: '🎵 TikTok', isLink: true, prefix: '' },
+        { key: 'facebook', label: '👥 Facebook', isLink: true, prefix: '' }
+      ];
+
+      let linksHtml = '';
+      platforms.forEach(p => {
+        if (promoData[`${p.key}_active`] && promoData[p.key]) {
+          let val = promoData[p.key].trim();
+          let href = val;
+          if (!p.isLink && !href.startsWith('mailto:')) {
+            href = 'mailto:' + href;
+          } else if (p.isLink && !href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('wa.me/')) {
+            if (p.key === 'whatsapp' && !href.includes('wa.me/')) {
+              href = 'https://wa.me/' + href.replace(/[^0-9]/g, '');
+            } else {
               href = 'https://' + href;
             }
-
-            displayLinks.innerHTML += `<a href="${href}" target="_blank" class="contact-link">${p.label}</a>`;
+          } else if (p.key === 'whatsapp' && href.startsWith('wa.me/')) {
+            href = 'https://' + href;
           }
-        });
-      }
+
+          linksHtml += `<a href="${href}" target="_blank" class="contact-link">${p.label}</a>`;
+        }
+      });
+
+      if (displayLinks) displayLinks.innerHTML = linksHtml;
+      if (displayLinksLogin) displayLinksLogin.innerHTML = linksHtml;
     }
 
     async function savePromoCard() {
