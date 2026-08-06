@@ -48,7 +48,7 @@
       border-color: var(--accent-color) !important;
     }
 
-    /* HEADER & LOGO (DESKTOP FORMAT) */
+    /* HEADER & LOGO */
     .header-bar { 
       display: flex; 
       flex-direction: column;
@@ -76,14 +76,13 @@
       border-radius: 20px;
     }
 
-    /* LOGO KLEINER OP MOBIEL (SCHERMEN SMALLER DAN 600PX) */
     @media (max-width: 600px) {
       .header-bar img {
         max-height: 80px;
       }
     }
 
-    h1, h2, h3 { color: var(--accent-color); text-align: center; margin-top: 5px; }
+    h1, h2, h3, h4 { color: var(--accent-color); text-align: center; margin-top: 5px; }
     
     input, button, textarea { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
     input, textarea { background: var(--card-bg); color: var(--text-color); }
@@ -99,7 +98,6 @@
     
     .hidden { display: none !important; }
     
-    /* DASHED BOX OM GEHELE AANVRAAG SECTIE */
     .request-box { 
       background: var(--card-bg); 
       padding: 15px; 
@@ -108,7 +106,16 @@
       margin-bottom: 25px; 
     }
 
-    /* XML Lijst Styling */
+    /* TANDWIEL MENU STYLING */
+    .settings-panel {
+      background: #181818;
+      border: 1px solid var(--accent-color);
+      border-radius: 12px;
+      padding: 15px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+
     .xml-file-item {
       background: #121212;
       padding: 10px 12px;
@@ -120,7 +127,6 @@
       border: 1px solid var(--border-color);
     }
 
-    /* Visitekaartje Styling */
     .promo-card { background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%); border: 2px solid var(--accent-color); border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
     .promo-card h3 { margin-bottom: 5px; }
     .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
@@ -135,7 +141,7 @@
     <button id="back-to-guest-btn" class="top-nav-btn hidden" style="margin-right:auto;" onclick="showView('guest')">← Gastenscherm</button>
   </div>
 
-  <!-- HEADER MET LOGO & DYNAMISCHE WELKOMSTTEKST -->
+  <!-- HEADER MET LOGO & WELKOMSTTEKST -->
   <div class="header-bar">
     <img src="Logo.png" alt="Drive-in Show Logo" id="app-logo">
     <div id="welcome-banner" class="welcome-banner hidden"></div>
@@ -144,10 +150,9 @@
   <!-- HOOFDSECTION -->
   <div id="app-section">
 
-    <!-- GASTENSCHERM (STANDAARD ZICHTBAAR) -->
+    <!-- GASTENSCHERM -->
     <div id="guest-view">
 
-      <!-- AANVRAAG BLOK MET RAND EN UITKLAPBARE INVOER -->
       <div class="request-box">
         <h2>Vraag een nummer aan</h2>
         <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
@@ -157,7 +162,6 @@
           <div id="song-list"></div>
         </div>
 
-        <!-- HANDMATIGE INVOER (UITKLAPBAAR) -->
         <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
           <button type="button" class="secondary-btn" onclick="toggleCustomForm()" id="toggle-custom-btn">
             ➕ Staat je nummer er niet tussen? Klik hier
@@ -172,17 +176,14 @@
         </div>
       </div>
       
-      <!-- AANGEVRAAGDE NUMMERS -->
       <h3>🔥 Aangevraagde Nummers</h3>
       <div id="guest-requested-list"></div>
 
-      <!-- KOPJE GEDRAAID GASTEN -->
       <div id="guest-done-section" style="margin-top: 30px;">
         <h3>🎉 Reeds Gedraaid</h3>
         <div id="guest-done-list"></div>
       </div>
 
-      <!-- DJ VISITEKAARTJE / PROMO -->
       <div class="promo-card">
         <h3>🎉 Drive-in Show Boeken?</h3>
         <p>Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
@@ -204,31 +205,48 @@
 
     <!-- DJ DASHBOARD -->
     <div id="dj-view" class="hidden">
-      <h2>🎧 DJ Live Dashboard</h2>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 10px;">
+        <h2 style="margin:0; text-align:left;">🎧 DJ Live Dashboard</h2>
+        <!-- TANDWIEL KNOP -->
+        <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 8px 14px; margin:0;" id="settings-toggle-btn">
+          ⚙️ Instellingen
+        </button>
+      </div>
 
-      <!-- WELKOMSTBERICHT INSTELEN -->
-      <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-bottom:20px; border:1px solid var(--border-color);">
-        <h3 style="margin-bottom:8px;">📢 Welkomsttekst Gastenscherm</h3>
-        <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
-        <div style="display:flex; gap:10px; margin-top:5px;">
-          <button onclick="saveWelcomeText()">Opslaan & Tonen</button>
-          <button onclick="clearWelcomeText()" class="secondary-btn">Wis Tekst</button>
+      <!-- TANDWIEL INSTELLINGEN PANEL (KLAPT OPEN/DICHT) -->
+      <div id="settings-panel" class="settings-panel hidden">
+        <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
+        
+        <!-- 1. WELKOMSTTEKST -->
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📢 Welkomsttekst Gastenscherm:</label>
+          <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
+          <div style="display:flex; gap:10px; margin-top:4px;">
+            <button onclick="saveWelcomeText()">Opslaan & Tonen</button>
+            <button onclick="clearWelcomeText()" class="secondary-btn">Wis Tekst</button>
+          </div>
+        </div>
+
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
+        <!-- 2. EXPORTEREN -->
+        <div>
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📊 Gegevens Exporteren:</label>
+          <button onclick="downloadCSV()" class="secondary-btn" style="margin-top:6px;">📥 Exporteer Verzoekjes naar Excel/CSV</button>
         </div>
       </div>
 
-      <button onclick="downloadCSV()" class="secondary-btn">📊 Download Sheets/CSV</button>
-
-      <div style="display:flex; justify-content:space-between; align-items:center;">
-        <h3>Aangevraagde Nummers</h3>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 20px;">
+        <h3 style="margin:0;">Aangevraagde Nummers</h3>
         <button onclick="wipeRequests()" class="danger-btn vote-btn">🧹 Wis Alle Verzoekjes</button>
       </div>
+      
       <div id="request-list"></div>
 
-      <!-- KOPJE GEDRAAID DJ -->
       <h3>🎉 Reeds Gedraaid</h3>
       <div id="dj-done-list"></div>
 
-      <!-- XML UPLOAD & OVERZICHT -->
+      <!-- XML UPLOAD -->
       <div style="background:var(--card-bg); padding:15px; border-radius:8px; margin-top:30px; border:1px solid var(--border-color);">
         <h3>Upload Rekordbox / Spotify XML</h3>
         <input type="file" id="xml-file" accept=".xml">
@@ -251,7 +269,6 @@
     let isDjLoggedIn = false;
     const DJ_PIN = "3977";
 
-    // Helper functies voor stemmen in localStorage
     function getVotedSongIds() {
       try {
         return JSON.parse(localStorage.getItem('voted_song_ids')) || [];
@@ -282,6 +299,21 @@
         }, 5000);
       } catch (err) {
         alert('Fout bij verbinden met Supabase: ' + err.message);
+      }
+    }
+
+    /* TOGGLE TANDWIEL MENU */
+    function toggleSettingsMenu() {
+      const panel = document.getElementById('settings-panel');
+      const btn = document.getElementById('settings-toggle-btn');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btn.style.borderColor = 'var(--accent-color)';
+        btn.style.color = 'var(--accent-color)';
+      } else {
+        panel.classList.add('hidden');
+        btn.style.borderColor = 'var(--border-color)';
+        btn.style.color = '#ffffff';
       }
     }
 
@@ -325,7 +357,7 @@
           .upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' });
 
         if (error) {
-          console.warn("Kon settings niet opslaan in Supabase (tabel 'settings' vereist), lokaal opgeslagen.", error);
+          console.warn("Kon settings niet opslaan in Supabase, lokaal opgeslagen.", error);
         }
       }
 
