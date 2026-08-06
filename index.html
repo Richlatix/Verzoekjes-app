@@ -65,7 +65,7 @@
     /* LOGO KLEINER OP MOBIEL (SCHERMEN SMALLER DAN 600PX) */
     @media (max-width: 600px) {
       .header-bar img {
-        max-height: 80px; /* Pas dit getal eventueel aan naar wens (bijv. 70px of 90px) */
+        max-height: 80px;
       }
     }
 
@@ -75,6 +75,7 @@
     input, textarea { background: var(--card-bg); color: var(--text-color); }
     button { background: var(--accent-color); color: #121212; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
     button:hover { opacity: 0.9; }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; opacity: 0.7; }
     
     .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
     .card.done { opacity: 0.6; text-decoration: line-through; border-style: dashed; }
@@ -225,6 +226,23 @@
     let isDjLoggedIn = false;
     const DJ_PIN = "3977";
 
+    // Helper functies voor stemmen in localStorage
+    function getVotedSongIds() {
+      try {
+        return JSON.parse(localStorage.getItem('voted_song_ids')) || [];
+      } catch (e) {
+        return [];
+      }
+    }
+
+    function recordVote(id) {
+      const voted = getVotedSongIds();
+      if (!voted.includes(id)) {
+        voted.push(id);
+        localStorage.setItem('voted_song_ids', JSON.stringify(voted));
+      }
+    }
+
     function initSupabase() {
       try {
         dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
@@ -293,6 +311,12 @@
     }
 
     async function vote(id) {
+      const votedIds = getVotedSongIds();
+      if (votedIds.includes(id)) {
+        alert('Je hebt al op dit nummer gestemd!');
+        return;
+      }
+
       const song = allSongs.find(s => s.id === id);
       if (!song) return;
       
@@ -307,6 +331,7 @@
       if (error) {
         alert('Fout bij stemmen: ' + error.message);
       } else {
+        recordVote(id);
         loadRequests();
       }
     }
@@ -339,12 +364,17 @@
 
       const requested = allSongs.filter(s => s.status === 'requested');
       const done = allSongs.filter(s => s.status === 'done');
+      const votedIds = getVotedSongIds();
 
       if (requested.length === 0) {
         guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>';
       } else {
         requested.forEach(song => {
           const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : '';
+          const hasVoted = votedIds.includes(song.id);
+          const btnText = hasVoted ? 'Gestemd ✅' : '+1 Stem';
+          const disabledAttr = hasVoted ? 'disabled' : '';
+
           guestList.innerHTML += `
             <div class="card">
               <div>
@@ -354,7 +384,7 @@
               </div>
               <div>
                 <span class="badge">👍 ${song.votes || 0}</span>
-                <button class="vote-btn" onclick="vote(${song.id})">+1 Stem</button>
+                <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button>
               </div>
             </div>`;
         });
@@ -473,6 +503,7 @@
 
       resultsSection.classList.remove('hidden');
       const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10);
+      const votedIds = getVotedSongIds();
 
       if (matches.length === 0) {
         songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>';
@@ -480,11 +511,15 @@
       }
 
       matches.forEach(song => {
+        const hasVoted = votedIds.includes(song.id);
+        const btnText = hasVoted ? 'Gestemd ✅' : 'Aanvragen';
+        const disabledAttr = hasVoted ? 'disabled' : '';
+
         songList.innerHTML += `
           <div class="card">
             <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
             <div>
-              <button class="vote-btn" onclick="vote(${song.id})">Aanvragen</button>
+              <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button>
             </div>
           </div>`;
       });
@@ -501,18 +536,21 @@
 
       if (!title) return alert('Vul alstublieft een titel in!');
 
-      const { error } = await dbClient.from('requests').insert([{
+      const { data, error } = await dbClient.from('requests').insert([{
         title: title,
         artist: artist,
         note: note,
         votes: 1,
         status: 'requested'
-      }]);
+      }]).select();
 
       if (error) {
         alert('Er ging iets mis: ' + error.message);
       } else {
         alert('Verzoekje "' + title + '" is verstuurd!');
+        if (data && data[0]) {
+          recordVote(data[0].id);
+        }
         titleInput.value = '';
         artistInput.value = '';
         noteInput.value = '';
@@ -541,6 +579,7 @@
       if (error) alert('Er ging iets mis bij het wissen: ' + error.message);
       else {
         alert('Alle verzoekjes zijn gewist!');
+        localStorage.removeItem('voted_song_ids');
         loadRequests();
       }
     }
