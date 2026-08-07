@@ -82,7 +82,7 @@
         <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
         <div id="search-results-section" class="hidden" style="margin-top: 15px;">
           <h3>🔍 Zoekresultaten uit bibliotheek</h3>
-          <div id="song-list" style="max-height: 300px; overflow-y: auto; padding-right: 4px;"></div>
+          <div id="song-list"></div>
         </div>
         <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
           <button type="button" class="secondary-btn" onclick="toggleCustomForm()" id="toggle-custom-btn">➕ Staat je nummer er niet tussen? Klik hier</button>
@@ -211,7 +211,7 @@
         <h3 style="margin-top:0;">🔍 Verzoekje Toevoegen (Bibliotheek / Handmatig)</h3>
         <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()">
         <div id="dj-search-results-section" class="hidden" style="margin-top: 10px;">
-          <div id="dj-song-list" style="max-height: 250px; overflow-y: auto; padding-right: 4px;"></div>
+          <div id="dj-song-list"></div>
         </div>
         <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
           <button type="button" class="secondary-btn" onclick="toggleDjCustomForm()" id="dj-toggle-custom-btn">➕ Staat het nummer niet in de bibliotheek? Klik hier</button>
@@ -519,51 +519,78 @@
     function renderUploadedXmlFiles() { const xmlListContainer = document.getElementById('uploaded-xml-list'); xmlListContainer.innerHTML = ''; const xmlSongs = allSongs.filter(s => s.source_file); if (xmlSongs.length === 0) { xmlListContainer.innerHTML = '<p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>'; return; } const filesMap = {}; xmlSongs.forEach(song => { const fileName = song.source_file || 'Onbekend XML Bestand'; if (!filesMap[fileName]) { filesMap[fileName] = { name: fileName, count: 0, date: song.created_at ? new Date(song.created_at).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' }) : 'Onbekend' }; } filesMap[fileName].count++; }); Object.values(filesMap).forEach(file => { xmlListContainer.innerHTML += ` <div class="xml-file-item"> <span>📄 <strong>${file.name}</strong> (${file.count} nummers)</span> <span style="color:var(--subtext-color);">${file.date}</span> </div>`; }); }
     
     function filterSongs() { 
+      if (activeLibraryNoteId !== null) {
+        const activeInput = document.getElementById(`lib-note-${activeLibraryNoteId}`);
+        if (activeInput && document.activeElement === activeInput) return;
+      }
+
       const query = document.getElementById('search-input').value.toLowerCase(); 
       const resultsSection = document.getElementById('search-results-section'); 
       const songList = document.getElementById('song-list'); 
       songList.innerHTML = ''; 
-      if (query.length < 2) { resultsSection.classList.add('hidden'); return; } 
+      if (query.length < 2) { 
+        resultsSection.classList.add('hidden'); 
+        return; 
+      } 
       resultsSection.classList.remove('hidden'); 
-      // Verhoogd of limiet weggehaald zodat je meer resultaten ziet
-      const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 50); 
+      
+      // Zoek nu in zowel 'available' als 'requested' nummers zodat reeds aangevraagde nummers vindbaar blijven
+      const matches = allSongs.filter(s => (s.status === 'available' || s.status === 'requested') && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); 
       const votedIds = getVotedSongIds(); 
+      
       if (matches.length === 0) { 
         songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>'; 
         return; 
       } 
+      
       matches.forEach(song => { 
         const hasVoted = votedIds.includes(song.id); 
-        const disabledAttr = hasVoted ? 'disabled' : ''; 
+        const disabledAttr = (song.status === 'requested' && hasVoted) ? 'disabled' : ''; 
         const isAddingNote = activeLibraryNoteId === song.id; 
+        const statusBadge = song.status === 'requested' ? ' <small style="color:var(--accent-color);">[Al in aanvraag]</small>' : '';
+        
         if (isAddingNote) { 
-          songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Verzoekje Versturen 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button> </div> </div>`; 
+          songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> ${statusBadge} - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Stem / Verzoek Sturen 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button> </div> </div>`; 
         } else { 
-          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleLibraryNote(${song.id})" ${disabledAttr}>${hasVoted ? 'Gestemd ✅' : 'Aanvragen'}</button> </div> </div>`; 
+          const btnLabel = song.status === 'requested' ? (hasVoted ? 'Gestemd ✅' : '+1 Stem') : 'Aanvragen';
+          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong> ${statusBadge}<br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleLibraryNote(${song.id})" ${disabledAttr}>${btnLabel}</button> </div> </div>`; 
         } 
       }); 
     }
 
     function filterDjSearchSongs() { 
+      if (activeDjLibraryNoteId !== null) {
+        const activeInput = document.getElementById(`dj-lib-note-${activeDjLibraryNoteId}`);
+        if (activeInput && document.activeElement === activeInput) return;
+      }
+
       const queryInput = document.getElementById('dj-search-input'); 
       if (!queryInput) return; 
       const query = queryInput.value.toLowerCase(); 
       const resultsSection = document.getElementById('dj-search-results-section'); 
       const songList = document.getElementById('dj-song-list'); 
       songList.innerHTML = ''; 
-      if (query.length < 2) { resultsSection.classList.add('hidden'); return; } 
+      if (query.length < 2) { 
+        resultsSection.classList.add('hidden'); 
+        return; 
+      } 
       resultsSection.classList.remove('hidden'); 
-      const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 50); 
+      
+      const matches = allSongs.filter(s => (s.status === 'available' || s.status === 'requested') && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); 
+      
       if (matches.length === 0) { 
         songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek.</p>'; 
         return; 
       } 
+      
       matches.forEach(song => { 
         const isAddingNote = activeDjLibraryNoteId === song.id; 
+        const statusBadge = song.status === 'requested' ? ' <small style="color:var(--accent-color);">[Al in aanvraag]</small>' : '';
+        
         if (isAddingNote) { 
-          songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="dj-lib-note-${song.id}" placeholder="Opmerking (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitDjLibraryVote(${song.id})">Toevoegen aan Wachtrij 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleDjLibraryNote(null)">Annuleren</button> </div> </div>`; 
+          songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> ${statusBadge} - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="dj-lib-note-${song.id}" placeholder="Opmerking (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitDjLibraryVote(${song.id})">Toevoegen aan Wachtrij 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleDjLibraryNote(null)">Annuleren</button> </div> </div>`; 
         } else { 
-          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">Toevoegen</button> </div> </div>`; 
+          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong> ${statusBadge}<br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">Toevoegen</button> </div> </div>`; 
         } 
       }); 
     }
@@ -615,25 +642,16 @@
         (async () => {
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-          
-          // Ondersteun verschillende XML formaten en hoofdlettervarianten (Rekordbox, VirtualDJ, Traktor, etc.)
-          let tracks = xmlDoc.getElementsByTagName("TRACK");
-          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("track");
-          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("Track");
-          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("SONG");
-          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("song");
-          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("Song");
+          const tracks = xmlDoc.getElementsByTagName("TRACK");
           
           let imported = [];
           for (let i = 0; i < tracks.length; i++) {
-            const track = tracks[i];
-            const title = track.getAttribute("Name") || track.getAttribute("name") || track.getAttribute("Title") || track.getAttribute("title");
-            const artist = track.getAttribute("Artist") || track.getAttribute("artist") || track.getAttribute("Author") || track.getAttribute("author") || "Onbekend";
-            
+            const title = tracks[i].getAttribute("Name");
+            const artist = tracks[i].getAttribute("Artist");
             if (title) {
               imported.push({ 
-                title: title.trim(), 
-                artist: artist.trim(), 
+                title: title, 
+                artist: artist || "Onbekend", 
                 votes: 0, 
                 status: 'available',
                 source_file: fileName 
@@ -641,13 +659,9 @@
             }
           }
 
-          if (imported.length === 0) {
-            return toonPopup('Geen geldige nummers gevonden in dit XML-bestand. Controleer de indeling.');
-          }
-
           const { error } = await dbClient.from('requests').insert(imported);
           if (error) {
-            toonPopup('Fout bij uploaden van XML naar database!');
+            toonPopup('Fout bij uploaden van XML!');
           } else {
             toonPopup(`${imported.length} nummers geïmporteerd uit XML!`);
             fileInput.value = '';
