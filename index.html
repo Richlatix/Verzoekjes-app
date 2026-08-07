@@ -123,6 +123,19 @@
       </div>
       <div id="settings-panel" class="settings-panel hidden">
         <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
+        
+        <!-- BLACKLIST SECTIE -->
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚫 Woorden Blacklist:</label>
+          <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Verzoekjes met deze woorden worden direct geblokkeerd.</p>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="blacklist-word-input" placeholder="Voer verboden woord in..." style="margin:0;">
+            <button onclick="addBlacklistWord()" style="width:auto; padding:10px 15px; margin:0;">Toevoegen</button>
+          </div>
+          <div id="blacklist-words-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
+        </div>
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+
         <div style="margin-bottom: 15px;">
           <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📢 Welkomsttekst Gastenscherm:</label>
           <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
@@ -233,12 +246,92 @@
     const SUPABASE_KEY = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
     let dbClient = null; let allSongs = []; let isDjLoggedIn = false; let currentPartyCode = null;
     let activeLibraryNoteId = null; let activeDjLibraryNoteId = null; let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
+    let blacklistedWords = [];
     const DJ_PIN = "3977";
     const defaultPromoCard = { title: "🎉 MXT Productions Boeken?", subtitle: "Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?", whatsapp: "https://wa.me/31622499093", whatsapp_active: true, email: "info.mxtproductions@gmail.com", email_active: true, instagram: "https://www.instagram.com/mxt.productions?igsh=Nmp4YW50d3JrajNz&utm_source=qr", instagram_active: false, tiktok: "https://www.tiktok.com/@mxtproductions?_r=1&_t=ZN-98fFhDOpgvO", tiktok_active: false, facebook: "https://www.facebook.com/share/1DArnr8LVu/?mibextid=wwXIfr", facebook_active: false };
+    
     function toonPopup(bericht) { const oudePopup = document.getElementById('custom-toast'); if (oudePopup) oudePopup.remove(); const popup = document.createElement('div'); popup.id = 'custom-toast'; popup.className = 'toast-popup'; popup.innerText = bericht; document.body.appendChild(popup); setTimeout(() => { if (popup) popup.remove(); }, 3000); }
     function getVotedSongIds() { try { return JSON.parse(localStorage.getItem('voted_song_ids')) || []; } catch (e) { return []; } }
     function recordVote(id) { const voted = getVotedSongIds(); if (!voted.includes(id)) { voted.push(id); localStorage.setItem('voted_song_ids', JSON.stringify(voted)); } }
-    async function initSupabase() { try { dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); const urlParams = new URLSearchParams(window.location.search); const codeFromUrl = urlParams.get('code'); if (codeFromUrl) { localStorage.setItem('entered_party_code', codeFromUrl); } await loadActivePartyCode(); checkGuestAccess(); loadRequests(); loadWelcomeText(); loadPromoCard(); listenToRealtime(); setInterval(() => { loadActivePartyCode(); loadRequests(); loadWelcomeText(); loadPromoCard(); pingPresence(); }, 3000); setInterval(() => { fetchOnlineCount(); }, 5000); } catch (err) { toonPopup('Fout bij verbinden met Supabase!'); } }
+
+    async function initSupabase() { 
+      try { 
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); 
+        const urlParams = new URLSearchParams(window.location.search); 
+        const codeFromUrl = urlParams.get('code'); 
+        if (codeFromUrl) { localStorage.setItem('entered_party_code', codeFromUrl); } 
+        await loadActivePartyCode(); 
+        await loadBlacklist();
+        checkGuestAccess(); 
+        loadRequests(); 
+        loadWelcomeText(); 
+        loadPromoCard(); 
+        listenToRealtime(); 
+        setInterval(() => { loadActivePartyCode(); loadRequests(); loadWelcomeText(); loadPromoCard(); loadBlacklist(); pingPresence(); }, 3000); 
+        setInterval(() => { fetchOnlineCount(); }, 5000); 
+      } catch (err) { toonPopup('Fout bij verbinden met Supabase!'); } 
+    }
+
+    // --- BLACKLIST LOGICA ---
+    async function loadBlacklist() {
+      if (!dbClient) return;
+      const { data } = await dbClient.from('settings').select('value').eq('key', 'blacklist').maybeSingle();
+      if (data && data.value) {
+        try { blacklistedWords = JSON.parse(data.value); } catch (e) { blacklistedWords = []; }
+      } else {
+        const local = localStorage.getItem('blacklist_words');
+        if (local) { try { blacklistedWords = JSON.parse(local); } catch (e) { blacklistedWords = []; } }
+      }
+      renderBlacklistUI();
+    }
+
+    function renderBlacklistUI() {
+      const container = document.getElementById('blacklist-words-container');
+      if (!container) return;
+      if (blacklistedWords.length === 0) {
+        container.innerHTML = '<small style="color:var(--subtext-color);">Geen woorden op de zwarte lijst.</small>';
+        return;
+      }
+      container.innerHTML = '';
+      blacklistedWords.forEach(word => {
+        container.innerHTML += `<span style="background:#2a2a2a; border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; font-size:0.85em; display:inline-flex; align-items:center; gap:6px;">
+          ${word} <span style="cursor:pointer; color:#ff4444; font-weight:bold;" onclick="removeBlacklistWord('${word}')">×</span>
+        </span>`;
+      });
+    }
+
+    async function addBlacklistWord() {
+      const input = document.getElementById('blacklist-word-input');
+      const word = input.value.trim().toLowerCase();
+      if (!word) return;
+      if (!blacklistedWords.includes(word)) {
+        blacklistedWords.push(word);
+        await saveBlacklistToDb();
+        input.value = '';
+      }
+    }
+
+    async function removeBlacklistWord(word) {
+      blacklistedWords = blacklistedWords.filter(w => w !== word);
+      await saveBlacklistToDb();
+    }
+
+    async function saveBlacklistToDb() {
+      const jsonStr = JSON.stringify(blacklistedWords);
+      localStorage.setItem('blacklist_words', jsonStr);
+      if (dbClient) {
+        await dbClient.from('settings').upsert({ key: 'blacklist', value: jsonStr }, { onConflict: 'key' });
+      }
+      renderBlacklistUI();
+      toonPopup('Zwarte lijst bijgewerkt!');
+    }
+
+    function containsBlacklistedWord(...texts) {
+      const combined = texts.join(' ').toLowerCase();
+      return blacklistedWords.some(word => combined.includes(word.toLowerCase()));
+    }
+    // -------------------------
+
     async function pingPresence() { const savedGuestCode = localStorage.getItem('entered_party_code'); if (!savedGuestCode || !currentPartyCode || savedGuestCode !== currentPartyCode || isDjLoggedIn) return; await dbClient.from('presence').upsert({ session_id: guestSessionId, party_code: currentPartyCode, last_seen: new Date().toISOString() }, { onConflict: 'session_id' }); }
     async function fetchOnlineCount() { if (!dbClient || !currentPartyCode) return; const threshold = new Date(Date.now() - 15000).toISOString(); await dbClient.from('presence').delete().lt('last_seen', threshold); const { count, error } = await dbClient.from('presence').select('*', { count: 'exact', head: true }).eq('party_code', currentPartyCode); if (!error && count !== null) { const countDisplay = document.getElementById('dj-online-count'); if (countDisplay) { countDisplay.innerText = `👥 ${count}`; } } }
     async function loadActivePartyCode() { if (!dbClient) return; const { data } = await dbClient.from('settings').select('value').eq('key', 'party_code').maybeSingle(); if (data && data.value) { currentPartyCode = data.value; const djCodeDisplay = document.getElementById('dj-active-code-display'); if (djCodeDisplay) djCodeDisplay.innerText = currentPartyCode; const savedGuestCode = localStorage.getItem('entered_party_code'); if (savedGuestCode && savedGuestCode !== currentPartyCode && !isDjLoggedIn) { localStorage.removeItem('entered_party_code'); checkGuestAccess(); toonPopup('Het vorige feest is afgelopen! Voer de nieuwe code in.'); } } }
@@ -258,7 +351,32 @@
     function showView(view) { document.getElementById('party-code-view').classList.add('hidden'); document.getElementById('guest-view').classList.add('hidden'); document.getElementById('pin-view').classList.add('hidden'); document.getElementById('dj-view').classList.add('hidden'); const loginBtn = document.getElementById('dj-login-btn'); const backBtn = document.getElementById('back-to-guest-btn'); if (view === 'guest') { loginBtn.classList.remove('hidden'); backBtn.classList.add('hidden'); checkGuestAccess(); } else if (view === 'dj') { loginBtn.classList.add('hidden'); backBtn.classList.add('hidden'); document.getElementById('dj-view').classList.remove('hidden'); loadActivePartyCode(); fetchOnlineCount(); } else { loginBtn.classList.add('hidden'); backBtn.classList.add('hidden'); document.getElementById(view + '-view').classList.remove('hidden'); } }
     function checkDJPass() { if (isDjLoggedIn) showView('dj'); else showView('pin'); }
     function verifyPin() { const enteredPin = document.getElementById('dj-pin-input').value; if (enteredPin === DJ_PIN) { isDjLoggedIn = true; document.getElementById('dj-pin-input').value = ''; showView('dj'); toonPopup('Succesvol ingelogd als DJ!'); } else { toonPopup('Onjuiste pincode!'); document.getElementById('dj-pin-input').value = ''; } }
-    async function vote(id, optionalNote = null, isDjAction = false) { const song = allSongs.find(s => s.id === id); if (!song) return; const currentVotes = Number(song.votes) || 0; const newVotes = isDjAction ? currentVotes : currentVotes + 1; const updateData = { votes: newVotes, status: 'requested', created_at: song.status === 'available' ? new Date().toISOString() : song.created_at }; if (optionalNote) updateData.note = optionalNote; const { error } = await dbClient.from('requests').update(updateData).eq('id', id); if (error) { toonPopup('Fout bij toevoegen!'); } else { if (!isDjAction) recordVote(id); toonPopup(`Verzoekje voor "${song.title}" toegevoegd!`); activeLibraryNoteId = null; activeDjLibraryNoteId = null; loadRequests(); } }
+    
+    async function vote(id, optionalNote = null, isDjAction = false) { 
+      const song = allSongs.find(s => s.id === id); 
+      if (!song) return; 
+      
+      if (!isDjAction && containsBlacklistedWord(song.title, song.artist, optionalNote)) {
+        toonPopup('Oeps, er is iets misgegaan bij het verzenden.');
+        return;
+      }
+
+      const currentVotes = Number(song.votes) || 0; 
+      const newVotes = isDjAction ? currentVotes : currentVotes + 1; 
+      const updateData = { votes: newVotes, status: 'requested', created_at: song.status === 'available' ? new Date().toISOString() : song.created_at }; 
+      if (optionalNote) updateData.note = optionalNote; 
+      const { error } = await dbClient.from('requests').update(updateData).eq('id', id); 
+      if (error) { 
+        toonPopup('Fout bij toevoegen!'); 
+      } else { 
+        if (!isDjAction) recordVote(id); 
+        toonPopup(`Verzoekje voor "${song.title}" toegevoegd!`); 
+        activeLibraryNoteId = null; 
+        activeDjLibraryNoteId = null; 
+        loadRequests(); 
+      } 
+    }
+
     async function loadRequests() { if (!dbClient) return; const { data, error } = await dbClient.from('requests').select('*'); if (data && !error) { allSongs = data; renderAllViews(); } }
     function renderAllViews() { renderGuestRequests(); renderDjRequests(); renderUploadedXmlFiles(); filterSongs(); filterDjSearchSongs(); }
     function formatTime(isoString) { if (!isoString) return ''; const date = new Date(isoString); return date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }); }
@@ -271,14 +389,37 @@
     function toggleDjLibraryNote(id) { activeDjLibraryNoteId = id; filterDjSearchSongs(); }
     function submitLibraryVote(id) { const noteInput = document.getElementById(`lib-note-${id}`); const note = noteInput ? noteInput.value.trim() : null; vote(id, note, false); }
     function submitDjLibraryVote(id) { const noteInput = document.getElementById(`dj-lib-note-${id}`); const note = noteInput ? noteInput.value.trim() : null; vote(id, note, true); }
-    async function submitCustomRequest() { const titleInput = document.getElementById('custom-title'); const artistInput = document.getElementById('custom-artist'); const noteInput = document.getElementById('custom-note'); const title = titleInput.value.trim(); const artist = artistInput.value.trim() || 'Los Verzoek'; const note = noteInput.value.trim(); if (!title) return toonPopup('Vul alstublieft een titel in!'); const { data, error } = await dbClient.from('requests').insert([{ title: title, artist: artist, note: note, votes: 1, status: 'requested', created_at: new Date().toISOString() }]).select(); if (error) { toonPopup('Er ging iets mis bij het verzenden!'); } else { toonPopup(`Verzoekje "${title}" is verstuurd!`); if (data && data[0]) { recordVote(data[0].id); } titleInput.value = ''; artistInput.value = ''; noteInput.value = ''; toggleCustomForm(); loadRequests(); } }
+    
+    async function submitCustomRequest() { 
+      const titleInput = document.getElementById('custom-title'); 
+      const artistInput = document.getElementById('custom-artist'); 
+      const noteInput = document.getElementById('custom-note'); 
+      const title = titleInput.value.trim(); 
+      const artist = artistInput.value.trim() || 'Los Verzoek'; 
+      const note = noteInput.value.trim(); 
+      if (!title) return toonPopup('Vul alstublieft een titel in!'); 
+      
+      if (containsBlacklistedWord(title, artist, note)) {
+        toonPopup('Oeps, er is iets misgegaan bij het verzenden.');
+        return;
+      }
+
+      const { data, error } = await dbClient.from('requests').insert([{ title: title, artist: artist, note: note, votes: 1, status: 'requested', created_at: new Date().toISOString() }]).select(); 
+      if (error) { 
+        toonPopup('Er ging iets mis bij het verzenden!'); 
+      } else { 
+        toonPopup(`Verzoekje "${title}" is verstuurd!`); 
+        if (data && data[0]) { recordVote(data[0].id); } 
+        titleInput.value = ''; artistInput.value = ''; noteInput.value = ''; toggleCustomForm(); loadRequests(); 
+      } 
+    }
+
     async function submitDjCustomRequest() { const titleInput = document.getElementById('dj-custom-title'); const artistInput = document.getElementById('dj-custom-artist'); const noteInput = document.getElementById('dj-custom-note'); const title = titleInput.value.trim(); const artist = artistInput.value.trim() || 'DJ Verzoek'; const note = noteInput.value.trim(); if (!title) return toonPopup('Vul alstublieft een titel in!'); const { error } = await dbClient.from('requests').insert([{ title: title, artist: artist, note: note, votes: 0, status: 'requested', created_at: new Date().toISOString() }]); if (error) { toonPopup('Er ging iets mis bij het toevoegen!'); } else { toonPopup(`Verzoekje "${title}" toegevoegd!`); titleInput.value = ''; artistInput.value = ''; noteInput.value = ''; toggleDjCustomForm(); loadRequests(); } }
     async function markDone(id) { const { error } = await dbClient.from('requests').update({ status: 'done' }).eq('id', id); if (error) toonPopup('Fout bij afvinken!'); else { toonPopup('Nummer gemarkeerd als gedraaid!'); loadRequests(); } }
     async function unmarkDone(id) { const { error } = await dbClient.from('requests').update({ status: 'requested' }).eq('id', id); if (error) toonPopup('Fout bij terugzetten!'); else { toonPopup('Nummer teruggezet naar actieve lijst!'); loadRequests(); } }
     async function wipeRequests() { const confirmWipe = confirm("Weet je ZEKER dat je alle actieve verzoekjes wilt wissen?"); if (!confirmWipe) return; const { error } = await dbClient.from('requests').delete().eq('status', 'requested'); await dbClient.from('requests').delete().eq('status', 'done'); if (error) toonPopup('Fout bij het wissen!'); else { toonPopup('Actieve verzoekjes zijn gewist!'); localStorage.removeItem('voted_song_ids'); loadRequests(); } }
     function downloadCSV() { const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done'); if (requested.length === 0) return toonPopup('Geen verzoekjes om te exporteren!'); let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Tijd;Opmerking;Status\n"; requested.forEach(s => { const note = (s.note || "").replace(/;/g, ","); const time = formatTime(s.created_at); csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${time}";"${note}";"${s.status}"\n`; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `verzoekjes_export_${new Date().toISOString().slice(0,10)}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); toonPopup('Lijst gedownload!'); }
     
-    // GECORRIGEERDE FUNCTIE:
     async function uploadXML() {
       const fileInput = document.getElementById('xml-file');
       const file = fileInput.files[0];
@@ -321,7 +462,15 @@
       reader.readAsText(file);
     }
 
-    function listenToRealtime() { if (!dbClient) return; dbClient.channel('public-db-changes').on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => { loadRequests(); }).on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => { loadActivePartyCode(); loadWelcomeText(); loadPromoCard(); }).on('postgres_changes', { event: '*', schema: 'public', table: 'presence' }, () => { fetchOnlineCount(); }).subscribe(); }
+    function listenToRealtime() { 
+      if (!dbClient) return; 
+      dbClient.channel('public-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => { loadRequests(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => { loadActivePartyCode(); loadWelcomeText(); loadPromoCard(); loadBlacklist(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'presence' }, () => { fetchOnlineCount(); })
+        .subscribe(); 
+    }
+
     window.onload = initSupabase;
   </script>
 </body>
