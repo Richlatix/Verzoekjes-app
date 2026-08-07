@@ -3,10 +3,12 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>MXT Productions - Beheer & Huisstijl</title>
+  <title>MXT Productions Verzoekjes</title>
   
-  <!-- Laad huisstijl en Supabase -->
+  <!-- 1. Laad eerst de huisstijl configuratie -->
   <script src="stijl.js"></script>
+
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -20,313 +22,473 @@
       --danger-color: #ff4444;
     }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 20px; max-width: 600px; margin: auto; }
-    h1, h2, h3 { color: var(--accent-color); text-align: center; }
-    .card { background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
-    input, button, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; background: #121212; color: var(--text-color); }
+    .top-nav { display: flex; justify-content: flex-end; align-items: center; min-height: 35px; margin-bottom: 10px; }
+    .top-nav-btn { width: auto !important; padding: 6px 14px !important; font-size: 0.85em; background: transparent !important; color: var(--subtext-color) !important; border: 1px solid var(--border-color) !important; border-radius: 20px !important; }
+    .top-nav-btn:hover { color: var(--accent-color) !important; border-color: var(--accent-color) !important; }
+    .header-bar { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 20px; }
+    .header-bar img { max-height: 140px; width: auto; object-fit: contain; transition: max-height 0.3s ease; }
+    .welcome-banner { margin-top: 12px; font-size: 1.2em; font-weight: bold; color: var(--accent-color); text-align: center; padding: 8px 16px; background: rgba(125, 255, 0, 0.08); border: 1px solid rgba(125, 255, 0, 0.2); border-radius: 20px; }
+    @media (max-width: 600px) { .header-bar img { max-height: 80px; } }
+    h1, h2, h3, h4 { color: var(--accent-color); text-align: center; margin-top: 5px; }
+    input, button, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; }
+    input, textarea, select { background: var(--card-bg); color: var(--text-color); }
     button { background: var(--accent-color); color: #121212; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
     button:hover { opacity: 0.9; }
-    .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
+    button:disabled { background: #444; color: #888; cursor: not-allowed; opacity: 0.7; }
+    .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
+    .card.done { opacity: 0.6; text-decoration: line-through; border-style: dashed; }
+    .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
     .danger-btn { background: var(--danger-color); color: #ffffff; }
+    .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
     .hidden { display: none !important; }
-    .color-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
-    .color-row label { font-size: 0.9em; color: var(--subtext-color); }
-    .color-row input[type="color"] { width: 60px; height: 40px; padding: 0; border: none; cursor: pointer; background: transparent; }
-    .toast-popup { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: #ffffff; border: 1.5px solid var(--accent-color); padding: 12px 24px; border-radius: 30px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); z-index: 9999; font-weight: bold; text-align: center; min-width: 250px; }
-    .preview-logo { max-height: 80px; display: block; margin: 10px auto; object-fit: contain; }
+    .request-box { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px dashed var(--accent-color); margin-bottom: 25px; }
+    .settings-panel, .xml-panel { background: #181818; border: 1px solid var(--accent-color); border-radius: 12px; padding: 15px; margin-bottom: 20px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+    .xml-file-item { background: #121212; padding: 10px 12px; border-radius: 6px; margin-top: 6px; font-size: 0.85em; display: flex; justify-content: space-between; border: 1px solid var(--border-color); }
+    .promo-card { background: linear-gradient(135deg, #1a1a1a 0%, #242424 100%); border: 2px solid var(--accent-color); border-radius: 12px; padding: 20px; margin-top: 30px; text-align: center; box-shadow: 0 4px 15px rgba(0,0,0,0.5); }
+    .promo-card h3 { margin-bottom: 5px; }
+    .promo-card p { color: var(--subtext-color); font-size: 0.9em; margin-bottom: 15px; }
+    .contact-links-container { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-top: 10px; }
+    .contact-link { display: inline-block; background: var(--accent-color); color: #121212; padding: 8px 16px; border-radius: 20px; text-decoration: none; font-weight: bold; font-size: 0.9em; }
+    .toast-popup { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: #ffffff; border: 1.5px solid var(--accent-color); padding: 12px 24px; border-radius: 30px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); z-index: 9999; font-weight: bold; text-align: center; min-width: 250px; animation: fadeInOut 3s ease forwards; }
+    @keyframes fadeInOut { 0% { opacity: 0; transform: translate(-50%, 20px); } 15% { opacity: 1; transform: translate(-50%, 0); } 85% { opacity: 1; transform: translate(-50%, 0); } 100% { opacity: 0; transform: translate(-50%, -10px); } }
   </style>
 </head>
 <body>
-
-  <!-- INLOGSCHERM ADMIN -->
-  <div id="admin-login-card" class="card" style="max-width: 400px; margin: 50px auto; text-align: center;">
-    <h2>🔐 Admin Inloggen</h2>
-    <p style="color:var(--subtext-color); font-size: 0.9em;">Voer de DJ-pincode in om het beheer te openen:</p>
-    <input type="password" id="admin-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
-    <button onclick="verifyAdminPin()">Inloggen</button>
-    <button onclick="window.location.href='index.html'" class="secondary-btn" style="margin-top:10px;">← Terug naar App</button>
+  <div class="top-nav" id="top-nav-bar">
+    <button id="dj-login-btn" class="top-nav-btn" onclick="checkDJPass()">🎧 DJ Inloggen</button>
+    <button id="back-to-guest-btn" class="top-nav-btn hidden" style="margin-right:auto;" onclick="showView('guest')">← Gastenscherm</button>
   </div>
-
-  <!-- ADMIN DASHBOARD -->
-  <div id="admin-dashboard" class="hidden">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
-      <h2>⚙️ MXT Admin Dashboard</h2>
-      <button onclick="window.location.href='index.html'" class="secondary-btn" style="width:auto; padding:8px 14px; margin:0;">Naar App →</button>
+  <div class="header-bar">
+    <img src="Logo.png" alt="Drive-in Show Logo" id="app-logo">
+    <div id="welcome-banner" class="welcome-banner hidden"></div>
+  </div>
+  <div id="app-section">
+    <div id="party-code-view" class="hidden" style="max-width: 400px; margin: 20px auto; text-align: center; flex-direction: column;">
+      <div class="card" style="text-align: center; flex-direction: column; display: block; margin-bottom: 0;">
+        <h2>🎉 Welkom op het feest!</h2>
+        <p style="color:var(--subtext-color); font-size: 0.9em;">Voer de 4-cijferige feestcode in die op de QR-poster of het DJ-scherm staat:</p>
+        <input type="number" id="guest-party-code-input" placeholder="0000" maxlength="4" style="font-size: 2em; letter-spacing: 6px; text-align: center; width: 80%; margin: 15px auto;">
+        <button onclick="submitPartyCode()" style="width: 100%; padding: 12px; font-size: 1.1em;">Deelnemen aan Feest 🚀</button>
+      </div>
+      <div class="promo-card" id="login-promo-card">
+        <h3 id="promo-display-title-login">🎉 Drive-in Show Boeken?</h3>
+        <p id="promo-display-subtitle-login">Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
+        <div class="contact-links-container" id="promo-display-links-login"></div>
+      </div>
     </div>
-
-    <!-- 1. HUISSTIJL & KLEUREN -->
-    <div class="card">
-      <h3>🎨 Huisstijl & Kleuren</h3>
-      <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:15px;">Pas hieronder het kleurenpalet van de app aan.</p>
-      
-      <div class="color-row">
-        <label>Achtergrondkleur (Body)</label>
-        <input type="color" id="col-bg" value="#121212">
-      </div>
-      <div class="color-row">
-        <label>Kaart Achtergrond</label>
-        <input type="color" id="col-card" value="#1e1e1e">
-      </div>
-      <div class="color-row">
-        <label>Accentkleur (Hoofdkleur / Groen)</label>
-        <input type="color" id="col-accent" value="#3c7a00">
-      </div>
-      <div class="color-row">
-        <label>Tekstkleur</label>
-        <input type="color" id="col-text" value="#ffffff">
-      </div>
-      <button onclick="saveColors()">Kleuren Opslaan</button>
-    </div>
-
-    <!-- 2. LOGO OF TEKST BEHEREN -->
-    <div class="card">
-      <h3>🖼️ Logo of Tekst Header</h3>
-      <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:10px;">Upload een logo óf verwijder het logo om een tekstnaam te gebruiken.</p>
-      
-      <div id="logo-active-section">
-        <img id="current-logo-preview" class="preview-logo" src="Logo.png" alt="Huidig Logo">
-        <input type="file" id="logo-file-input" accept="image/png, image/jpeg, image/webp">
-        <div style="display:flex; gap:10px; margin-top:8px;">
-          <button onclick="uploadLogo()">Logo Uploaden</button>
-          <button onclick="removeLogo()" class="danger-btn">Logo Verwijderen</button>
+    <div id="guest-view" class="hidden">
+      <div class="request-box">
+        <h2>Vraag een nummer aan</h2>
+        <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
+        <div id="search-results-section" class="hidden" style="margin-top: 15px;">
+          <h3>🔍 Zoekresultaten uit bibliotheek</h3>
+          <div id="song-list"></div>
         </div>
-      </div>
-
-      <div id="text-brand-section" class="hidden" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
-        <label style="font-size:0.85em; color:var(--accent-color); font-weight:bold;">✍️ Tekstnaam als Header:</label>
-        <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">Er is momenteel geen logo actief. Vul hier de bedrijfs- of show naam in:</p>
-        <input type="text" id="setting-brand-name" placeholder="Bijv. MXT Productions">
-        <button onclick="saveBrandName()">Tekstnaam Opslaan</button>
-        <button onclick="undoRemoveLogo()" class="secondary-btn" style="margin-top: 6px; font-size: 0.85em;">↩️ Toch weer logo gebruiken</button>
-      </div>
-    </div>
-
-    <!-- 3. GEGEVENS & DATABASE BEHEER (NIEUW: XML VERWIJDEREN) -->
-    <div class="card">
-      <h3>🗄️ Muziekdatabase & Nieuw Feest</h3>
-      <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:10px;">Beheer hier de geladen XML-muziekbestanden. Let op: dit verwijdert alle nummers uit de database.</p>
-      <button onclick="clearXmlDatabase()" class="danger-btn">🗑️ Geïmporteerde XML Bestanden Verwijderen</button>
-    </div>
-
-    <!-- 4. ALGEMENE INSTELLINGEN & PINCODE -->
-    <div class="card">
-      <h3>🔑 Systeem & Pincode</h3>
-      <label style="font-size:0.85em; color:var(--subtext-color);">DJ Pincode:</label>
-      <input type="text" id="setting-pincode" maxlength="4" placeholder="Bijv. 3977">
-      <button onclick="savePincode()">Pincode Opslaan</button>
-    </div>
-
-    <!-- 5. GEAVANCEERD: SUPABASE CONFIGURATIE (BEVEILIGD MET ADMIN WACHTWOORD) -->
-    <div class="card" style="border-color: #333; opacity: 0.85;">
-      <details>
-        <summary style="cursor: pointer; font-weight: bold; color: var(--subtext-color); font-size: 0.9em;">⚙️ Geavanceerd: Supabase Koppeling (Klik om te openen)</summary>
-        <div style="margin-top: 15px;">
-          <div style="background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger-color); padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.8em; color: #ff8888; line-height: 1.4;">
-            ⚠️ <strong>LET OP:</strong> Vereist het wachtwoord **Admin3977**. Onjuiste gegevens verbreken de verbinding direct!
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="secondary-btn" onclick="toggleCustomForm()" id="toggle-custom-btn">➕ Staat je nummer er niet tussen? Klik hier</button>
+          <div id="custom-form-container" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="custom-title" placeholder="Nummer titel...">
+            <input type="text" id="custom-artist" placeholder="Artiest (optioneel)...">
+            <input type="text" id="custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
+            <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
           </div>
-          <label style="font-size:0.8em; color:var(--subtext-color);">Supabase URL:</label>
-          <input type="text" id="setting-supabase-url" placeholder="https://xxx.supabase.co" style="font-size: 0.85em;">
-          
-          <label style="font-size:0.8em; color:var(--subtext-color); margin-top:8px;">Supabase Anon / Publishable Key:</label>
-          <input type="password" id="setting-supabase-key" placeholder="eyJhbGciOi..." style="font-size: 0.85em;">
-
-          <label style="font-size:0.8em; color:var(--subtext-color); margin-top:8px;">Admin Wachtwoord (Admin3977):</label>
-          <input type="password" id="setting-admin-pass" placeholder="Voer wachtwoord in" style="font-size: 0.85em;">
-          
-          <button onclick="saveSupabaseCredentials()" class="danger-btn" style="margin-top: 10px; font-size: 0.85em;">Database-koppeling Wijzigen</button>
         </div>
-      </details>
+      </div>
+      <h3>🔥 Aangevraagde Nummers</h3>
+      <div id="guest-requested-list"></div>
+      <div id="guest-done-section" style="margin-top: 30px;">
+        <h3>🎉 Reeds Gedraaid</h3>
+        <div id="guest-done-list"></div>
+      </div>
+      <div class="promo-card" id="guest-promo-card">
+        <h3 id="promo-display-title">🎉 Drive-in Show Boeken?</h3>
+        <p id="promo-display-subtitle">Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
+        <div class="contact-links-container" id="promo-display-links"></div>
+      </div>
     </div>
+    <div id="pin-view" class="hidden">
+      <h2>🎧 DJ Toegang</h2>
+      <p style="text-align: center; color: var(--subtext-color);">Voer de DJ-pincode in om in te loggen:</p>
+      <input type="password" id="dj-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
+      <button onclick="verifyPin()">Inloggen</button>
+      <button onclick="showView('guest')" class="secondary-btn" style="margin-top:10px;">Annuleren</button>
+    </div>
+    <div id="dj-view" class="hidden">
+      <!-- Aangepaste header balk met nieuwe knoppen -->
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 15px; background: #1a1a1a; padding: 10px 15px; border-radius: 8px; border: 1px solid var(--border-color); flex-wrap: wrap; gap: 10px;">
+        <div style="display: flex; flex-direction: column;">
+          <h2 style="margin:0; text-align:left; font-size: 1.3em;">🎧 DJ Live Dashboard</h2>
+          <div style="display: flex; gap: 8px; margin-top: 6px;">
+            <button onclick="showView('guest')" class="secondary-btn" style="width: auto; padding: 4px 10px; font-size: 0.75em; margin: 0;">🏠 Gastenscherm</button>
+            <button onclick="window.location.href='admin.html'" class="secondary-btn" style="width: auto; padding: 4px 10px; font-size: 0.75em; margin: 0;">🔧 Admin</button>
+          </div>
+        </div>
+        <div style="display:flex; align-items:center; gap: 10px;">
+          <div style="background: rgba(255,255,255,0.05); border: 1px solid var(--border-color); padding: 4px 10px; border-radius: 6px; text-align: center;">
+            <span style="font-size:0.7em; color:var(--subtext-color); display:block; line-height:1;">INGELOGD</span>
+            <strong id="dj-online-count" style="font-size:1.1em; color:#ffffff;">👥 0</strong>
+          </div>
+          <div style="background: rgba(125,255,0,0.1); border: 1px solid var(--accent-color); padding: 4px 10px; border-radius: 6px; text-align: center;">
+            <span style="font-size:0.7em; color:var(--subtext-color); display:block; line-height:1;">CODE</span>
+            <strong id="dj-active-code-display" style="font-size:1.2em; color:var(--accent-color);">----</strong>
+          </div>
+          <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 6px 10px; margin:0;" id="settings-toggle-btn">⚙️</button>
+        </div>
+      </div>
+      
+      <div id="settings-panel" class="settings-panel hidden">
+        <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
+        
+        <!-- BLACKLIST SECTIE -->
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚫 Woorden Blacklist:</label>
+          <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Verzoekjes met deze woorden worden direct geblokkeerd.</p>
+          <div style="display:flex; gap:8px;">
+            <input type="text" id="blacklist-word-input" placeholder="Voer verboden woord in..." style="margin:0;">
+            <button onclick="addBlacklistWord()" style="width:auto; padding:10px 15px; margin:0;">Toevoegen</button>
+          </div>
+          <div id="blacklist-words-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
+        </div>
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
 
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📢 Welkomsttekst Gastenscherm:</label>
+          <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!">
+          <div style="display:flex; gap:10px; margin-top:4px;">
+            <button onclick="saveWelcomeText()">Opslaan & Tonen</button>
+            <button onclick="clearWelcomeText()" class="secondary-btn">Wis Tekst</button>
+          </div>
+        </div>
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🏷️ Visitekaartje (Promo-kaart) Aanpassen:</label>
+          <div style="margin-top: 8px;">
+            <label style="font-size:0.8em; color:var(--subtext-color);">Titel:</label>
+            <input type="text" id="promo-title-input" placeholder="Bijv. 🎉 Drive-in Show Boeken?">
+          </div>
+          <div style="margin-top: 4px;">
+            <label style="font-size:0.8em; color:var(--subtext-color);">Subtitel / Beschrijving:</label>
+            <textarea id="promo-subtitle-input" placeholder="Bijv. Vond je het een tof feest..." style="height: 60px;"></textarea>
+          </div>
+          <div style="margin-top: 10px; border: 1px solid var(--border-color); padding: 10px; border-radius: 8px; background: #121212;">
+            <span style="font-size:0.85em; font-weight:bold; color:var(--accent-color);">Platforms & Knoppen:</span>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">💬 WhatsApp</label>
+              <input type="text" id="promo-whatsapp-input" placeholder="https://wa.me/316..." style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-whatsapp-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">✉️ E-mail</label>
+              <input type="text" id="promo-email-input" placeholder="info@jouwshow.nl" style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-email-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">📸 Instagram</label>
+              <input type="text" id="promo-instagram-input" placeholder="https://instagram.com/..." style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-instagram-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">🎵 TikTok</label>
+              <input type="text" id="promo-tiktok-input" placeholder="https://tiktok.com/@..." style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-tiktok-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+            <div style="display:flex; align-items:center; justify-content:space-between; margin-top:8px; gap:10px;">
+              <label style="font-size:0.85em; min-width:80px;">👥 Facebook</label>
+              <input type="text" id="promo-facebook-input" placeholder="https://facebook.com/..." style="margin:0; font-size:0.85em; padding:8px;">
+              <label style="font-size:0.8em; display:flex; align-items:center; gap:4px; cursor:pointer;"><input type="checkbox" id="promo-facebook-toggle" style="width:auto; margin:0;"> Aan</label>
+            </div>
+          </div>
+          <button onclick="savePromoCard()" style="margin-top: 10px;">Visitekaartje Opslaan</button>
+        </div>
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+        <div style="margin-bottom: 15px;">
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">📊 Gegevens Exporteren:</label>
+          <button onclick="downloadCSV()" class="secondary-btn" style="margin-top:6px;">📥 Exporteer Verzoekjes naar Excel/CSV</button>
+        </div>
+        <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
+        <div>
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚀 Nieuw Evenement Starten:</label>
+          <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">Dit wist alle verzoekjes, genereert een nieuwe 4-cijferige Feestcode en blokkeert telefoons van het vorige feest.</p>
+          <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest (Nieuwe Code)</button>
+        </div>
+      </div>
+      <div id="dj-search-panel" class="request-box hidden" style="margin-top: 15px;">
+        <h3 style="margin-top:0;">🔍 Verzoekje Toevoegen (Bibliotheek / Handmatig)</h3>
+        <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()">
+        <div id="dj-search-results-section" class="hidden" style="margin-top: 10px;">
+          <div id="dj-song-list"></div>
+        </div>
+        <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+          <button type="button" class="secondary-btn" onclick="toggleDjCustomForm()" id="dj-toggle-custom-btn">➕ Staat het nummer niet in de bibliotheek? Klik hier</button>
+          <div id="dj-custom-form-container" class="hidden" style="margin-top: 10px;">
+            <input type="text" id="dj-custom-title" placeholder="Nummer titel...">
+            <input type="text" id="dj-custom-artist" placeholder="Artiest (optioneel)...">
+            <input type="text" id="dj-custom-note" placeholder="Opmerking / Voor wie? (optioneel)...">
+            <button onclick="submitDjCustomRequest()">Direct Toevoegen aan Verzoekjes</button>
+          </div>
+        </div>
+      </div>
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px; flex-wrap: wrap; gap: 8px;">
+        <h3 style="margin:0; text-align:left;">🔥 Live Verzoekjes</h3>
+        <div style="display:flex; gap:6px; align-items:center;">
+          <button onclick="toggleDjSearchMenu()" class="secondary-btn vote-btn" id="dj-search-toggle-btn" style="padding: 6px 10px; font-size:0.85em; margin:0;" title="Verzoekje toevoegen">🔍</button>
+          <select id="sort-select" onchange="renderDjRequests()" style="width:auto; padding: 6px 10px; margin:0; font-size:0.85em;">
+            <option value="votes">🔥 Meeste stemmen</option>
+            <option value="newest">⏱️ Nieuwste aanvragen</option>
+            <option value="oldest">⌛ Oudste aanvragen</option>
+          </select>
+          <button onclick="wipeRequests()" class="danger-btn vote-btn" style="padding: 6px 10px; font-size:0.85em;">🧹 Wis</button>
+        </div>
+      </div>
+      <div id="request-list" style="margin-top: 10px;"></div>
+      <h3 style="margin-top: 25px;">🎉 Reeds Gedraaid</h3>
+      <div id="dj-done-list"></div>
+      <div style="margin-top: 30px;">
+        <button onclick="toggleXmlMenu()" class="secondary-btn" id="xml-toggle-btn" style="width: 100%; border-color: var(--accent-color); color: var(--accent-color); font-weight: bold;">📂 Muziekbibliotheek / XML Beheren (Uitklappen)</button>
+        <div id="xml-panel" class="xml-panel hidden" style="margin-top: 10px;">
+          <h3 style="margin-top:0; color: var(--accent-color);">XML Beheer</h3>
+          <p style="font-size: 0.85em; color: var(--subtext-color); margin-bottom: 10px;">Upload hier je muziekbestand zodat gasten uit je bibliotheek kunnen zoeken.</p>
+          <input type="file" id="xml-file" accept=".xml">
+          <button onclick="uploadXML()">Importeer Muzieklijst</button>
+          <h4 style="margin-top:20px; color:var(--accent-color); margin-bottom:5px;">📂 Geüploade XML Bestanden</h4>
+          <div id="uploaded-xml-list"><p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p></div>
+        </div>
+      </div>
+    </div>
   </div>
-
   <script>
-    const SUPABASE_URL = localStorage.getItem('custom_supabase_url') || "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
-    const SUPABASE_KEY = localStorage.getItem('custom_supabase_key') || "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
-    let dbClient = null;
+    const SUPABASE_URL = "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
+    const SUPABASE_KEY = "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
+    let dbClient = null; let allSongs = []; let isDjLoggedIn = false; let currentPartyCode = null;
+    let activeLibraryNoteId = null; let activeDjLibraryNoteId = null; let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
+    let blacklistedWords = [];
+    
+    // Pincode en standaard promo worden nu uit HUISSTIJL (stijl.js) gehaald, met veilige fallback
     const DJ_PIN = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.pincode) ? HUISSTIJL.pincode : "3977";
+    const defaultPromoCard = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.standaardPromo) ? HUISSTIJL.standaardPromo : { title: "🎉 MXT Productions Boeken?", subtitle: "Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?", whatsapp: "https://wa.me/31622499093", whatsapp_active: true, email: "info.mxtproductions@gmail.com", email_active: true, instagram: "https://www.instagram.com/mxt.productions?igsh=Nmp4YW50d3JrajNz&utm_source=qr", instagram_active: false, tiktok: "https://www.tiktok.com/@mxtproductions?_r=1&_t=ZN-98fFhDOpgvO", tiktok_active: false, facebook: "https://www.facebook.com/share/1DArnr8LVu/?mibextid=wwXIfr", facebook_active: false };
+    
+    function toonPopup(bericht) { const oudePopup = document.getElementById('custom-toast'); if (oudePopup) oudePopup.remove(); const popup = document.createElement('div'); popup.id = 'custom-toast'; popup.className = 'toast-popup'; popup.innerText = bericht; document.body.appendChild(popup); setTimeout(() => { if (popup) popup.remove(); }, 3000); }
+    function getVotedSongIds() { try { return JSON.parse(localStorage.getItem('voted_song_ids')) || []; } catch (e) { return []; } }
+    function recordVote(id) { const voted = getVotedSongIds(); if (!voted.includes(id)) { voted.push(id); localStorage.setItem('voted_song_ids', JSON.stringify(voted)); } }
 
-    document.addEventListener("DOMContentLoaded", () => {
-      dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-      loadAdminSettings();
-    });
-
-    function toonPopup(bericht) {
-      const oude = document.getElementById('custom-toast');
-      if (oude) oude.remove();
-      const p = document.createElement('div');
-      p.id = 'custom-toast';
-      p.className = 'toast-popup';
-      p.innerText = bericht;
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 3000);
+    async function initSupabase() { 
+      try { 
+        dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY); 
+        const urlParams = new URLSearchParams(window.location.search); 
+        const codeFromUrl = urlParams.get('code'); 
+        if (codeFromUrl) { localStorage.setItem('entered_party_code', codeFromUrl); } 
+        await loadActivePartyCode(); 
+        await loadBlacklist();
+        checkGuestAccess(); 
+        loadRequests(); 
+        loadWelcomeText(); 
+        loadPromoCard(); 
+        listenToRealtime(); 
+        setInterval(() => { loadActivePartyCode(); loadRequests(); loadWelcomeText(); loadPromoCard(); loadBlacklist(); pingPresence(); }, 3000); 
+        setInterval(() => { fetchOnlineCount(); }, 5000); 
+      } catch (err) { toonPopup('Fout bij verbinden met Supabase!'); } 
     }
 
-    function verifyAdminPin() {
-      const val = document.getElementById('admin-pin-input').value;
-      if (val === DJ_PIN) {
-        document.getElementById('admin-login-card').classList.add('hidden');
-        document.getElementById('admin-dashboard').classList.remove('hidden');
-        toonPopup('Welkom in het Beheer!');
+    // --- BLACKLIST LOGICA ---
+    async function loadBlacklist() {
+      if (!dbClient) return;
+      const { data } = await dbClient.from('settings').select('value').eq('key', 'blacklist').maybeSingle();
+      if (data && data.value) {
+        try { blacklistedWords = JSON.parse(data.value); } catch (e) { blacklistedWords = []; }
       } else {
-        toonPopup('Onjuiste pincode!');
-        document.getElementById('admin-pin-input').value = '';
+        const local = localStorage.getItem('blacklist_words');
+        if (local) { try { blacklistedWords = JSON.parse(local); } catch (e) { blacklistedWords = []; } }
+      }
+      renderBlacklistUI();
+    }
+
+    function renderBlacklistUI() {
+      const container = document.getElementById('blacklist-words-container');
+      if (!container) return;
+      if (blacklistedWords.length === 0) {
+        container.innerHTML = '<small style="color:var(--subtext-color);">Geen woorden op de zwarte lijst.</small>';
+        return;
+      }
+      container.innerHTML = '';
+      blacklistedWords.forEach(word => {
+        container.innerHTML += `<span style="background:#2a2a2a; border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; font-size:0.85em; display:inline-flex; align-items:center; gap:6px;">
+          ${word} <span style="cursor:pointer; color:var(--danger-color); font-weight:bold;" onclick="removeBlacklistWord('${word}')">×</span>
+        </span>`;
+      });
+    }
+
+    async function addBlacklistWord() {
+      const input = document.getElementById('blacklist-word-input');
+      const word = input.value.trim().toLowerCase();
+      if (!word) return;
+      if (!blacklistedWords.includes(word)) {
+        blacklistedWords.push(word);
+        await saveBlacklistToDb();
+        input.value = '';
       }
     }
 
-    async function loadAdminSettings() {
-      if (!dbClient) return;
-      
-      document.getElementById('setting-supabase-url').value = SUPABASE_URL;
-      document.getElementById('setting-supabase-key').value = SUPABASE_KEY;
+    async function removeBlacklistWord(word) {
+      blacklistedWords = blacklistedWords.filter(w => w !== word);
+      await saveBlacklistToDb();
+    }
 
-      const { data } = await dbClient.from('settings').select('*').in('key', ['app_colors', 'app_pincode', 'logo_url', 'app_brand_name']);
-      if (data) {
-        data.forEach(item => {
-          if (item.key === 'app_colors') {
-            try {
-              const c = JSON.parse(item.value);
-              if(c.bg) document.getElementById('col-bg').value = c.bg;
-              if(c.card) document.getElementById('col-card').value = c.card;
-              if(c.accent) document.getElementById('col-accent').value = c.accent;
-              if(c.text) document.getElementById('col-text').value = c.text;
-            } catch(e) {}
-          }
-          if (item.key === 'app_pincode') {
-            document.getElementById('setting-pincode').value = item.value;
-          }
-          if (item.key === 'logo_url') {
-            if (item.value === 'REMOVED' || !item.value) {
-              toggleTextBrandMode(true);
-            } else {
-              toggleTextBrandMode(false);
-              document.getElementById('current-logo-preview').src = item.value + '?' + new Date().getTime();
+    async function saveBlacklistToDb() {
+      const jsonStr = JSON.stringify(blacklistedWords);
+      localStorage.setItem('blacklist_words', jsonStr);
+      if (dbClient) {
+        await dbClient.from('settings').upsert({ key: 'blacklist', value: jsonStr }, { onConflict: 'key' });
+      }
+      renderBlacklistUI();
+      toonPopup('Zwarte lijst bijgewerkt!');
+    }
+
+    function containsBlacklistedWord(...texts) {
+      const combined = texts.join(' ').toLowerCase();
+      return blacklistedWords.some(word => combined.includes(word.toLowerCase()));
+    }
+    // -------------------------
+
+    async function pingPresence() { const savedGuestCode = localStorage.getItem('entered_party_code'); if (!savedGuestCode || !currentPartyCode || savedGuestCode !== currentPartyCode || isDjLoggedIn) return; await dbClient.from('presence').upsert({ session_id: guestSessionId, party_code: currentPartyCode, last_seen: new Date().toISOString() }, { onConflict: 'session_id' }); }
+    async function fetchOnlineCount() { if (!dbClient || !currentPartyCode) return; const threshold = new Date(Date.now() - 15000).toISOString(); await dbClient.from('presence').delete().lt('last_seen', threshold); const { count, error } = await dbClient.from('presence').select('*', { count: 'exact', head: true }).eq('party_code', currentPartyCode); if (!error && count !== null) { const countDisplay = document.getElementById('dj-online-count'); if (countDisplay) { countDisplay.innerText = `👥 ${count}`; } } }
+    async function loadActivePartyCode() { if (!dbClient) return; const { data } = await dbClient.from('settings').select('value').eq('key', 'party_code').maybeSingle(); if (data && data.value) { currentPartyCode = data.value; const djCodeDisplay = document.getElementById('dj-active-code-display'); if (djCodeDisplay) djCodeDisplay.innerText = currentPartyCode; const savedGuestCode = localStorage.getItem('entered_party_code'); if (savedGuestCode && savedGuestCode !== currentPartyCode && !isDjLoggedIn) { localStorage.removeItem('entered_party_code'); checkGuestAccess(); toonPopup('Het vorige feest is afgelopen! Voer de nieuwe code in.'); } } }
+    function checkGuestAccess() { if (isDjLoggedIn) return; const savedGuestCode = localStorage.getItem('entered_party_code'); if (savedGuestCode && currentPartyCode && savedGuestCode === currentPartyCode) { document.getElementById('party-code-view').classList.add('hidden'); document.getElementById('guest-view').classList.remove('hidden'); pingPresence(); } else { document.getElementById('guest-view').classList.add('hidden'); document.getElementById('party-code-view').classList.remove('hidden'); } }
+    function submitPartyCode() { const inputCode = document.getElementById('guest-party-code-input').value.trim(); if (!currentPartyCode) { return toonPopup('Er is momenteel geen actief feest gestart door de DJ.'); } if (inputCode === currentPartyCode) { localStorage.setItem('entered_party_code', inputCode); checkGuestAccess(); pingPresence(); toonPopup('Succesvol ingelogd op het feest!'); } else { toonPopup('Onjuiste feestcode! Kijk op het scherm of de poster.'); } }
+    async function startNewSession() { const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Er wordt een nieuwe feestcode gegenereerd en verzoekjes worden gewist."); if (!confirmStart) return; const newCode = Math.floor(1000 + Math.random() * 9000).toString(); try { await dbClient.from('requests').delete().eq('status', 'requested'); await dbClient.from('requests').delete().eq('status', 'done'); await dbClient.from('presence').delete(); await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).eq('status', 'available'); await dbClient.from('settings').delete().eq('key', 'party_code'); await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]); currentPartyCode = newCode; const djCodeDisplay = document.getElementById('dj-active-code-display'); if (djCodeDisplay) djCodeDisplay.innerText = newCode; toonPopup(`Nieuw feest gestart! Nieuwe code: ${newCode}`); loadRequests(); fetchOnlineCount(); } catch (err) { console.error(err); toonPopup("Fout bij starten van nieuw feest."); } }
+    function toggleSettingsMenu() { const panel = document.getElementById('settings-panel'); const btn = document.getElementById('settings-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
+    function toggleDjSearchMenu() { const panel = document.getElementById('dj-search-panel'); const btn = document.getElementById('dj-search-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; document.getElementById('dj-search-input').focus(); } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
+    function toggleXmlMenu() { const panel = document.getElementById('xml-panel'); const btn = document.getElementById('xml-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Inklappen)'; } else { panel.classList.add('hidden'); btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Uitklappen)'; } }
+    async function loadWelcomeText() { if (!dbClient) return; const { data } = await dbClient.from('settings').select('value').eq('key', 'welcome_text').maybeSingle(); let text = ""; if (data && data.value) { text = data.value; } else { text = localStorage.getItem('welcome_text') || ""; } const banner = document.getElementById('welcome-banner'); const input = document.getElementById('welcome-text-input'); if (text.trim() !== "") { banner.innerText = text; banner.classList.remove('hidden'); if (input && document.activeElement !== input) input.value = text; } else { banner.innerText = ""; banner.classList.add('hidden'); if (input && document.activeElement !== input) input.value = ""; } }
+    async function saveWelcomeText() { const text = document.getElementById('welcome-text-input').value.trim(); localStorage.setItem('welcome_text', text); if (dbClient) { await dbClient.from('settings').upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' }); } loadWelcomeText(); toonPopup('Welkomsttekst bijgewerkt!'); }
+    async function clearWelcomeText() { document.getElementById('welcome-text-input').value = ""; saveWelcomeText(); }
+    async function loadPromoCard() { if (!dbClient) return; const { data } = await dbClient.from('settings').select('value').eq('key', 'promo_card').maybeSingle(); let promoData = defaultPromoCard; if (data && data.value) { try { promoData = JSON.parse(data.value); } catch (e) { promoData = defaultPromoCard; } } else { const local = localStorage.getItem('promo_card_data'); if (local) { try { promoData = JSON.parse(local); } catch (e) {} } } const titleInput = document.getElementById('promo-title-input'); const subtitleInput = document.getElementById('promo-subtitle-input'); if (titleInput && document.activeElement !== titleInput) titleInput.value = promoData.title || ""; if (subtitleInput && document.activeElement !== subtitleInput) subtitleInput.value = promoData.subtitle || ""; ['whatsapp', 'email', 'instagram', 'tiktok', 'facebook'].forEach(platform => { const inputEl = document.getElementById(`promo-${platform}-input`); const toggleEl = document.getElementById(`promo-${platform}-toggle`); if (inputEl && document.activeElement !== inputEl) inputEl.value = promoData[platform] || ""; if (toggleEl) toggleEl.checked = !!promoData[`${platform}_active`]; }); const displayTitle = document.getElementById('promo-display-title'); const displaySubtitle = document.getElementById('promo-display-subtitle'); const displayLinks = document.getElementById('promo-display-links'); const displayTitleLogin = document.getElementById('promo-display-title-login'); const displaySubtitleLogin = document.getElementById('promo-display-subtitle-login'); const displayLinksLogin = document.getElementById('promo-display-links-login'); const cardTitle = promoData.title || defaultPromoCard.title; const cardSubtitle = promoData.subtitle || defaultPromoCard.subtitle; if (displayTitle) displayTitle.innerText = cardTitle; if (displaySubtitle) displaySubtitle.innerText = cardSubtitle; if (displayTitleLogin) displayTitleLogin.innerText = cardTitle; if (displaySubtitleLogin) displaySubtitleLogin.innerText = cardSubtitle; const platforms = [{ key: 'whatsapp', label: '💬 WhatsApp', isLink: true, prefix: '' }, { key: 'email', label: '✉️ E-mail Sturen', isLink: false, prefix: 'mailto:' }, { key: 'instagram', label: '📸 Instagram', isLink: true, prefix: '' }, { key: 'tiktok', label: '🎵 TikTok', isLink: true, prefix: '' }, { key: 'facebook', label: '👥 Facebook', isLink: true, prefix: '' }]; let linksHtml = ''; platforms.forEach(p => { if (promoData[`${p.key}_active`] && promoData[p.key]) { let val = promoData[p.key].trim(); let href = val; if (!p.isLink && !href.startsWith('mailto:')) { href = 'mailto:' + href; } else if (p.isLink && !href.startsWith('http://') && !href.startsWith('https://') && !href.startsWith('wa.me/')) { if (p.key === 'whatsapp' && !href.includes('wa.me/')) { href = 'https://wa.me/' + href.replace(/[^0-9]/g, ''); } else { href = 'https://' + href; } } else if (p.key === 'whatsapp' && href.startsWith('wa.me/')) { href = 'https://' + href; } linksHtml += `<a href="${href}" target="_blank" class="contact-link">${p.label}</a>`; } }); if (displayLinks) displayLinks.innerHTML = linksHtml; if (displayLinksLogin) displayLinksLogin.innerHTML = linksHtml; }
+    async function savePromoCard() { const promoData = { title: document.getElementById('promo-title-input').value.trim(), subtitle: document.getElementById('promo-subtitle-input').value.trim(), whatsapp: document.getElementById('promo-whatsapp-input').value.trim(), whatsapp_active: document.getElementById('promo-whatsapp-toggle').checked, email: document.getElementById('promo-email-input').value.trim(), email_active: document.getElementById('promo-email-toggle').checked, instagram: document.getElementById('promo-instagram-input').value.trim(), instagram_active: document.getElementById('promo-instagram-toggle').checked, tiktok: document.getElementById('promo-tiktok-input').value.trim(), tiktok_active: document.getElementById('promo-tiktok-toggle').checked, facebook: document.getElementById('promo-facebook-input').value.trim(), facebook_active: document.getElementById('promo-facebook-toggle').checked, }; const jsonStr = JSON.stringify(promoData); localStorage.setItem('promo_card_data', jsonStr); if (dbClient) { await dbClient.from('settings').upsert({ key: 'promo_card', value: jsonStr }, { onConflict: 'key' }); } loadPromoCard(); toonPopup('Visitekaartje succesvol bijgewerkt!'); }
+    function toggleCustomForm() { const form = document.getElementById('custom-form-container'); const btn = document.getElementById('toggle-custom-btn'); if (form.classList.contains('hidden')) { form.classList.remove('hidden'); btn.innerText = '➖ Sluit handmatig invoeren'; } else { form.classList.add('hidden'); btn.innerText = '➕ Staat je nummer er niet tussen? Klik hier'; } }
+    function toggleDjCustomForm() { const form = document.getElementById('dj-custom-form-container'); const btn = document.getElementById('dj-toggle-custom-btn'); if (form.classList.contains('hidden')) { form.classList.remove('hidden'); btn.innerText = '➖ Sluit handmatig invoeren'; } else { form.classList.add('hidden'); btn.innerText = '➕ Staat het nummer niet in de bibliotheek? Klik hier'; } }
+    function showView(view) { document.getElementById('party-code-view').classList.add('hidden'); document.getElementById('guest-view').classList.add('hidden'); document.getElementById('pin-view').classList.add('hidden'); document.getElementById('dj-view').classList.add('hidden'); const loginBtn = document.getElementById('dj-login-btn'); const backBtn = document.getElementById('back-to-guest-btn'); if (view === 'guest') { loginBtn.classList.remove('hidden'); backBtn.classList.add('hidden'); checkGuestAccess(); } else if (view === 'dj') { loginBtn.classList.add('hidden'); backBtn.classList.add('hidden'); document.getElementById('dj-view').classList.remove('hidden'); loadActivePartyCode(); fetchOnlineCount(); } else { loginBtn.classList.add('hidden'); backBtn.classList.add('hidden'); document.getElementById(view + '-view').classList.remove('hidden'); } }
+    function checkDJPass() { if (isDjLoggedIn) showView('dj'); else showView('pin'); }
+    function verifyPin() { const enteredPin = document.getElementById('dj-pin-input').value; if (enteredPin === DJ_PIN) { isDjLoggedIn = true; document.getElementById('dj-pin-input').value = ''; showView('dj'); toonPopup('Succesvol ingelogd als DJ!'); } else { toonPopup('Onjuiste pincode!'); document.getElementById('dj-pin-input').value = ''; } }
+    
+    async function vote(id, optionalNote = null, isDjAction = false) { 
+      const song = allSongs.find(s => s.id === id); 
+      if (!song) return; 
+      
+      if (!isDjAction && containsBlacklistedWord(song.title, song.artist, optionalNote)) {
+        toonPopup('Oeps, er is iets misgegaan bij het verzenden.');
+        return;
+      }
+
+      const currentVotes = Number(song.votes) || 0; 
+      const newVotes = isDjAction ? currentVotes : currentVotes + 1; 
+      const updateData = { votes: newVotes, status: 'requested', created_at: song.status === 'available' ? new Date().toISOString() : song.created_at }; 
+      if (optionalNote) updateData.note = optionalNote; 
+      const { error } = await dbClient.from('requests').update(updateData).eq('id', id); 
+      if (error) { 
+        toonPopup('Fout bij toevoegen!'); 
+      } else { 
+        if (!isDjAction) recordVote(id); 
+        toonPopup(`Verzoekje voor "${song.title}" toegevoegd!`); 
+        activeLibraryNoteId = null; 
+        activeDjLibraryNoteId = null; 
+        loadRequests(); 
+      } 
+    }
+
+    async function loadRequests() { if (!dbClient) return; const { data, error } = await dbClient.from('requests').select('*'); if (data && !error) { allSongs = data; renderAllViews(); } }
+    function renderAllViews() { renderGuestRequests(); renderDjRequests(); renderUploadedXmlFiles(); filterSongs(); filterDjSearchSongs(); }
+    function formatTime(isoString) { if (!isoString) return ''; const date = new Date(isoString); return date.toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }); }
+    function renderGuestRequests() { const guestList = document.getElementById('guest-requested-list'); const guestDoneList = document.getElementById('guest-done-list'); guestList.innerHTML = ''; guestDoneList.innerHTML = ''; const requested = allSongs.filter(s => s.status === 'requested').sort((a,b) => (b.votes || 0) - (a.votes || 0)); const done = allSongs.filter(s => s.status === 'done'); const votedIds = getVotedSongIds(); if (requested.length === 0) { guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>'; } else { requested.forEach(song => { const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : ''; const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : ''; const hasVoted = votedIds.includes(song.id); const btnText = hasVoted ? 'Gestemd ✅' : '+1 Stem'; const disabledAttr = hasVoted ? 'disabled' : ''; guestList.innerHTML += ` <div class="card"> <div> <strong>${song.title}</strong> ${timeStr}<br> <small style="color:var(--subtext-color);">${song.artist}</small> ${noteText} </div> <div> <span class="badge">👍 ${song.votes || 0}</span> <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button> </div> </div>`; }); } if (done.length === 0) { guestDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>'; } else { done.forEach(song => { const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : ''; guestDoneList.innerHTML += ` <div class="card done"> <div> <strong>${song.title}</strong><br> <small style="color:var(--subtext-color);">${song.artist}</small> ${noteText} </div> <div><span class="badge">✅ Gedraaid</span></div> </div>`; }); } }
+    function renderDjRequests() { const djList = document.getElementById('request-list'); const djDoneList = document.getElementById('dj-done-list'); djList.innerHTML = ''; djDoneList.innerHTML = ''; let requested = allSongs.filter(s => s.status === 'requested'); const done = allSongs.filter(s => s.status === 'done'); const sortOption = document.getElementById('sort-select') ? document.getElementById('sort-select').value : 'votes'; if (sortOption === 'votes') { requested.sort((a,b) => (b.votes || 0) - (a.votes || 0)); } else if (sortOption === 'newest') { requested.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); } else if (sortOption === 'oldest') { requested.sort((a,b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)); } if (requested.length === 0) { djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color); padding: 20px 0;">Geen verzoekjes in de wachtrij 🎉</p>'; } else { requested.forEach(song => { const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : ''; const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : ''; djList.innerHTML += ` <div class="card" style="border-left: 4px solid var(--accent-color);"> <div> <strong>${song.title}</strong> ${timeStr}<br> <small style="color:var(--subtext-color);">${song.artist}</small> ${noteText} </div> <div> <span style="margin-right:10px; font-weight:bold; color:var(--accent-color);">👍 ${song.votes || 0}</span> <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button> </div> </div>`; }); } if (done.length === 0) { djDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>'; } else { done.forEach(song => { const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : ''; djDoneList.innerHTML += ` <div class="card done"> <div> <strong>${song.title}</strong><br> <small style="color:var(--subtext-color);">${song.artist}</small> ${noteText} </div> <div> <button class="vote-btn secondary-btn" onclick="unmarkDone(${song.id})">↩️ Terugzetten</button> </div> </div>`; }); } }
+    function renderUploadedXmlFiles() { const xmlListContainer = document.getElementById('uploaded-xml-list'); xmlListContainer.innerHTML = ''; const xmlSongs = allSongs.filter(s => s.source_file); if (xmlSongs.length === 0) { xmlListContainer.innerHTML = '<p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>'; return; } const filesMap = {}; xmlSongs.forEach(song => { const fileName = song.source_file || 'Onbekend XML Bestand'; if (!filesMap[fileName]) { filesMap[fileName] = { name: fileName, count: 0, date: song.created_at ? new Date(song.created_at).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' }) : 'Onbekend' }; } filesMap[fileName].count++; }); Object.values(filesMap).forEach(file => { xmlListContainer.innerHTML += ` <div class="xml-file-item"> <span>📄 <strong>${file.name}</strong> (${file.count} nummers)</span> <span style="color:var(--subtext-color);">${file.date}</span> </div>`; }); }
+    function filterSongs() { const query = document.getElementById('search-input').value.toLowerCase(); const resultsSection = document.getElementById('search-results-section'); const songList = document.getElementById('song-list'); songList.innerHTML = ''; if (query.length < 2) { resultsSection.classList.add('hidden'); return; } resultsSection.classList.remove('hidden'); const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); const votedIds = getVotedSongIds(); if (matches.length === 0) { songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>'; return; } matches.forEach(song => { const hasVoted = votedIds.includes(song.id); const disabledAttr = hasVoted ? 'disabled' : ''; const isAddingNote = activeLibraryNoteId === song.id; if (isAddingNote) { songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Verzoekje Versturen 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button> </div> </div>`; } else { songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleLibraryNote(${song.id})" ${disabledAttr}>${hasVoted ? 'Gestemd ✅' : 'Aanvragen'}</button> </div> </div>`; } }); }
+    function filterDjSearchSongs() { const queryInput = document.getElementById('dj-search-input'); if (!queryInput) return; const query = queryInput.value.toLowerCase(); const resultsSection = document.getElementById('dj-search-results-section'); const songList = document.getElementById('dj-song-list'); songList.innerHTML = ''; if (query.length < 2) { resultsSection.classList.add('hidden'); return; } resultsSection.classList.remove('hidden'); const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); if (matches.length === 0) { songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek.</p>'; return; } matches.forEach(song => { const isAddingNote = activeDjLibraryNoteId === song.id; if (isAddingNote) { songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="dj-lib-note-${song.id}" placeholder="Opmerking (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitDjLibraryVote(${song.id})">Toevoegen aan Wachtrij 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleDjLibraryNote(null)">Annuleren</button> </div> </div>`; } else { songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">Toevoegen</button> </div> </div>`; } }); }
+    function toggleLibraryNote(id) { activeLibraryNoteId = id; filterSongs(); }
+    function toggleDjLibraryNote(id) { activeDjLibraryNoteId = id; filterDjSearchSongs(); }
+    function submitLibraryVote(id) { const noteInput = document.getElementById(`lib-note-${id}`); const note = noteInput ? noteInput.value.trim() : null; vote(id, note, false); }
+    function submitDjLibraryVote(id) { const noteInput = document.getElementById(`dj-lib-note-${id}`); const note = noteInput ? noteInput.value.trim() : null; vote(id, note, true); }
+    
+    async function submitCustomRequest() { 
+      const titleInput = document.getElementById('custom-title'); 
+      const artistInput = document.getElementById('custom-artist'); 
+      const noteInput = document.getElementById('custom-note'); 
+      const title = titleInput.value.trim(); 
+      const artist = artistInput.value.trim() || 'Los Verzoek'; 
+      const note = noteInput.value.trim(); 
+      if (!title) return toonPopup('Vul alstublieft een titel in!'); 
+      
+      if (containsBlacklistedWord(title, artist, note)) {
+        toonPopup('Oeps, er is iets misgegaan bij het verzenden.');
+        return;
+      }
+
+      const { data, error } = await dbClient.from('requests').insert([{ title: title, artist: artist, note: note, votes: 1, status: 'requested', created_at: new Date().toISOString() }]).select(); 
+      if (error) { 
+        toonPopup('Er ging iets mis bij het verzenden!'); 
+      } else { 
+        toonPopup(`Verzoekje "${title}" is verstuurd!`); 
+        if (data && data[0]) { recordVote(data[0].id); } 
+        titleInput.value = ''; artistInput.value = ''; noteInput.value = ''; toggleCustomForm(); loadRequests(); 
+      } 
+    }
+
+    async function submitDjCustomRequest() { const titleInput = document.getElementById('dj-custom-title'); const artistInput = document.getElementById('dj-custom-artist'); const noteInput = document.getElementById('dj-custom-note'); const title = titleInput.value.trim(); const artist = artistInput.value.trim() || 'DJ Verzoek'; const note = noteInput.value.trim(); if (!title) return toonPopup('Vul alstublieft een titel in!'); const { error } = await dbClient.from('requests').insert([{ title: title, artist: artist, note: note, votes: 0, status: 'requested', created_at: new Date().toISOString() }]); if (error) { toonPopup('Er ging iets mis bij het toevoegen!'); } else { toonPopup(`Verzoekje "${title}" toegevoegd!`); titleInput.value = ''; artistInput.value = ''; noteInput.value = ''; toggleDjCustomForm(); loadRequests(); } }
+    async function markDone(id) { const { error } = await dbClient.from('requests').update({ status: 'done' }).eq('id', id); if (error) toonPopup('Fout bij afvinken!'); else { toonPopup('Nummer gemarkeerd als gedraaid!'); loadRequests(); } }
+    async function unmarkDone(id) { const { error } = await dbClient.from('requests').update({ status: 'requested' }).eq('id', id); if (error) toonPopup('Fout bij terugzetten!'); else { toonPopup('Nummer teruggezet naar actieve lijst!'); loadRequests(); } }
+    async function wipeRequests() { const confirmWipe = confirm("Weet je ZEKER dat je alle actieve verzoekjes wilt wissen?"); if (!confirmWipe) return; const { error } = await dbClient.from('requests').delete().eq('status', 'requested'); await dbClient.from('requests').delete().eq('status', 'done'); if (error) toonPopup('Fout bij het wissen!'); else { toonPopup('Actieve verzoekjes zijn gewist!'); localStorage.removeItem('voted_song_ids'); loadRequests(); } }
+    function downloadCSV() { const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done'); if (requested.length === 0) return toonPopup('Geen verzoekjes om te exporteren!'); let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Tijd;Opmerking;Status\n"; requested.forEach(s => { const note = (s.note || "").replace(/;/g, ","); const time = formatTime(s.created_at); csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${time}";"${note}";"${s.status}"\n`; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `verzoekjes_export_${new Date().toISOString().slice(0,10)}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); toonPopup('Lijst gedownload!'); }
+    
+    async function uploadXML() {
+      const fileInput = document.getElementById('xml-file');
+      const file = fileInput.files[0];
+      if (!file) return toonPopup('Kies eerst een .xml bestand!');
+      
+      const fileName = file.name;
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        (async () => {
+          const parser = new DOMParser();
+          const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+          const tracks = xmlDoc.getElementsByTagName("TRACK");
+          
+          let imported = [];
+          for (let i = 0; i < tracks.length; i++) {
+            const title = tracks[i].getAttribute("Name");
+            const artist = tracks[i].getAttribute("Artist");
+            if (title) {
+              imported.push({ 
+                title: title, 
+                artist: artist || "Onbekend", 
+                votes: 0, 
+                status: 'available',
+                source_file: fileName 
+              });
             }
           }
-          if (item.key === 'app_brand_name') {
-            document.getElementById('setting-brand-name').value = item.value || '';
+
+          const { error } = await dbClient.from('requests').insert(imported);
+          if (error) {
+            toonPopup('Fout bij uploaden van XML!');
+          } else {
+            toonPopup(`${imported.length} nummers geïmporteerd uit XML!`);
+            fileInput.value = '';
+            loadRequests();
           }
-        });
-      }
-      if (!document.getElementById('setting-pincode').value) {
-        document.getElementById('setting-pincode').value = DJ_PIN;
-      }
-    }
-
-    function toggleTextBrandMode(isTextMode) {
-      const logoSection = document.getElementById('logo-active-section');
-      const textSection = document.getElementById('text-brand-section');
-      if (isTextMode) {
-        logoSection.classList.add('hidden');
-        textSection.classList.remove('hidden');
-      } else {
-        logoSection.classList.remove('hidden');
-        textSection.classList.add('hidden');
-      }
-    }
-
-    async function removeLogo() {
-      const confirmRemove = confirm("Weet je zeker dat je het logo wilt verwijderen? Hiermee kun je een tekstnaam instellen.");
-      if (!confirmRemove) return;
-
-      await dbClient.from('settings').upsert({ key: 'logo_url', value: 'REMOVED' }, { onConflict: 'key' });
-      toggleTextBrandMode(true);
-      toonPopup('Logo verwijderd. Je kunt nu een tekstnaam instellen!');
-    }
-
-    async function undoRemoveLogo() {
-      await dbClient.from('settings').upsert({ key: 'logo_url', value: '' }, { onConflict: 'key' });
-      toggleTextBrandMode(false);
-      document.getElementById('current-logo-preview').src = 'Logo.png?' + new Date().getTime();
-      toonPopup('Teruggeschakeld naar logo-modus.');
-    }
-
-    async function saveBrandName() {
-      const name = document.getElementById('setting-brand-name').value.trim();
-      if (!name) return toonPopup('Vul a.u.b. een tekstnaam in!');
-      await dbClient.from('settings').upsert({ key: 'app_brand_name', value: name }, { onConflict: 'key' });
-      toonPopup('Tekstnaam succesvol opgeslagen!');
-    }
-
-    async function clearXmlDatabase() {
-      const passCheck = prompt("⚠️ WAARSCHUWING: Dit verwijdert alle 8000+ nummers uit de database. Typ het admin-wachtwoord (Admin3977) om te bevestigen:");
-      if (passCheck !== "Admin3977") {
-        return toonPopup("Onjuist wachtwoord. Actie geannuleerd.");
-      }
-
-      const confirmExtra = confirm("Weet je absoluut zeker dat je de complete muziekdatabase wilt wissen?");
-      if (!confirmExtra) return;
-
-      // Vervang 'nummers' eventueel door de exacte naam van jouw tabel waar de XML-nummers in staan opgeslagen
-      const { error } = await dbClient.from('nummers').delete().neq('id', 0); 
-      if (error) {
-        toonPopup("Fout bij legen: controleer of de tabel 'nummers' bestaat.");
-        console.error(error);
-      } else {
-        toonPopup("Alle geïmporteerde nummers zijn succesvol verwijderd!");
-      }
-    }
-
-    async function saveColors() {
-      const colors = {
-        bg: document.getElementById('col-bg').value,
-        card: document.getElementById('col-card').value,
-        accent: document.getElementById('col-accent').value,
-        text: document.getElementById('col-text').value
+        })();
       };
-      const jsonStr = JSON.stringify(colors);
-      await dbClient.from('settings').upsert({ key: 'app_colors', value: jsonStr }, { onConflict: 'key' });
-      toonPopup('Kleuren succesvol opgeslagen!');
+      reader.readAsText(file);
     }
 
-    async function savePincode() {
-      const pin = document.getElementById('setting-pincode').value.trim();
-      if (pin.length !== 4) return toonPopup('De pincode moet exact 4 cijfers bevatten!');
-      await dbClient.from('settings').upsert({ key: 'app_pincode', value: pin }, { onConflict: 'key' });
-      toonPopup('Pincode opgeslagen!');
+    function listenToRealtime() { 
+      if (!dbClient) return; 
+      dbClient.channel('public-db-changes')
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => { loadRequests(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => { loadActivePartyCode(); loadWelcomeText(); loadPromoCard(); loadBlacklist(); })
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'presence' }, () => { fetchOnlineCount(); })
+        .subscribe(); 
     }
 
-    function saveSupabaseCredentials() {
-      const url = document.getElementById('setting-supabase-url').value.trim();
-      const key = document.getElementById('setting-supabase-key').value.trim();
-      const pass = document.getElementById('setting-admin-pass').value.trim();
-
-      if (pass !== "Admin3977") {
-        return toonPopup("❌ Onjuist admin-wachtwoord! (Vereist: Admin3977)");
-      }
-      if (!url || !key) return toonPopup('URL en Key mogen niet leeg zijn!');
-
-      const confirmChange = confirm("⚠️ Weet je zeker dat je de Supabase URL en Key wilt wijzigen? De pagina wordt hierna herladen.");
-      if (confirmChange) {
-        localStorage.setItem('custom_supabase_url', url);
-        localStorage.setItem('custom_supabase_key', key);
-        toonPopup('Nieuwe database-instellingen opgeslagen. Bezig met herladen...');
-        setTimeout(() => location.reload(), 1500);
-      }
-    }
-
-    async function uploadLogo() {
-      const fileInput = document.getElementById('logo-file-input');
-      const file = fileInput.files[0];
-      if (!file) return toonPopup('Kies eerst een afbeelding!');
-
-      const { data, error } = await dbClient.storage
-        .from('media')
-        .upload('Logo.png', file, { upsert: true });
-
-      if (error) {
-        toonPopup('Fout bij uploaden: Maak een Storage bucket "media" aan in Supabase!');
-        console.error(error);
-      } else {
-        const { data: publicData } = dbClient.storage.from('media').getPublicUrl('Logo.png');
-        if (publicData && publicData.publicUrl) {
-          await dbClient.from('settings').upsert({ key: 'logo_url', value: publicData.publicUrl }, { onConflict: 'key' });
-          document.getElementById('current-logo-preview').src = publicData.publicUrl + '?' + new Date().getTime();
-          toggleTextBrandMode(false);
-        }
-        toonPopup('Logo opgeslagen als Logo.png!');
-        fileInput.value = '';
-      }
-    }
+    window.onload = initSupabase;
   </script>
 </body>
 </html>
