@@ -202,7 +202,7 @@
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
         <div>
           <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚀 Nieuw Evenement Starten:</label>
-          <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">Dit wist alle verzoekjes, genereert een nieuwe 4-cijferige Feestcode en blokkeert telefoons van het vorige feest.</p>
+          <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">Dit reset alle nummers, zet ze op beschikbaar, genereert een nieuwe 4-cijferige Feestcode en blokkeert telefoons van het vorige feest.</p>
           <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest (Nieuwe Code)</button>
         </div>
       </div>
@@ -406,7 +406,28 @@
     function checkGuestAccess() { if (isDjLoggedIn) return; const savedGuestCode = localStorage.getItem('entered_party_code'); if (savedGuestCode && currentPartyCode && savedGuestCode === currentPartyCode) { document.getElementById('party-code-view').classList.add('hidden'); document.getElementById('guest-view').classList.remove('hidden'); pingPresence(); } else { document.getElementById('guest-view').classList.add('hidden'); document.getElementById('party-code-view').classList.remove('hidden'); } }
     function submitPartyCode() { const inputCode = document.getElementById('guest-party-code-input').value.trim(); if (!currentPartyCode) { return toonPopup('Er is momenteel geen actief feest gestart door de DJ.'); } if (inputCode === currentPartyCode) { localStorage.setItem('entered_party_code', inputCode); checkGuestAccess(); pingPresence(); toonPopup('Succesvol ingelogd op het feest!'); } else { toonPopup('Onjuiste feestcode! Kijk op het scherm of de poster.'); } }
     
-    async function startNewSession() { const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Er wordt een nieuwe feestcode gegenereerd en verzoekjes worden gewist."); if (!confirmStart) return; const newCode = Math.floor(1000 + Math.random() * 9000).toString(); try { await dbClient.from('requests').delete().eq('status', 'requested'); await dbClient.from('requests').delete().eq('status', 'done'); await dbClient.from('presence').delete(); await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).eq('status', 'available'); await dbClient.from('settings').delete().eq('key', 'party_code'); await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]); currentPartyCode = newCode; const djCodeDisplay = document.getElementById('dj-active-code-display'); if (djCodeDisplay) djCodeDisplay.innerText = newCode; toonPopup(`Nieuw feest gestart! Nieuwe code: ${newCode}`); loadRequests(); fetchOnlineCount(); } catch (err) { console.error(err); toonPopup("Fout bij starten van nieuw feest."); } }
+    async function startNewSession() { 
+      const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Alle nummers blijven behouden, maar hun statussen worden gereset en er wordt een nieuwe feestcode gegenereerd."); 
+      if (!confirmStart) return; 
+      const newCode = Math.floor(1000 + Math.random() * 9000).toString(); 
+      try { 
+        // Reset alle nummers in de database naar available, votes 0 en note null (geen nummers wissen!)
+        await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).neq('id', 0);
+        await dbClient.from('presence').delete(); 
+        await dbClient.from('settings').delete().eq('key', 'party_code'); 
+        await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]); 
+        currentPartyCode = newCode; 
+        localStorage.removeItem('voted_song_ids'); 
+        const djCodeDisplay = document.getElementById('dj-active-code-display'); 
+        if (djCodeDisplay) djCodeDisplay.innerText = newCode; 
+        toonPopup(`Nieuw feest gestart! Nieuwe code: ${newCode}`); 
+        loadRequests(); 
+        fetchOnlineCount(); 
+      } catch (err) { 
+        console.error(err); 
+        toonPopup("Fout bij starten van nieuw feest."); 
+      } 
+    }
     
     function toggleSettingsMenu() { const panel = document.getElementById('settings-panel'); const btn = document.getElementById('settings-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
     function toggleDjSearchMenu() { const panel = document.getElementById('dj-search-panel'); const btn = document.getElementById('dj-search-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; document.getElementById('dj-search-input').focus(); } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
@@ -496,9 +517,15 @@
       }
 
       const currentVotes = Number(song.votes) || 0; 
-      const newVotes = isDjAction ? currentVotes : currentVotes + 1; 
-      const updateData = { votes: newVotes, status: 'requested', created_at: song.status === 'available' ? new Date().toISOString() : song.created_at }; 
+      const newVotes = isDjAction ? currentVotes : (song.status === 'done' ? 1 : currentVotes + 1); 
+      
+      const updateData = { 
+        votes: newVotes, 
+        status: 'requested', 
+        created_at: new Date().toISOString() // Altijd naar huidige tijd zodat het bovenaan komt bij opnieuw aanvragen
+      }; 
       if (optionalNote) updateData.note = optionalNote; 
+      
       const { error } = await dbClient.from('requests').update(updateData).eq('id', id); 
       if (error) { 
         toonPopup('Fout bij toevoegen!'); 
@@ -534,8 +561,7 @@
       } 
       resultsSection.classList.remove('hidden'); 
       
-      // Zoek nu in zowel 'available' als 'requested' nummers zodat reeds aangevraagde nummers vindbaar blijven
-      const matches = allSongs.filter(s => (s.status === 'available' || s.status === 'requested') && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); 
+      const matches = allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); 
       const votedIds = getVotedSongIds(); 
       
       if (matches.length === 0) { 
@@ -544,16 +570,28 @@
       } 
       
       matches.forEach(song => { 
-        const hasVoted = votedIds.includes(song.id); 
-        const disabledAttr = (song.status === 'requested' && hasVoted) ? 'disabled' : ''; 
+        const hasVoted = votedIds.includes(song.id) && song.status === 'requested'; 
         const isAddingNote = activeLibraryNoteId === song.id; 
-        const statusBadge = song.status === 'requested' ? ' <small style="color:var(--accent-color);">[Al in aanvraag]</small>' : '';
+        
+        // Exacte gewenste statussen in de zoekbalk
+        let statusBadge = '';
+        if (song.status === 'requested') {
+          statusBadge = ' <small style="color:var(--accent-color); font-weight:bold;">[Al aangevraagd]</small>';
+        } else if (song.status === 'done') {
+          statusBadge = ' <small style="color:var(--subtext-color); font-weight:bold;">[Reeds gedraaid]</small>';
+        }
         
         if (isAddingNote) { 
-          songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> ${statusBadge} - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Stem / Verzoek Sturen 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button> </div> </div>`; 
+          songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> ${statusBadge} - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Opnieuw Aanvragen 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button> </div> </div>`; 
         } else { 
-          const btnLabel = song.status === 'requested' ? (hasVoted ? 'Gestemd ✅' : '+1 Stem') : 'Aanvragen';
-          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong> ${statusBadge}<br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleLibraryNote(${song.id})" ${disabledAttr}>${btnLabel}</button> </div> </div>`; 
+          let btnLabel = 'Aanvragen';
+          if (song.status === 'requested') {
+            btnLabel = hasVoted ? 'Nogmaals Aanvragen' : '+1 Stem';
+          } else if (song.status === 'done') {
+            btnLabel = 'Opnieuw Aanvragen';
+          }
+
+          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong> ${statusBadge}<br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleLibraryNote(${song.id})">${btnLabel}</button> </div> </div>`; 
         } 
       }); 
     }
@@ -576,7 +614,7 @@
       } 
       resultsSection.classList.remove('hidden'); 
       
-      const matches = allSongs.filter(s => (s.status === 'available' || s.status === 'requested') && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); 
+      const matches = allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); 
       
       if (matches.length === 0) { 
         songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek.</p>'; 
@@ -585,12 +623,18 @@
       
       matches.forEach(song => { 
         const isAddingNote = activeDjLibraryNoteId === song.id; 
-        const statusBadge = song.status === 'requested' ? ' <small style="color:var(--accent-color);">[Al in aanvraag]</small>' : '';
+        let statusBadge = '';
+        if (song.status === 'requested') {
+          statusBadge = ' <small style="color:var(--accent-color); font-weight:bold;">[Al aangevraagd]</small>';
+        } else if (song.status === 'done') {
+          statusBadge = ' <small style="color:var(--subtext-color); font-weight:bold;">[Reeds gedraaid]</small>';
+        }
         
         if (isAddingNote) { 
           songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> ${statusBadge} - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="dj-lib-note-${song.id}" placeholder="Opmerking (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitDjLibraryVote(${song.id})">Toevoegen aan Wachtrij 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleDjLibraryNote(null)">Annuleren</button> </div> </div>`; 
         } else { 
-          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong> ${statusBadge}<br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">Toevoegen</button> </div> </div>`; 
+          const btnLabel = song.status === 'done' ? 'Opnieuw Toevoegen' : (song.status === 'requested' ? 'Opnieuw Toevoegen' : 'Toevoegen');
+          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong> ${statusBadge}<br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">${btnLabel}</button> </div> </div>`; 
         } 
       }); 
     }
@@ -627,7 +671,7 @@
     async function submitDjCustomRequest() { const titleInput = document.getElementById('dj-custom-title'); const artistInput = document.getElementById('dj-custom-artist'); const noteInput = document.getElementById('dj-custom-note'); const title = titleInput.value.trim(); const artist = artistInput.value.trim() || 'DJ Verzoek'; const note = noteInput.value.trim(); if (!title) return toonPopup('Vul alstublieft een titel in!'); const { error } = await dbClient.from('requests').insert([{ title: title, artist: artist, note: note, votes: 0, status: 'requested', created_at: new Date().toISOString() }]); if (error) { toonPopup('Er ging iets mis bij het toevoegen!'); } else { toonPopup(`Verzoekje "${title}" toegevoegd!`); titleInput.value = ''; artistInput.value = ''; noteInput.value = ''; toggleDjCustomForm(); loadRequests(); } }
     async function markDone(id) { const { error } = await dbClient.from('requests').update({ status: 'done' }).eq('id', id); if (error) toonPopup('Fout bij afvinken!'); else { toonPopup('Nummer gemarkeerd als gedraaid!'); loadRequests(); } }
     async function unmarkDone(id) { const { error } = await dbClient.from('requests').update({ status: 'requested' }).eq('id', id); if (error) toonPopup('Fout bij terugzetten!'); else { toonPopup('Nummer teruggezet naar actieve lijst!'); loadRequests(); } }
-    async function wipeRequests() { const confirmWipe = confirm("Weet je ZEKER dat je alle actieve verzoekjes wilt wissen?"); if (!confirmWipe) return; const { error } = await dbClient.from('requests').delete().eq('status', 'requested'); await dbClient.from('requests').delete().eq('status', 'done'); if (error) toonPopup('Fout bij het wissen!'); else { toonPopup('Actieve verzoekjes zijn gewist!'); localStorage.removeItem('voted_song_ids'); loadRequests(); } }
+    async function wipeRequests() { const confirmWipe = confirm("Weet je ZEKER dat je alle actieve verzoekjes wilt wissen?"); if (!confirmWipe) return; const { error } = await dbClient.from('requests').update({ status: 'available', votes: 0, note: null }).eq('status', 'requested'); await dbClient.from('requests').update({ status: 'available', votes: 0, note: null }).eq('status', 'done'); if (error) toonPopup('Fout bij het wissen!'); else { toonPopup('Actieve verzoekjes zijn gewist!'); localStorage.removeItem('voted_song_ids'); loadRequests(); } }
     function downloadCSV() { const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done'); if (requested.length === 0) return toonPopup('Geen verzoekjes om te exporteren!'); let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Tijd;Opmerking;Status\n"; requested.forEach(s => { const note = (s.note || "").replace(/;/g, ","); const time = formatTime(s.created_at); csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${time}";"${note}";"${s.status}"\n`; }); const encodedUri = encodeURI(csvContent); const link = document.createElement("a"); link.setAttribute("href", encodedUri); link.setAttribute("download", `verzoekjes_export_${new Date().toISOString().slice(0,10)}.csv`); document.body.appendChild(link); link.click(); document.body.removeChild(link); toonPopup('Lijst gedownload!'); }
     
     async function uploadXML() {
