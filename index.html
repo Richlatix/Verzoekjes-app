@@ -82,7 +82,7 @@
         <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
         <div id="search-results-section" class="hidden" style="margin-top: 15px;">
           <h3>🔍 Zoekresultaten uit bibliotheek</h3>
-          <div id="song-list"></div>
+          <div id="song-list" style="max-height: 300px; overflow-y: auto; padding-right: 4px;"></div>
         </div>
         <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
           <button type="button" class="secondary-btn" onclick="toggleCustomForm()" id="toggle-custom-btn">➕ Staat je nummer er niet tussen? Klik hier</button>
@@ -211,7 +211,7 @@
         <h3 style="margin-top:0;">🔍 Verzoekje Toevoegen (Bibliotheek / Handmatig)</h3>
         <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()">
         <div id="dj-search-results-section" class="hidden" style="margin-top: 10px;">
-          <div id="dj-song-list"></div>
+          <div id="dj-song-list" style="max-height: 250px; overflow-y: auto; padding-right: 4px;"></div>
         </div>
         <div style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
           <button type="button" class="secondary-btn" onclick="toggleDjCustomForm()" id="dj-toggle-custom-btn">➕ Staat het nummer niet in de bibliotheek? Klik hier</button>
@@ -224,7 +224,7 @@
         </div>
       </div>
 
-      <!-- Zwarte lijst toevoegen paneel (geopend via de 🚫 knop naast de vergrootglas knop) -->
+      <!-- Zwarte lijst toevoegen paneel -->
       <div id="dj-blacklist-panel" class="request-box hidden" style="margin-top: 15px;">
         <h3 style="margin-top:0;">🚫 Woord Toevoegen aan Blacklist</h3>
         <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Verzoekjes met dit woord of nummer worden direct geblokkeerd.</p>
@@ -517,8 +517,57 @@
     function renderGuestRequests() { const guestList = document.getElementById('guest-requested-list'); const guestDoneList = document.getElementById('guest-done-list'); guestList.innerHTML = ''; guestDoneList.innerHTML = ''; const requested = allSongs.filter(s => s.status === 'requested').sort((a,b) => (b.votes || 0) - (a.votes || 0)); const done = allSongs.filter(s => s.status === 'done'); const votedIds = getVotedSongIds(); if (requested.length === 0) { guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Er zijn nog geen actieve verzoekjes. Wees de eerste!</p>'; } else { requested.forEach(song => { const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : ''; const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : ''; const hasVoted = votedIds.includes(song.id); const btnText = hasVoted ? 'Gestemd ✅' : '+1 Stem'; const disabledAttr = hasVoted ? 'disabled' : ''; guestList.innerHTML += ` <div class="card"> <div> <strong>${song.title}</strong> ${timeStr}<br> <small style="color:var(--subtext-color);">${song.artist}</small> ${noteText} </div> <div> <span class="badge">👍 ${song.votes || 0}</span> <button class="vote-btn" onclick="vote(${song.id})" ${disabledAttr}>${btnText}</button> </div> </div>`; }); } if (done.length === 0) { guestDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>'; } else { done.forEach(song => { const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : ''; guestDoneList.innerHTML += ` <div class="card done"> <div> <strong>${song.title}</strong><br> <small style="color:var(--subtext-color);">${song.artist}</small> ${noteText} </div> <div><span class="badge">✅ Gedraaid</span></div> </div>`; }); } }
     function renderDjRequests() { const djList = document.getElementById('request-list'); const djDoneList = document.getElementById('dj-done-list'); djList.innerHTML = ''; djDoneList.innerHTML = ''; let requested = allSongs.filter(s => s.status === 'requested'); const done = allSongs.filter(s => s.status === 'done'); const sortOption = document.getElementById('sort-select') ? document.getElementById('sort-select').value : 'votes'; if (sortOption === 'votes') { requested.sort((a,b) => (b.votes || 0) - (a.votes || 0)); } else if (sortOption === 'newest') { requested.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0)); } else if (sortOption === 'oldest') { requested.sort((a,b) => new Date(a.created_at || 0) - new Date(b.created_at || 0)); } if (requested.length === 0) { djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color); padding: 20px 0;">Geen verzoekjes in de wachtrij 🎉</p>'; } else { requested.forEach(song => { const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : ''; const noteText = song.note ? `<br><small style="color:var(--accent-color);">💬 "${song.note}"</small>` : ''; djList.innerHTML += ` <div class="card" style="border-left: 4px solid var(--accent-color);"> <div> <strong>${song.title}</strong> ${timeStr}<br> <small style="color:var(--subtext-color);">${song.artist}</small> ${noteText} </div> <div> <span style="margin-right:10px; font-weight:bold; color:var(--accent-color);">👍 ${song.votes || 0}</span> <button class="vote-btn" onclick="markDone(${song.id})">✅ Gedraaid</button> </div> </div>`; }); } if (done.length === 0) { djDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color);">Nog geen nummers afgevinkt.</p>'; } else { done.forEach(song => { const noteText = song.note ? `<br><small>💬 "${song.note}"</small>` : ''; djDoneList.innerHTML += ` <div class="card done"> <div> <strong>${song.title}</strong><br> <small style="color:var(--subtext-color);">${song.artist}</small> ${noteText} </div> <div> <button class="vote-btn secondary-btn" onclick="unmarkDone(${song.id})">↩️ Terugzetten</button> </div> </div>`; }); } }
     function renderUploadedXmlFiles() { const xmlListContainer = document.getElementById('uploaded-xml-list'); xmlListContainer.innerHTML = ''; const xmlSongs = allSongs.filter(s => s.source_file); if (xmlSongs.length === 0) { xmlListContainer.innerHTML = '<p style="color:var(--subtext-color); font-size:0.85em; text-align:center;">Geen bestanden geüpload.</p>'; return; } const filesMap = {}; xmlSongs.forEach(song => { const fileName = song.source_file || 'Onbekend XML Bestand'; if (!filesMap[fileName]) { filesMap[fileName] = { name: fileName, count: 0, date: song.created_at ? new Date(song.created_at).toLocaleString('nl-NL', { dateStyle: 'short', timeStyle: 'short' }) : 'Onbekend' }; } filesMap[fileName].count++; }); Object.values(filesMap).forEach(file => { xmlListContainer.innerHTML += ` <div class="xml-file-item"> <span>📄 <strong>${file.name}</strong> (${file.count} nummers)</span> <span style="color:var(--subtext-color);">${file.date}</span> </div>`; }); }
-    function filterSongs() { const query = document.getElementById('search-input').value.toLowerCase(); const resultsSection = document.getElementById('search-results-section'); const songList = document.getElementById('song-list'); songList.innerHTML = ''; if (query.length < 2) { resultsSection.classList.add('hidden'); return; } resultsSection.classList.remove('hidden'); const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); const votedIds = getVotedSongIds(); if (matches.length === 0) { songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>'; return; } matches.forEach(song => { const hasVoted = votedIds.includes(song.id); const disabledAttr = hasVoted ? 'disabled' : ''; const isAddingNote = activeLibraryNoteId === song.id; if (isAddingNote) { songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Verzoekje Versturen 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button> </div> </div>`; } else { songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleLibraryNote(${song.id})" ${disabledAttr}>${hasVoted ? 'Gestemd ✅' : 'Aanvragen'}</button> </div> </div>`; } }); }
-    function filterDjSearchSongs() { const queryInput = document.getElementById('dj-search-input'); if (!queryInput) return; const query = queryInput.value.toLowerCase(); const resultsSection = document.getElementById('dj-search-results-section'); const songList = document.getElementById('dj-song-list'); songList.innerHTML = ''; if (query.length < 2) { resultsSection.classList.add('hidden'); return; } resultsSection.classList.remove('hidden'); const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 10); if (matches.length === 0) { songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek.</p>'; return; } matches.forEach(song => { const isAddingNote = activeDjLibraryNoteId === song.id; if (isAddingNote) { songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="dj-lib-note-${song.id}" placeholder="Opmerking (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitDjLibraryVote(${song.id})">Toevoegen aan Wachtrij 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleDjLibraryNote(null)">Annuleren</button> </div> </div>`; } else { songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">Toevoegen</button> </div> </div>`; } }); }
+    
+    function filterSongs() { 
+      const query = document.getElementById('search-input').value.toLowerCase(); 
+      const resultsSection = document.getElementById('search-results-section'); 
+      const songList = document.getElementById('song-list'); 
+      songList.innerHTML = ''; 
+      if (query.length < 2) { resultsSection.classList.add('hidden'); return; } 
+      resultsSection.classList.remove('hidden'); 
+      // Verhoogd of limiet weggehaald zodat je meer resultaten ziet
+      const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 50); 
+      const votedIds = getVotedSongIds(); 
+      if (matches.length === 0) { 
+        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek. Gebruik de knop hieronder om handmatig in te vullen!</p>'; 
+        return; 
+      } 
+      matches.forEach(song => { 
+        const hasVoted = votedIds.includes(song.id); 
+        const disabledAttr = hasVoted ? 'disabled' : ''; 
+        const isAddingNote = activeLibraryNoteId === song.id; 
+        if (isAddingNote) { 
+          songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="lib-note-${song.id}" placeholder="Opmerking / voor wie? (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitLibraryVote(${song.id})">Verzoekje Versturen 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleLibraryNote(null)">Annuleren</button> </div> </div>`; 
+        } else { 
+          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleLibraryNote(${song.id})" ${disabledAttr}>${hasVoted ? 'Gestemd ✅' : 'Aanvragen'}</button> </div> </div>`; 
+        } 
+      }); 
+    }
+
+    function filterDjSearchSongs() { 
+      const queryInput = document.getElementById('dj-search-input'); 
+      if (!queryInput) return; 
+      const query = queryInput.value.toLowerCase(); 
+      const resultsSection = document.getElementById('dj-search-results-section'); 
+      const songList = document.getElementById('dj-song-list'); 
+      songList.innerHTML = ''; 
+      if (query.length < 2) { resultsSection.classList.add('hidden'); return; } 
+      resultsSection.classList.remove('hidden'); 
+      const matches = allSongs.filter(s => s.status === 'available' && (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 50); 
+      if (matches.length === 0) { 
+        songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.9em;">Geen nummers gevonden in de bibliotheek.</p>'; 
+        return; 
+      } 
+      matches.forEach(song => { 
+        const isAddingNote = activeDjLibraryNoteId === song.id; 
+        if (isAddingNote) { 
+          songList.innerHTML += ` <div class="card" style="flex-direction:column; align-items:flex-start; gap: 8px;"> <div><strong>${song.title}</strong> - <small style="color:var(--subtext-color);">${song.artist}</small></div> <input type="text" id="dj-lib-note-${song.id}" placeholder="Opmerking (optioneel)..." style="margin:0;"> <div style="display:flex; gap:8px; width:100%;"> <button class="vote-btn" onclick="submitDjLibraryVote(${song.id})">Toevoegen aan Wachtrij 🚀</button> <button class="vote-btn secondary-btn" onclick="toggleDjLibraryNote(null)">Annuleren</button> </div> </div>`; 
+        } else { 
+          songList.innerHTML += ` <div class="card"> <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div> <div> <button class="vote-btn" onclick="toggleDjLibraryNote(${song.id})">Toevoegen</button> </div> </div>`; 
+        } 
+      }); 
+    }
+
     function toggleLibraryNote(id) { activeLibraryNoteId = id; filterSongs(); }
     function toggleDjLibraryNote(id) { activeDjLibraryNoteId = id; filterDjSearchSongs(); }
     function submitLibraryVote(id) { const noteInput = document.getElementById(`lib-note-${id}`); const note = noteInput ? noteInput.value.trim() : null; vote(id, note, false); }
@@ -566,16 +615,25 @@
         (async () => {
           const parser = new DOMParser();
           const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-          const tracks = xmlDoc.getElementsByTagName("TRACK");
+          
+          // Ondersteun verschillende XML formaten en hoofdlettervarianten (Rekordbox, VirtualDJ, Traktor, etc.)
+          let tracks = xmlDoc.getElementsByTagName("TRACK");
+          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("track");
+          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("Track");
+          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("SONG");
+          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("song");
+          if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("Song");
           
           let imported = [];
           for (let i = 0; i < tracks.length; i++) {
-            const title = tracks[i].getAttribute("Name");
-            const artist = tracks[i].getAttribute("Artist");
+            const track = tracks[i];
+            const title = track.getAttribute("Name") || track.getAttribute("name") || track.getAttribute("Title") || track.getAttribute("title");
+            const artist = track.getAttribute("Artist") || track.getAttribute("artist") || track.getAttribute("Author") || track.getAttribute("author") || "Onbekend";
+            
             if (title) {
               imported.push({ 
-                title: title, 
-                artist: artist || "Onbekend", 
+                title: title.trim(), 
+                artist: artist.trim(), 
                 votes: 0, 
                 status: 'available',
                 source_file: fileName 
@@ -583,9 +641,13 @@
             }
           }
 
+          if (imported.length === 0) {
+            return toonPopup('Geen geldige nummers gevonden in dit XML-bestand. Controleer de indeling.');
+          }
+
           const { error } = await dbClient.from('requests').insert(imported);
           if (error) {
-            toonPopup('Fout bij uploaden van XML!');
+            toonPopup('Fout bij uploaden van XML naar database!');
           } else {
             toonPopup(`${imported.length} nummers geïmporteerd uit XML!`);
             fileInput.value = '';
