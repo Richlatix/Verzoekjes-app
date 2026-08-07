@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MXT Productions - Beheer & Huisstijl</title>
+  
+  <!-- Laad huisstijl en Supabase -->
+  <script src="stijl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --text-color: #ffffff;
+      --accent-color: #3c7a00;
+      --border-color: #2a2a2a;
+      --subtext-color: #b0b0b0;
+      --danger-color: #ff4444;
+    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 20px; max-width: 600px; margin: auto; }
+    h1, h2, h3 { color: var(--accent-color); text-align: center; }
+    .card { background: var(--card-bg); padding: 20px; border-radius: 12px; margin-bottom: 20px; border: 1px solid var(--border-color); box-shadow: 0 4px 12px rgba(0,0,0,0.4); }
+    input, button, textarea, select { width: 100%; padding: 12px; margin: 8px 0; border-radius: 8px; border: 1px solid var(--border-color); box-sizing: border-box; font-family: inherit; background: #121212; color: var(--text-color); }
+    button { background: var(--accent-color); color: #121212; font-weight: bold; cursor: pointer; border: none; transition: opacity 0.2s; }
+    button:hover { opacity: 0.9; }
+    .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
+    .danger-btn { background: var(--danger-color); color: #ffffff; }
+    .hidden { display: none !important; }
+    .color-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px; gap: 10px; }
+    .color-row label { font-size: 0.9em; color: var(--subtext-color); }
+    .color-row input[type="color"] { width: 60px; height: 40px; padding: 0; border: none; cursor: pointer; background: transparent; }
+    .toast-popup { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: #ffffff; border: 1.5px solid var(--accent-color); padding: 12px 24px; border-radius: 30px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); z-index: 9999; font-weight: bold; text-align: center; min-width: 250px; }
+    .preview-logo { max-height: 80px; display: block; margin: 10px auto; object-fit: contain; }
+  </style>
+</head>
+<body>
+
+  <!-- INLOGSCHERM ADMIN -->
+  <div id="admin-login-card" class="card" style="max-width: 400px; margin: 50px auto; text-align: center;">
+    <h2>🔐 Admin Inloggen</h2>
+    <p style="color:var(--subtext-color); font-size: 0.9em;">Voer de DJ-pincode in om het beheer te openen:</p>
+    <input type="password" id="admin-pin-input" placeholder="Pincode (4 cijfers)" maxlength="4" style="text-align:center; font-size:1.5em; letter-spacing:5px;">
+    <button onclick="verifyAdminPin()">Inloggen</button>
+    <button onclick="window.location.href='index.html'" class="secondary-btn" style="margin-top:10px;">← Terug naar App</button>
+  </div>
+
+  <!-- ADMIN DASHBOARD -->
+  <div id="admin-dashboard" class="hidden">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 20px;">
+      <h2>⚙️ MXT Admin Dashboard</h2>
+      <button onclick="window.location.href='index.html'" class="secondary-btn" style="width:auto; padding:8px 14px; margin:0;">Naar App →</button>
+    </div>
+
+    <!-- 1. HUISSTIJL & KLEUREN -->
+    <div class="card">
+      <h3>🎨 Huisstijl & Kleuren</h3>
+      <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:15px;">Pas hieronder het kleurenpalet van de app aan.</p>
+      
+      <div class="color-row">
+        <label>Achtergrondkleur (Body)</label>
+        <input type="color" id="col-bg" value="#121212">
+      </div>
+      <div class="color-row">
+        <label>Kaart Achtergrond</label>
+        <input type="color" id="col-card" value="#1e1e1e">
+      </div>
+      <div class="color-row">
+        <label>Accentkleur (Hoofdkleur / Groen)</label>
+        <input type="color" id="col-accent" value="#3c7a00">
+      </div>
+      <div class="color-row">
+        <label>Tekstkleur</label>
+        <input type="color" id="col-text" value="#ffffff">
+      </div>
+      <button onclick="saveColors()">Kleuren Opslaan</button>
+    </div>
+
+    <!-- 2. LOGO UPLOADER -->
+    <div class="card">
+      <h3>🖼️ Logo Beheren</h3>
+      <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:10px;">Upload een nieuwe afbeelding. Deze wordt automatisch opgeslagen als <code>Logo.png</code>.</p>
+      <img id="current-logo-preview" class="preview-logo" src="Logo.png" alt="Huidig Logo">
+      <input type="file" id="logo-file-input" accept="image/png, image/jpeg, image/webp">
+      <button onclick="uploadLogo()">Logo Uploaden & Opslaan</button>
+    </div>
+
+    <!-- 3. ALGEMENE INSTELLINGEN & PINCODE -->
+    <div class="card">
+      <h3>🔑 Systeem & Pincode</h3>
+      <label style="font-size:0.85em; color:var(--subtext-color);">DJ Pincode:</label>
+      <input type="text" id="setting-pincode" maxlength="4" placeholder="Bijv. 3977">
+      <button onclick="savePincode()">Pincode Opslaan</button>
+    </div>
+
+    <!-- 4. GEAVANCEERD: SUPABASE CONFIGURATIE (VERSTOPT) -->
+    <div class="card" style="border-color: #333; opacity: 0.85;">
+      <details>
+        <summary style="cursor: pointer; font-weight: bold; color: var(--subtext-color); font-size: 0.9em;">⚙️ Geavanceerd: Supabase Koppeling (Klik om te openen)</summary>
+        <div style="margin-top: 15px;">
+          <div style="background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger-color); padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.8em; color: #ff8888; line-height: 1.4;">
+            ⚠️ <strong>LET OP:</strong> Pas deze gegevens alleen aan als je overstapt naar een andere Supabase-database. Onjuiste URL's of sleutels zorgen ervoor dat de app direct stopt met werken!
+          </div>
+          <label style="font-size:0.8em; color:var(--subtext-color);">Supabase URL:</label>
+          <input type="text" id="setting-supabase-url" placeholder="https://xxx.supabase.co" style="font-size: 0.85em;">
+          
+          <label style="font-size:0.8em; color:var(--subtext-color); margin-top:8px;">Supabase Anon / Publishable Key:</label>
+          <input type="password" id="setting-supabase-key" placeholder="eyJhbGciOi..." style="font-size: 0.85em;">
+          
+          <button onclick="saveSupabaseCredentials()" class="danger-btn" style="margin-top: 10px; font-size: 0.85em;">Database-koppeling Wijzigen</button>
+        </div>
+      </details>
+    </div>
+
+  </div>
+
+  <script>
+    // Haal eventuele opgeslagen aangepaste credentials op uit localStorage, anders de hardcoded defaults
+    const SUPABASE_URL = localStorage.getItem('custom_supabase_url') || "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
+    const SUPABASE_KEY = localStorage.getItem('custom_supabase_key') || "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
+    let dbClient = null;
+    const DJ_PIN = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.pincode) ? HUISSTIJL.pincode : "3977";
+
+    document.addEventListener("DOMContentLoaded", () => {
+      dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+      loadAdminSettings();
+    });
+
+    function toonPopup(bericht) {
+      const oude = document.getElementById('custom-toast');
+      if (oude) oude.remove();
+      const p = document.createElement('div');
+      p.id = 'custom-toast';
+      p.className = 'toast-popup';
+      p.innerText = bericht;
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 3000);
+    }
+
+    function verifyAdminPin() {
+      const val = document.getElementById('admin-pin-input').value;
+      if (val === DJ_PIN) {
+        document.getElementById('admin-login-card').classList.add('hidden');
+        document.getElementById('admin-dashboard').classList.remove('hidden');
+        toonPopup('Welkom in het Beheer!');
+      } else {
+        toonPopup('Onjuiste pincode!');
+        document.getElementById('admin-pin-input').value = '';
+      }
+    }
+
+    async function loadAdminSettings() {
+      if (!dbClient) return;
+      
+      // Vul de verborgen velden met de huidige actieve waardes
+      document.getElementById('setting-supabase-url').value = SUPABASE_URL;
+      document.getElementById('setting-supabase-key').value = SUPABASE_KEY;
+
+      const { data } = await dbClient.from('settings').select('*').in('key', ['app_colors', 'app_pincode']);
+      if (data) {
+        data.forEach(item => {
+          if (item.key === 'app_colors') {
+            try {
+              const c = JSON.parse(item.value);
+              if(c.bg) document.getElementById('col-bg').value = c.bg;
+              if(c.card) document.getElementById('col-card').value = c.card;
+              if(c.accent) document.getElementById('col-accent').value = c.accent;
+              if(c.text) document.getElementById('col-text').value = c.text;
+            } catch(e) {}
+          }
+          if (item.key === 'app_pincode') {
+            document.getElementById('setting-pincode').value = item.value;
+          }
+        });
+      }
+      if (!document.getElementById('setting-pincode').value) {
+        document.getElementById('setting-pincode').value = DJ_PIN;
+      }
+    }
+
+    async function saveColors() {
+      const colors = {
+        bg: document.getElementById('col-bg').value,
+        card: document.getElementById('col-card').value,
+        accent: document.getElementById('col-accent').value,
+        text: document.getElementById('col-text').value
+      };
+      const jsonStr = JSON.stringify(colors);
+      await dbClient.from('settings').upsert({ key: 'app_colors', value: jsonStr }, { onConflict: 'key' });
+      toonPopup('Kleuren succesvol opgeslagen!');
+    }
+
+    async function savePincode() {
+      const pin = document.getElementById('setting-pincode').value.trim();
+      if (pin.length !== 4) return toonPopup('De pincode moet exact 4 cijfers bevatten!');
+      await dbClient.from('settings').upsert({ key: 'app_pincode', value: pin }, { onConflict: 'key' });
+      toonPopup('Pincode opgeslagen!');
+    }
+
+    function saveSupabaseCredentials() {
+      const url = document.getElementById('setting-supabase-url').value.trim();
+      const key = document.getElementById('setting-supabase-key').value.trim();
+      if (!url || !key) return toonPopup('URL en Key mogen niet leeg zijn!');
+
+      const confirmChange = confirm("⚠️ Weet je zeker dat je de Supabase URL en Key wilt wijzigen? De pagina wordt hierna herladen.");
+      if (confirmChange) {
+        localStorage.setItem('custom_supabase_url', url);
+        localStorage.setItem('custom_supabase_key', key);
+        toonPopup('Nieuwe database-instellingen opgeslagen. Bezig met herladen...');
+        setTimeout(() => location.reload(), 1500);
+      }
+    }
+
+    async function uploadLogo() {
+      const fileInput = document.getElementById('logo-file-input');
+      const file = fileInput.files[0];
+      if (!file) return toonPopup('Kies eerst een afbeelding!');
+
+      const { data, error } = await dbClient.storage
+        .from('media')
+        .upload('Logo.png', file, { upsert: true });
+
+      if (error) {
+        toonPopup('Fout bij uploaden: Maak een Storage bucket "media" aan in Supabase!');
+        console.error(error);
+      } else {
+        const { data: publicData } = dbClient.storage.from('media').getPublicUrl('Logo.png');
+        if (publicData && publicData.publicUrl) {
+          await dbClient.from('settings').upsert({ key: 'logo_url', value: publicData.publicUrl }, { onConflict: 'key' });
+          document.getElementById('current-logo-preview').src = publicData.publicUrl + '?' + new Date().getTime();
+        }
+        toonPopup('Logo opgeslagen als Logo.png!');
+        fileInput.value = '';
+      }
+    }
+  </script>
+</body>
+</html>
