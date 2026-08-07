@@ -113,13 +113,13 @@
         <summary style="cursor: pointer; font-weight: bold; color: var(--subtext-color); font-size: 0.9em;">⚙️ Geavanceerd: Supabase Koppeling</summary>
         <div style="margin-top: 15px;">
           <div style="background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger-color); padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.8em; color: #ff8888;">
-            ⚠️ <strong>LET OP:</strong> Vereist wachtwoord **Admin3977**[cite: 2].
+            ⚠️ <strong>LET OP:</strong> Vereist een geldig admin-wachtwoord.
           </div>
           <label style="font-size:0.8em; color:var(--subtext-color);">Supabase URL:</label>
           <input type="text" id="setting-supabase-url" placeholder="https://xxx.supabase.co" style="font-size: 0.85em;">
           <label style="font-size:0.8em; color:var(--subtext-color); margin-top:8px;">Supabase Anon / Publishable Key:</label>
           <input type="password" id="setting-supabase-key" placeholder="eyJhbGciOi..." style="font-size: 0.85em;">
-          <label style="font-size:0.8em; color:var(--subtext-color); margin-top:8px;">Admin Wachtwoord (Admin3977):</label>
+          <label style="font-size:0.8em; color:var(--subtext-color); margin-top:8px;">Admin Wachtwoord:</label>
           <input type="password" id="setting-admin-pass" placeholder="Voer wachtwoord in" style="font-size: 0.85em;">
           <button onclick="saveSupabaseCredentials()" class="danger-btn" style="margin-top: 10px; font-size: 0.85em;">Database-koppeling Wijzigen</button>
         </div>
@@ -235,8 +235,8 @@
     }
 
     async function clearXmlDatabase() {
-      const passCheck = prompt("Typ het admin-wachtwoord[cite: 2] om te bevestigen:");
-      if (passCheck !== MASTER_KEY) return toonPopup("Onjuist wachtwoord.");
+      const pinCheck = prompt("Typ de DJ-pincode om te bevestigen:");
+      if (pinCheck !== activeDjPin) return toonPopup("Onjuiste pincode.");
       if (!confirm("Weet je zeker dat je de database wilt wissen?")) return;
 
       const { error } = await dbClient.from('requests').delete().neq('id', 0); 
@@ -268,7 +268,7 @@
       const key = document.getElementById('setting-supabase-key').value.trim();
       const pass = document.getElementById('setting-admin-pass').value.trim();
 
-      if (pass !== MASTER_KEY) return toonPopup("❌ Onjuist admin-wachtwoord![cite: 2]");
+      if (pass !== MASTER_KEY) return toonPopup("❌ Onjuist admin-wachtwoord!");
       if (!url || !key) return toonPopup('URL en Key mogen niet leeg zijn!');
 
       if (confirm("Weet je zeker dat je de Supabase koppeling wilt wijzigen?")) {
