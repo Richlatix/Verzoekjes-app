@@ -1361,32 +1361,57 @@
     }
 
     async function uploadXML() {
-      const fileInput = document.getElementById('xml-file');
-      const file = fileInput.files[0];
-      if (!file) return toonPopup('Kies eerst een .xml bestand!');
+  const fileInput = document.getElementById('xml-file');
+  const file = fileInput.files[0];
+  if (!file) return toonPopup('Kies eerst een .xml bestand!');
+  
+  const fileName = file.name;
+  const reader = new FileReader();
+  
+  reader.onload = async function(e) {
+    const parser = new DOMParser();
+    const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
+    
+    // Ondersteun verschillende veelvoorkomende tag-namen (hoofd- en kleine letters)
+    let tracks = xmlDoc.getElementsByTagName("TRACK");
+    if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("track");
+    if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("SONG");
+    if (tracks.length === 0) tracks = xmlDoc.getElementsByTagName("song");
+    
+    let imported = [];
+    for (let i = 0; i < tracks.length; i++) {
+      const el = tracks[i];
       
-      const fileName = file.name;
-      const reader = new FileReader();
+      // Ondersteun verschillende attribuutnamen voor titel en artiest per DJ-programma
+      const title = el.getAttribute("Name") || el.getAttribute("Title") || el.getAttribute("Titel") || el.getAttribute("name") || el.getAttribute("title");
+      const artist = el.getAttribute("Artist") || el.getAttribute("Author") || el.getAttribute("ArtistName") || el.getAttribute("artist") || el.getAttribute("author") || "Onbekend";
       
-      reader.onload = async function(e) {
-        const parser = new DOMParser();
-        const xmlDoc = parser.parseFromString(e.target.result, "text/xml");
-        const tracks = xmlDoc.getElementsByTagName("TRACK");
-        
-        let imported = [];
-        for (let i = 0; i < tracks.length; i++) {
-          const title = tracks[i].getAttribute("Name");
-          const artist = tracks[i].getAttribute("Artist");
-          if (title) {
-            imported.push({ 
-              title: title, 
-              artist: artist || "Onbekend", 
-              votes: 0, 
-              status: 'available',
-              source_file: fileName 
-            });
-          }
-        }
+      if (title) {
+        imported.push({ 
+          title: title.trim(), 
+          artist: artist.trim(), 
+          votes: 0, 
+          status: 'available',
+          source_file: fileName 
+        });
+      }
+    }
+
+    if (imported.length === 0) {
+      return toonPopup('Geen nummers gevonden! Controleer of de XML de juiste structuur heeft.');
+    }
+
+    const { error } = await dbClient.from('requests').insert(imported);
+    if (error) {
+      toonPopup('Fout bij uploaden van XML naar database!');
+    } else {
+      toonPopup(`${imported.length} nummers succesvol geïmporteerd!`);
+      fileInput.value = '';
+      loadRequests();
+    }
+  };
+  reader.readAsText(file);
+}
 
         const { error } = await dbClient.from('requests').insert(imported);
         if (error) toonPopup('Fout bij uploaden van XML!');
