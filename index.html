@@ -4,7 +4,13 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MXT Productions Verzoekjes</title>
+  
+  <!-- 1. Laad eerst de huisstijl configuratie -->
+  <script src="stijl.js"></script>
+
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
   <style>
     :root {
       --bg-color: #121212;
@@ -13,6 +19,7 @@
       --accent-color: #3c7a00;
       --border-color: #2a2a2a;
       --subtext-color: #b0b0b0;
+      --danger-color: #ff4444;
     }
     body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg-color); color: var(--text-color); padding: 20px; max-width: 600px; margin: auto; }
     .top-nav { display: flex; justify-content: flex-end; align-items: center; min-height: 35px; margin-bottom: 10px; }
@@ -31,7 +38,7 @@
     .card { background: var(--card-bg); padding: 15px; border-radius: 8px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border: 1px solid var(--border-color); }
     .card.done { opacity: 0.6; text-decoration: line-through; border-style: dashed; }
     .vote-btn { width: auto; padding: 8px 15px; margin: 0 2px; }
-    .danger-btn { background: #ff4444; color: #ffffff; }
+    .danger-btn { background: var(--danger-color); color: #ffffff; }
     .secondary-btn { background: #2a2a2a; color: #ffffff; border: 1px solid var(--border-color); }
     .hidden { display: none !important; }
     .request-box { background: var(--card-bg); padding: 15px; border-radius: 12px; border: 1px dashed var(--accent-color); margin-bottom: 25px; }
@@ -247,8 +254,10 @@
     let dbClient = null; let allSongs = []; let isDjLoggedIn = false; let currentPartyCode = null;
     let activeLibraryNoteId = null; let activeDjLibraryNoteId = null; let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
     let blacklistedWords = [];
-    const DJ_PIN = "3977";
-    const defaultPromoCard = { title: "🎉 MXT Productions Boeken?", subtitle: "Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?", whatsapp: "https://wa.me/31622499093", whatsapp_active: true, email: "info.mxtproductions@gmail.com", email_active: true, instagram: "https://www.instagram.com/mxt.productions?igsh=Nmp4YW50d3JrajNz&utm_source=qr", instagram_active: false, tiktok: "https://www.tiktok.com/@mxtproductions?_r=1&_t=ZN-98fFhDOpgvO", tiktok_active: false, facebook: "https://www.facebook.com/share/1DArnr8LVu/?mibextid=wwXIfr", facebook_active: false };
+    
+    // Pincode en standaard promo worden nu uit HUISSTIJL (stijl.js) gehaald, met veilige fallback
+    const DJ_PIN = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.pincode) ? HUISSTIJL.pincode : "3977";
+    const defaultPromoCard = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.standaardPromo) ? HUISSTIJL.standaardPromo : { title: "🎉 MXT Productions Boeken?", subtitle: "Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?", whatsapp: "https://wa.me/31622499093", whatsapp_active: true, email: "info.mxtproductions@gmail.com", email_active: true, instagram: "https://www.instagram.com/mxt.productions?igsh=Nmp4YW50d3JrajNz&utm_source=qr", instagram_active: false, tiktok: "https://www.tiktok.com/@mxtproductions?_r=1&_t=ZN-98fFhDOpgvO", tiktok_active: false, facebook: "https://www.facebook.com/share/1DArnr8LVu/?mibextid=wwXIfr", facebook_active: false };
     
     function toonPopup(bericht) { const oudePopup = document.getElementById('custom-toast'); if (oudePopup) oudePopup.remove(); const popup = document.createElement('div'); popup.id = 'custom-toast'; popup.className = 'toast-popup'; popup.innerText = bericht; document.body.appendChild(popup); setTimeout(() => { if (popup) popup.remove(); }, 3000); }
     function getVotedSongIds() { try { return JSON.parse(localStorage.getItem('voted_song_ids')) || []; } catch (e) { return []; } }
@@ -295,7 +304,7 @@
       container.innerHTML = '';
       blacklistedWords.forEach(word => {
         container.innerHTML += `<span style="background:#2a2a2a; border:1px solid var(--border-color); padding:4px 8px; border-radius:6px; font-size:0.85em; display:inline-flex; align-items:center; gap:6px;">
-          ${word} <span style="cursor:pointer; color:#ff4444; font-weight:bold;" onclick="removeBlacklistWord('${word}')">×</span>
+          ${word} <span style="cursor:pointer; color:var(--danger-color); font-weight:bold;" onclick="removeBlacklistWord('${word}')">×</span>
         </span>`;
       });
     }
