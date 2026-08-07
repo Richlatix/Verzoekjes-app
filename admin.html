@@ -82,7 +82,6 @@
       <h3>🖼️ Logo of Tekst Header</h3>
       <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:10px;">Upload een logo óf verwijder het logo om een tekstnaam te gebruiken.</p>
       
-      <!-- Logo Sectie -->
       <div id="logo-active-section">
         <img id="current-logo-preview" class="preview-logo" src="Logo.png" alt="Huidig Logo">
         <input type="file" id="logo-file-input" accept="image/png, image/jpeg, image/webp">
@@ -92,7 +91,6 @@
         </div>
       </div>
 
-      <!-- Tekstnaam Sectie (Alleen zichtbaar als logo verwijderd is) -->
       <div id="text-brand-section" class="hidden" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
         <label style="font-size:0.85em; color:var(--accent-color); font-weight:bold;">✍️ Tekstnaam als Header:</label>
         <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">Er is momenteel geen logo actief. Vul hier de bedrijfs- of show naam in:</p>
@@ -102,7 +100,14 @@
       </div>
     </div>
 
-    <!-- 3. ALGEMENE INSTELLINGEN & PINCODE -->
+    <!-- 3. GEGEVENS & DATABASE BEHEER (NIEUW: XML VERWIJDEREN) -->
+    <div class="card">
+      <h3>🗄️ Muziekdatabase & Nieuw Feest</h3>
+      <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:10px;">Beheer hier de geladen XML-muziekbestanden. Let op: dit verwijdert alle nummers uit de database.</p>
+      <button onclick="clearXmlDatabase()" class="danger-btn">🗑️ Geïmporteerde XML Bestanden Verwijderen</button>
+    </div>
+
+    <!-- 4. ALGEMENE INSTELLINGEN & PINCODE -->
     <div class="card">
       <h3>🔑 Systeem & Pincode</h3>
       <label style="font-size:0.85em; color:var(--subtext-color);">DJ Pincode:</label>
@@ -110,19 +115,22 @@
       <button onclick="savePincode()">Pincode Opslaan</button>
     </div>
 
-    <!-- 4. GEAVANCEERD: SUPABASE CONFIGURATIE (VERSTOPT) -->
+    <!-- 5. GEAVANCEERD: SUPABASE CONFIGURATIE (BEVEILIGD MET ADMIN WACHTWOORD) -->
     <div class="card" style="border-color: #333; opacity: 0.85;">
       <details>
         <summary style="cursor: pointer; font-weight: bold; color: var(--subtext-color); font-size: 0.9em;">⚙️ Geavanceerd: Supabase Koppeling (Klik om te openen)</summary>
         <div style="margin-top: 15px;">
           <div style="background: rgba(255, 68, 68, 0.1); border: 1px solid var(--danger-color); padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.8em; color: #ff8888; line-height: 1.4;">
-            ⚠️ <strong>LET OP:</strong> Pas deze gegevens alleen aan als je overstapt naar een andere Supabase-database. Onjuiste URL's of sleutels zorgen ervoor dat de app direct stopt met werken!
+            ⚠️ <strong>LET OP:</strong> Vereist het wachtwoord **Admin3977**. Onjuiste gegevens verbreken de verbinding direct!
           </div>
           <label style="font-size:0.8em; color:var(--subtext-color);">Supabase URL:</label>
           <input type="text" id="setting-supabase-url" placeholder="https://xxx.supabase.co" style="font-size: 0.85em;">
           
           <label style="font-size:0.8em; color:var(--subtext-color); margin-top:8px;">Supabase Anon / Publishable Key:</label>
           <input type="password" id="setting-supabase-key" placeholder="eyJhbGciOi..." style="font-size: 0.85em;">
+
+          <label style="font-size:0.8em; color:var(--subtext-color); margin-top:8px;">Admin Wachtwoord (Admin3977):</label>
+          <input type="password" id="setting-admin-pass" placeholder="Voer wachtwoord in" style="font-size: 0.85em;">
           
           <button onclick="saveSupabaseCredentials()" class="danger-btn" style="margin-top: 10px; font-size: 0.85em;">Database-koppeling Wijzigen</button>
         </div>
@@ -220,14 +228,12 @@
       const confirmRemove = confirm("Weet je zeker dat je het logo wilt verwijderen? Hiermee kun je een tekstnaam instellen.");
       if (!confirmRemove) return;
 
-      // Sla een lege/verwijderde status op in Supabase
       await dbClient.from('settings').upsert({ key: 'logo_url', value: 'REMOVED' }, { onConflict: 'key' });
       toggleTextBrandMode(true);
       toonPopup('Logo verwijderd. Je kunt nu een tekstnaam instellen!');
     }
 
     async function undoRemoveLogo() {
-      // Zet logo_url terug naar leeg zodat standaard Logo.png weer gebruikt kan worden
       await dbClient.from('settings').upsert({ key: 'logo_url', value: '' }, { onConflict: 'key' });
       toggleTextBrandMode(false);
       document.getElementById('current-logo-preview').src = 'Logo.png?' + new Date().getTime();
@@ -239,6 +245,25 @@
       if (!name) return toonPopup('Vul a.u.b. een tekstnaam in!');
       await dbClient.from('settings').upsert({ key: 'app_brand_name', value: name }, { onConflict: 'key' });
       toonPopup('Tekstnaam succesvol opgeslagen!');
+    }
+
+    async function clearXmlDatabase() {
+      const passCheck = prompt("⚠️ WAARSCHUWING: Dit verwijdert alle 8000+ nummers uit de database. Typ het admin-wachtwoord (Admin3977) om te bevestigen:");
+      if (passCheck !== "Admin3977") {
+        return toonPopup("Onjuist wachtwoord. Actie geannuleerd.");
+      }
+
+      const confirmExtra = confirm("Weet je absoluut zeker dat je de complete muziekdatabase wilt wissen?");
+      if (!confirmExtra) return;
+
+      // Vervang 'nummers' eventueel door de exacte naam van jouw tabel waar de XML-nummers in staan opgeslagen
+      const { error } = await dbClient.from('nummers').delete().neq('id', 0); 
+      if (error) {
+        toonPopup("Fout bij legen: controleer of de tabel 'nummers' bestaat.");
+        console.error(error);
+      } else {
+        toonPopup("Alle geïmporteerde nummers zijn succesvol verwijderd!");
+      }
     }
 
     async function saveColors() {
@@ -263,6 +288,11 @@
     function saveSupabaseCredentials() {
       const url = document.getElementById('setting-supabase-url').value.trim();
       const key = document.getElementById('setting-supabase-key').value.trim();
+      const pass = document.getElementById('setting-admin-pass').value.trim();
+
+      if (pass !== "Admin3977") {
+        return toonPopup("❌ Onjuist admin-wachtwoord! (Vereist: Admin3977)");
+      }
       if (!url || !key) return toonPopup('URL en Key mogen niet leeg zijn!');
 
       const confirmChange = confirm("⚠️ Weet je zeker dat je de Supabase URL en Key wilt wijzigen? De pagina wordt hierna herladen.");
