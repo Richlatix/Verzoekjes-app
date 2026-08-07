@@ -128,17 +128,14 @@
           <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto; padding: 6px 10px; margin:0;" id="settings-toggle-btn">⚙️</button>
         </div>
       </div>
+      
       <div id="settings-panel" class="settings-panel hidden">
         <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
         
-        <!-- BLACKLIST SECTIE -->
+        <!-- BLACKLIST BEHEER & VERWIJDEREN (IN TANDWIELMENU) -->
         <div style="margin-bottom: 15px;">
-          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚫 Woorden Blacklist:</label>
-          <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Verzoekjes met deze woorden worden direct geblokkeerd.</p>
-          <div style="display:flex; gap:8px;">
-            <input type="text" id="blacklist-word-input" placeholder="Voer verboden woord in..." style="margin:0;">
-            <button onclick="addBlacklistWord()" style="width:auto; padding:10px 15px; margin:0;">Toevoegen</button>
-          </div>
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚫 Woorden Blacklist (Beheren):</label>
+          <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Hier zie je alle verboden woorden. Klik op het kruisje om er een te verwijderen.</p>
           <div id="blacklist-words-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
         </div>
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
@@ -204,6 +201,8 @@
           <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest (Nieuwe Code)</button>
         </div>
       </div>
+
+      <!-- ZOEKPANEEL VOOR DJ -->
       <div id="dj-search-panel" class="request-box hidden" style="margin-top: 15px;">
         <h3 style="margin-top:0;">🔍 Verzoekje Toevoegen (Bibliotheek / Handmatig)</h3>
         <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()">
@@ -220,10 +219,22 @@
           </div>
         </div>
       </div>
+
+      <!-- NIEUW: BLACKLIST PANEEL (NAAST VERGROOTGLAS) -->
+      <div id="dj-blacklist-panel" class="request-box hidden" style="margin-top: 15px;">
+        <h3 style="margin-top:0;">🚫 Woorden Blacklist Toevoegen</h3>
+        <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Verzoekjes met deze woorden worden direct geblokkeerd.</p>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="blacklist-word-input" placeholder="Voer verboden woord in..." style="margin:0;">
+          <button onclick="addBlacklistWord()" style="width:auto; padding:10px 15px; margin:0;">Toevoegen</button>
+        </div>
+      </div>
+
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px; flex-wrap: wrap; gap: 8px;">
         <h3 style="margin:0; text-align:left;">🔥 Live Verzoekjes</h3>
         <div style="display:flex; gap:6px; align-items:center;">
           <button onclick="toggleDjSearchMenu()" class="secondary-btn vote-btn" id="dj-search-toggle-btn" style="padding: 6px 10px; font-size:0.85em; margin:0;" title="Verzoekje toevoegen">🔍</button>
+          <button onclick="toggleDjBlacklistMenu()" class="secondary-btn vote-btn" id="dj-blacklist-toggle-btn" style="padding: 6px 10px; font-size:0.85em; margin:0;" title="Zwarte lijst beheren">🚫</button>
           <select id="sort-select" onchange="renderDjRequests()" style="width:auto; padding: 6px 10px; margin:0; font-size:0.85em;">
             <option value="votes">🔥 Meeste stemmen</option>
             <option value="newest">⏱️ Nieuwste aanvragen</option>
@@ -255,7 +266,6 @@
     let activeLibraryNoteId = null; let activeDjLibraryNoteId = null; let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
     let blacklistedWords = [];
     
-    // Pincode en standaard promo worden nu uit HUISSTIJL (stijl.js) gehaald, met veilige fallback
     const DJ_PIN = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.pincode) ? HUISSTIJL.pincode : "3977";
     const defaultPromoCard = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.standaardPromo) ? HUISSTIJL.standaardPromo : { title: "🎉 MXT Productions Boeken?", subtitle: "Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?", whatsapp: "https://wa.me/31622499093", whatsapp_active: true, email: "info.mxtproductions@gmail.com", email_active: true, instagram: "https://www.instagram.com/mxt.productions?igsh=Nmp4YW50d3JrajNz&utm_source=qr", instagram_active: false, tiktok: "https://www.tiktok.com/@mxtproductions?_r=1&_t=ZN-98fFhDOpgvO", tiktok_active: false, facebook: "https://www.facebook.com/share/1DArnr8LVu/?mibextid=wwXIfr", facebook_active: false };
     
@@ -347,8 +357,69 @@
     function checkGuestAccess() { if (isDjLoggedIn) return; const savedGuestCode = localStorage.getItem('entered_party_code'); if (savedGuestCode && currentPartyCode && savedGuestCode === currentPartyCode) { document.getElementById('party-code-view').classList.add('hidden'); document.getElementById('guest-view').classList.remove('hidden'); pingPresence(); } else { document.getElementById('guest-view').classList.add('hidden'); document.getElementById('party-code-view').classList.remove('hidden'); } }
     function submitPartyCode() { const inputCode = document.getElementById('guest-party-code-input').value.trim(); if (!currentPartyCode) { return toonPopup('Er is momenteel geen actief feest gestart door de DJ.'); } if (inputCode === currentPartyCode) { localStorage.setItem('entered_party_code', inputCode); checkGuestAccess(); pingPresence(); toonPopup('Succesvol ingelogd op het feest!'); } else { toonPopup('Onjuiste feestcode! Kijk op het scherm of de poster.'); } }
     async function startNewSession() { const confirmStart = confirm("Weet je zeker dat je een nieuw feest wilt starten? Er wordt een nieuwe feestcode gegenereerd en verzoekjes worden gewist."); if (!confirmStart) return; const newCode = Math.floor(1000 + Math.random() * 9000).toString(); try { await dbClient.from('requests').delete().eq('status', 'requested'); await dbClient.from('requests').delete().eq('status', 'done'); await dbClient.from('presence').delete(); await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).eq('status', 'available'); await dbClient.from('settings').delete().eq('key', 'party_code'); await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]); currentPartyCode = newCode; const djCodeDisplay = document.getElementById('dj-active-code-display'); if (djCodeDisplay) djCodeDisplay.innerText = newCode; toonPopup(`Nieuw feest gestart! Nieuwe code: ${newCode}`); loadRequests(); fetchOnlineCount(); } catch (err) { console.error(err); toonPopup("Fout bij starten van nieuw feest."); } }
-    function toggleSettingsMenu() { const panel = document.getElementById('settings-panel'); const btn = document.getElementById('settings-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
-    function toggleDjSearchMenu() { const panel = document.getElementById('dj-search-panel'); const btn = document.getElementById('dj-search-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; document.getElementById('dj-search-input').focus(); } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
+    
+    function toggleSettingsMenu() { 
+      const panel = document.getElementById('settings-panel'); 
+      const btn = document.getElementById('settings-toggle-btn'); 
+      if (panel.classList.contains('hidden')) { 
+        panel.classList.remove('hidden'); 
+        btn.style.borderColor = 'var(--accent-color)'; 
+        btn.style.color = 'var(--accent-color)'; 
+      } else { 
+        panel.classList.add('hidden'); 
+        btn.style.borderColor = 'var(--border-color)'; 
+        btn.style.color = '#ffffff'; 
+      } 
+    }
+    
+    function toggleDjSearchMenu() { 
+      const panel = document.getElementById('dj-search-panel'); 
+      const blacklistPanel = document.getElementById('dj-blacklist-panel');
+      const btn = document.getElementById('dj-search-toggle-btn'); 
+      
+      // Sluit eventueel de blacklist balk als deze open staat
+      if (!blacklistPanel.classList.contains('hidden')) {
+        blacklistPanel.classList.add('hidden');
+        document.getElementById('dj-blacklist-toggle-btn').style.borderColor = 'var(--border-color)';
+        document.getElementById('dj-blacklist-toggle-btn').style.color = '#ffffff';
+      }
+
+      if (panel.classList.contains('hidden')) { 
+        panel.classList.remove('hidden'); 
+        btn.style.borderColor = 'var(--accent-color)'; 
+        btn.style.color = 'var(--accent-color)'; 
+        document.getElementById('dj-search-input').focus(); 
+      } else { 
+        panel.classList.add('hidden'); 
+        btn.style.borderColor = 'var(--border-color)'; 
+        btn.style.color = '#ffffff'; 
+      } 
+    }
+
+    function toggleDjBlacklistMenu() {
+      const panel = document.getElementById('dj-blacklist-panel');
+      const searchPanel = document.getElementById('dj-search-panel');
+      const btn = document.getElementById('dj-blacklist-toggle-btn');
+
+      // Sluit eventueel het zoekvenster als dat open staat
+      if (!searchPanel.classList.contains('hidden')) {
+        searchPanel.classList.add('hidden');
+        document.getElementById('dj-search-toggle-btn').style.borderColor = 'var(--border-color)';
+        document.getElementById('dj-search-toggle-btn').style.color = '#ffffff';
+      }
+
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btn.style.borderColor = 'var(--accent-color)';
+        btn.style.color = 'var(--accent-color)';
+        document.getElementById('blacklist-word-input').focus();
+      } else {
+        panel.classList.add('hidden');
+        btn.style.borderColor = 'var(--border-color)';
+        btn.style.color = '#ffffff';
+      }
+    }
+
     function toggleXmlMenu() { const panel = document.getElementById('xml-panel'); const btn = document.getElementById('xml-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Inklappen)'; } else { panel.classList.add('hidden'); btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Uitklappen)'; } }
     async function loadWelcomeText() { if (!dbClient) return; const { data } = await dbClient.from('settings').select('value').eq('key', 'welcome_text').maybeSingle(); let text = ""; if (data && data.value) { text = data.value; } else { text = localStorage.getItem('welcome_text') || ""; } const banner = document.getElementById('welcome-banner'); const input = document.getElementById('welcome-text-input'); if (text.trim() !== "") { banner.innerText = text; banner.classList.remove('hidden'); if (input && document.activeElement !== input) input.value = text; } else { banner.innerText = ""; banner.classList.add('hidden'); if (input && document.activeElement !== input) input.value = ""; } }
     async function saveWelcomeText() { const text = document.getElementById('welcome-text-input').value.trim(); localStorage.setItem('welcome_text', text); if (dbClient) { await dbClient.from('settings').upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' }); } loadWelcomeText(); toonPopup('Welkomsttekst bijgewerkt!'); }
