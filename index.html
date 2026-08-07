@@ -139,12 +139,8 @@
         <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
         
         <div style="margin-bottom: 15px;">
-          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚫 Woorden Blacklist:</label>
-          <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Verzoekjes met deze woorden worden direct geblokkeerd.</p>
-          <div style="display:flex; gap:8px;">
-            <input type="text" id="blacklist-word-input" placeholder="Voer verboden woord in..." style="margin:0;">
-            <button onclick="addBlacklistWord()" style="width:auto; padding:10px 15px; margin:0;">Toevoegen</button>
-          </div>
+          <label style="font-weight:bold; font-size:0.9em; color:var(--accent-color);">🚫 Woorden Blacklist (Beheren):</label>
+          <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Hier zie je alle ingevoerde woorden. Klik op het kruisje om een woord te verwijderen:</p>
           <div id="blacklist-words-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:10px;"></div>
         </div>
         <hr style="border: 0; border-top: 1px solid var(--border-color); margin: 15px 0;">
@@ -210,6 +206,7 @@
           <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest (Nieuwe Code)</button>
         </div>
       </div>
+      
       <div id="dj-search-panel" class="request-box hidden" style="margin-top: 15px;">
         <h3 style="margin-top:0;">🔍 Verzoekje Toevoegen (Bibliotheek / Handmatig)</h3>
         <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()">
@@ -226,10 +223,22 @@
           </div>
         </div>
       </div>
+
+      <!-- Zwarte lijst toevoegen paneel (geopend via de 🚫 knop naast de vergrootglas knop) -->
+      <div id="dj-blacklist-panel" class="request-box hidden" style="margin-top: 15px;">
+        <h3 style="margin-top:0;">🚫 Woord Toevoegen aan Blacklist</h3>
+        <p style="font-size: 0.8em; color: var(--subtext-color); margin: 4px 0 8px 0;">Verzoekjes met dit woord of nummer worden direct geblokkeerd.</p>
+        <div style="display:flex; gap:8px;">
+          <input type="text" id="blacklist-word-input" placeholder="Voer verboden woord in..." style="margin:0;">
+          <button onclick="addBlacklistWord()" style="width:auto; padding:10px 15px; margin:0;">Toevoegen</button>
+        </div>
+      </div>
+
       <div style="display:flex; justify-content:space-between; align-items:center; margin-top: 15px; flex-wrap: wrap; gap: 8px;">
         <h3 style="margin:0; text-align:left;">🔥 Live Verzoekjes</h3>
         <div style="display:flex; gap:6px; align-items:center;">
           <button onclick="toggleDjSearchMenu()" class="secondary-btn vote-btn" id="dj-search-toggle-btn" style="padding: 6px 10px; font-size:0.85em; margin:0;" title="Verzoekje toevoegen">🔍</button>
+          <button onclick="toggleBlacklistMenu()" class="secondary-btn vote-btn" id="dj-blacklist-toggle-btn" style="padding: 6px 10px; font-size:0.85em; margin:0;" title="Zwarte lijst beheren">🚫</button>
           <select id="sort-select" onchange="renderDjRequests()" style="width:auto; padding: 6px 10px; margin:0; font-size:0.85em;">
             <option value="votes">🔥 Meeste stemmen</option>
             <option value="newest">⏱️ Nieuwste aanvragen</option>
@@ -261,7 +270,6 @@
     let activeLibraryNoteId = null; let activeDjLibraryNoteId = null; let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
     let blacklistedWords = [];
     
-    // Dynamische DJ_PIN (wordt hieronder live overschreven vanuit Supabase ofijl.js)
     let DJ_PIN = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.pincode) ? HUISSTIJL.pincode : "3977";
     const defaultPromoCard = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.standaardPromo) ? HUISSTIJL.standaardPromo : { title: "🎉 MXT Productions Boeken?", subtitle: "Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?", whatsapp: "https://wa.me/31622499093", whatsapp_active: true, email: "info.mxtproductions@gmail.com", email_active: true, instagram: "https://www.instagram.com/mxt.productions?igsh=Nmp4YW50d3JrajNz&utm_source=qr", instagram_active: false, tiktok: "https://www.tiktok.com/@mxtproductions?_r=1&_t=ZN-98fFhDOpgvO", tiktok_active: false, facebook: "https://www.facebook.com/share/1DArnr8LVu/?mibextid=wwXIfr", facebook_active: false };
     
@@ -276,7 +284,6 @@
         const codeFromUrl = urlParams.get('code'); 
         if (codeFromUrl) { localStorage.setItem('entered_party_code', codeFromUrl); } 
         
-        // Haal direct alle instellingen (pincode, kleuren, logo, etc.) op uit Supabase
         await loadAppSettings();
 
         checkGuestAccess(); 
@@ -287,17 +294,14 @@
       } catch (err) { toonPopup('Fout bij verbinden met Supabase!'); } 
     }
 
-    // --- CENTRALE FUNCTIE VOOR ALLE INSTELLINGEN & PINCODE SYNC ---
     async function loadAppSettings() {
       if (!dbClient) return;
       const { data } = await dbClient.from('settings').select('*');
       if (data) {
         data.forEach(item => {
-          // 1. Pincode live synchroniseren met admin.html
           if (item.key === 'app_pincode' && item.value) {
             DJ_PIN = item.value;
           }
-          // 2. Feestcode
           if (item.key === 'party_code' && item.value) {
             currentPartyCode = item.value;
             const djCodeDisplay = document.getElementById('dj-active-code-display');
@@ -309,12 +313,10 @@
               toonPopup('Het vorige feest is afgelopen! Voer de nieuwe code in.');
             }
           }
-          // 3. Blacklist
           if (item.key === 'blacklist' && item.value) {
             try { blacklistedWords = JSON.parse(item.value); } catch (e) { blacklistedWords = []; }
             renderBlacklistUI();
           }
-          // 4. Welkomsttekst
           if (item.key === 'welcome_text') {
             const banner = document.getElementById('welcome-banner');
             const input = document.getElementById('welcome-text-input');
@@ -328,7 +330,6 @@
               if (input && document.activeElement !== input) input.value = "";
             }
           }
-          // 5. Kleuren toepassen indien ingesteld in admin
           if (item.key === 'app_colors' && item.value) {
             try {
               const c = JSON.parse(item.value);
@@ -339,12 +340,11 @@
               if (c.text) root.style.setProperty('--text-color', c.text);
             } catch (e) {}
           }
-          // 6. Logo of Tekstnaam toepassen
           if (item.key === 'logo_url') {
             const logoImg = document.getElementById('app-logo');
             if (logoImg) {
               if (item.value === 'REMOVED' || !item.value) {
-                // Eventueel verbergen of standaard logo
+                // geen logo
               } else {
                 logoImg.src = item.value + '?' + new Date().getTime();
               }
@@ -355,7 +355,6 @@
       loadPromoCard();
     }
 
-    // --- BLACKLIST LOGICA ---
     function renderBlacklistUI() {
       const container = document.getElementById('blacklist-words-container');
       if (!container) return;
@@ -400,7 +399,6 @@
       const combined = texts.join(' ').toLowerCase();
       return blacklistedWords.some(word => combined.includes(word.toLowerCase()));
     }
-    // -------------------------
 
     async function pingPresence() { const savedGuestCode = localStorage.getItem('entered_party_code'); if (!savedGuestCode || !currentPartyCode || savedGuestCode !== currentPartyCode || isDjLoggedIn) return; await dbClient.from('presence').upsert({ session_id: guestSessionId, party_code: currentPartyCode, last_seen: new Date().toISOString() }, { onConflict: 'session_id' }); }
     async function fetchOnlineCount() { if (!dbClient || !currentPartyCode) return; const threshold = new Date(Date.now() - 15000).toISOString(); await dbClient.from('presence').delete().lt('last_seen', threshold); const { count, error } = await dbClient.from('presence').select('*', { count: 'exact', head: true }).eq('party_code', currentPartyCode); if (!error && count !== null) { const countDisplay = document.getElementById('dj-online-count'); if (countDisplay) { countDisplay.innerText = `👥 ${count}`; } } }
@@ -412,6 +410,7 @@
     
     function toggleSettingsMenu() { const panel = document.getElementById('settings-panel'); const btn = document.getElementById('settings-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
     function toggleDjSearchMenu() { const panel = document.getElementById('dj-search-panel'); const btn = document.getElementById('dj-search-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; document.getElementById('dj-search-input').focus(); } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
+    function toggleBlacklistMenu() { const panel = document.getElementById('dj-blacklist-panel'); const btn = document.getElementById('dj-blacklist-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.style.borderColor = 'var(--accent-color)'; btn.style.color = 'var(--accent-color)'; document.getElementById('blacklist-word-input').focus(); } else { panel.classList.add('hidden'); btn.style.borderColor = 'var(--border-color)'; btn.style.color = '#ffffff'; } }
     function toggleXmlMenu() { const panel = document.getElementById('xml-panel'); const btn = document.getElementById('xml-toggle-btn'); if (panel.classList.contains('hidden')) { panel.classList.remove('hidden'); btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Inklappen)'; } else { panel.classList.add('hidden'); btn.innerText = '📂 Muziekbibliotheek / XML Beheren (Uitklappen)'; } }
     
     async function saveWelcomeText() { const text = document.getElementById('welcome-text-input').value.trim(); if (dbClient) { await dbClient.from('settings').upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' }); } loadAppSettings(); toonPopup('Welkomsttekst bijgewerkt!'); }
@@ -474,7 +473,6 @@
     function showView(view) { document.getElementById('party-code-view').classList.add('hidden'); document.getElementById('guest-view').classList.add('hidden'); document.getElementById('pin-view').classList.add('hidden'); document.getElementById('dj-view').classList.add('hidden'); const loginBtn = document.getElementById('dj-login-btn'); const backBtn = document.getElementById('back-to-guest-btn'); if (view === 'guest') { loginBtn.classList.remove('hidden'); backBtn.classList.add('hidden'); checkGuestAccess(); } else if (view === 'dj') { loginBtn.classList.add('hidden'); backBtn.classList.add('hidden'); document.getElementById('dj-view').classList.remove('hidden'); loadAppSettings(); fetchOnlineCount(); } else { loginBtn.classList.add('hidden'); backBtn.classList.add('hidden'); document.getElementById(view + '-view').classList.remove('hidden'); } }
     function checkDJPass() { if (isDjLoggedIn) showView('dj'); else showView('pin'); }
     
-    // Hier wordt nu gecontroleerd tegen de dynamische DJ_PIN die uit Supabase komt!
     function verifyPin() { 
       const enteredPin = document.getElementById('dj-pin-input').value.trim(); 
       if (enteredPin === DJ_PIN) { 
