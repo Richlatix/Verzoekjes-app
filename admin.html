@@ -77,13 +77,29 @@
       <button onclick="saveColors()">Kleuren Opslaan</button>
     </div>
 
-    <!-- 2. LOGO UPLOADER -->
+    <!-- 2. LOGO OF TEKST BEHEREN -->
     <div class="card">
-      <h3>🖼️ Logo Beheren</h3>
-      <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:10px;">Upload een nieuwe afbeelding. Deze wordt automatisch opgeslagen als <code>Logo.png</code>.</p>
-      <img id="current-logo-preview" class="preview-logo" src="Logo.png" alt="Huidig Logo">
-      <input type="file" id="logo-file-input" accept="image/png, image/jpeg, image/webp">
-      <button onclick="uploadLogo()">Logo Uploaden & Opslaan</button>
+      <h3>🖼️ Logo of Tekst Header</h3>
+      <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:10px;">Upload een logo óf verwijder het logo om een tekstnaam te gebruiken.</p>
+      
+      <!-- Logo Sectie -->
+      <div id="logo-active-section">
+        <img id="current-logo-preview" class="preview-logo" src="Logo.png" alt="Huidig Logo">
+        <input type="file" id="logo-file-input" accept="image/png, image/jpeg, image/webp">
+        <div style="display:flex; gap:10px; margin-top:8px;">
+          <button onclick="uploadLogo()">Logo Uploaden</button>
+          <button onclick="removeLogo()" class="danger-btn">Logo Verwijderen</button>
+        </div>
+      </div>
+
+      <!-- Tekstnaam Sectie (Alleen zichtbaar als logo verwijderd is) -->
+      <div id="text-brand-section" class="hidden" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+        <label style="font-size:0.85em; color:var(--accent-color); font-weight:bold;">✍️ Tekstnaam als Header:</label>
+        <p style="font-size:0.8em; color:var(--subtext-color); margin: 4px 0 8px 0;">Er is momenteel geen logo actief. Vul hier de bedrijfs- of show naam in:</p>
+        <input type="text" id="setting-brand-name" placeholder="Bijv. MXT Productions">
+        <button onclick="saveBrandName()">Tekstnaam Opslaan</button>
+        <button onclick="undoRemoveLogo()" class="secondary-btn" style="margin-top: 6px; font-size: 0.85em;">↩️ Toch weer logo gebruiken</button>
+      </div>
     </div>
 
     <!-- 3. ALGEMENE INSTELLINGEN & PINCODE -->
@@ -116,7 +132,6 @@
   </div>
 
   <script>
-    // Haal eventuele opgeslagen aangepaste credentials op uit localStorage, anders de hardcoded defaults
     const SUPABASE_URL = localStorage.getItem('custom_supabase_url') || "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
     const SUPABASE_KEY = localStorage.getItem('custom_supabase_key') || "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
     let dbClient = null;
@@ -153,11 +168,10 @@
     async function loadAdminSettings() {
       if (!dbClient) return;
       
-      // Vul de verborgen velden met de huidige actieve waardes
       document.getElementById('setting-supabase-url').value = SUPABASE_URL;
       document.getElementById('setting-supabase-key').value = SUPABASE_KEY;
 
-      const { data } = await dbClient.from('settings').select('*').in('key', ['app_colors', 'app_pincode']);
+      const { data } = await dbClient.from('settings').select('*').in('key', ['app_colors', 'app_pincode', 'logo_url', 'app_brand_name']);
       if (data) {
         data.forEach(item => {
           if (item.key === 'app_colors') {
@@ -172,11 +186,59 @@
           if (item.key === 'app_pincode') {
             document.getElementById('setting-pincode').value = item.value;
           }
+          if (item.key === 'logo_url') {
+            if (item.value === 'REMOVED' || !item.value) {
+              toggleTextBrandMode(true);
+            } else {
+              toggleTextBrandMode(false);
+              document.getElementById('current-logo-preview').src = item.value + '?' + new Date().getTime();
+            }
+          }
+          if (item.key === 'app_brand_name') {
+            document.getElementById('setting-brand-name').value = item.value || '';
+          }
         });
       }
       if (!document.getElementById('setting-pincode').value) {
         document.getElementById('setting-pincode').value = DJ_PIN;
       }
+    }
+
+    function toggleTextBrandMode(isTextMode) {
+      const logoSection = document.getElementById('logo-active-section');
+      const textSection = document.getElementById('text-brand-section');
+      if (isTextMode) {
+        logoSection.classList.add('hidden');
+        textSection.classList.remove('hidden');
+      } else {
+        logoSection.classList.remove('hidden');
+        textSection.classList.add('hidden');
+      }
+    }
+
+    async function removeLogo() {
+      const confirmRemove = confirm("Weet je zeker dat je het logo wilt verwijderen? Hiermee kun je een tekstnaam instellen.");
+      if (!confirmRemove) return;
+
+      // Sla een lege/verwijderde status op in Supabase
+      await dbClient.from('settings').upsert({ key: 'logo_url', value: 'REMOVED' }, { onConflict: 'key' });
+      toggleTextBrandMode(true);
+      toonPopup('Logo verwijderd. Je kunt nu een tekstnaam instellen!');
+    }
+
+    async function undoRemoveLogo() {
+      // Zet logo_url terug naar leeg zodat standaard Logo.png weer gebruikt kan worden
+      await dbClient.from('settings').upsert({ key: 'logo_url', value: '' }, { onConflict: 'key' });
+      toggleTextBrandMode(false);
+      document.getElementById('current-logo-preview').src = 'Logo.png?' + new Date().getTime();
+      toonPopup('Teruggeschakeld naar logo-modus.');
+    }
+
+    async function saveBrandName() {
+      const name = document.getElementById('setting-brand-name').value.trim();
+      if (!name) return toonPopup('Vul a.u.b. een tekstnaam in!');
+      await dbClient.from('settings').upsert({ key: 'app_brand_name', value: name }, { onConflict: 'key' });
+      toonPopup('Tekstnaam succesvol opgeslagen!');
     }
 
     async function saveColors() {
@@ -229,6 +291,7 @@
         if (publicData && publicData.publicUrl) {
           await dbClient.from('settings').upsert({ key: 'logo_url', value: publicData.publicUrl }, { onConflict: 'key' });
           document.getElementById('current-logo-preview').src = publicData.publicUrl + '?' + new Date().getTime();
+          toggleTextBrandMode(false);
         }
         toonPopup('Logo opgeslagen als Logo.png!');
         fileInput.value = '';
