@@ -188,7 +188,7 @@
               toggleTextBrandMode(true);
             } else {
               toggleTextBrandMode(false);
-              document.getElementById('current-logo-preview').src = item.value + '?' + new Date().getTime();
+              document.getElementById('current-logo-preview').src = item.value + (item.value.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
             }
           }
           if (item.key === 'app_brand_name') {
@@ -221,7 +221,7 @@
     }
 
     async function undoRemoveLogo() {
-      await dbClient.from('settings').upsert({ key: 'logo_url', value: '' }, { onConflict: 'key' });
+      await dbClient.from('settings').upsert({ key: 'logo_url', value: 'Logo.png' }, { onConflict: 'key' });
       toggleTextBrandMode(false);
       document.getElementById('current-logo-preview').src = 'Logo.png?' + new Date().getTime();
       toonPopup('Teruggeschakeld naar logo-modus.');
@@ -284,11 +284,14 @@
       const file = fileInput.files[0];
       if (!file) return toonPopup('Kies eerst een afbeelding!');
 
-      const { data, error } = await dbClient.storage.from('media').upload('Logo.png', file, { upsert: true });
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo_${Date.now()}.${fileExt}`;
+
+      const { error } = await dbClient.storage.from('media').upload(fileName, file, { upsert: true });
       if (error) {
         toonPopup('Fout bij uploaden naar bucket "media"!');
       } else {
-        const { data: publicData } = dbClient.storage.from('media').getPublicUrl('Logo.png');
+        const { data: publicData } = dbClient.storage.from('media').getPublicUrl(fileName);
         if (publicData && publicData.publicUrl) {
           await dbClient.from('settings').upsert({ key: 'logo_url', value: publicData.publicUrl }, { onConflict: 'key' });
           document.getElementById('current-logo-preview').src = publicData.publicUrl + '?' + new Date().getTime();
