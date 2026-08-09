@@ -32,7 +32,6 @@
     .color-row input[type="color"] { width: 60px; height: 40px; padding: 0; border: none; cursor: pointer; background: transparent; }
     .toast-popup { position: fixed; bottom: 25px; left: 50%; transform: translateX(-50%); background: #1e1e1e; color: #ffffff; border: 1.5px solid var(--accent-color); padding: 12px 24px; border-radius: 30px; box-shadow: 0 6px 20px rgba(0, 0, 0, 0.7); z-index: 9999; font-weight: bold; text-align: center; min-width: 250px; }
     .preview-logo { max-height: 80px; display: block; margin: 10px auto; object-fit: contain; }
-    .divider { border-top: 1px solid var(--border-color); margin: 15px 0; padding-top: 15px; }
   </style>
 </head>
 <body>
@@ -77,27 +76,20 @@
 
     <!-- 2. LOGO OF TEKST BEHEREN -->
     <div class="card">
-      <h3>🖼️ Header: Logo of Tekstnaam</h3>
-      
-      <!-- Logo Preview & Upload -->
-      <div>
-        <label style="font-size:0.85em; color:var(--subtext-color);">Huidig Logo Preview:</label>
-        <img id="current-logo-preview" class="preview-logo" src="Logo.png" alt="Logo Preview" onerror="this.style.display='none'">
-        
-        <label style="font-size:0.85em; color:var(--subtext-color); margin-top: 10px; display:block;">Nieuw logo kiezen en uploaden:</label>
-        <input type="file" id="logo-file-input" accept="image/*">
-        
+      <h3>🖼️ Logo of Tekst Header</h3>
+      <div id="logo-active-section">
+        <img id="current-logo-preview" class="preview-logo" src="Logo.png" alt="Huidig Logo">
+        <input type="file" id="logo-file-input" accept="image/png, image/jpeg, image/webp">
         <div style="display:flex; gap:10px; margin-top:8px;">
-          <button onclick="uploadLogo()">📷 Logo Uploaden & Gebruiken</button>
-          <button onclick="removeLogo()" class="danger-btn">🗑️ Logo Verwijderen</button>
+          <button onclick="uploadLogo()">Logo Uploaden</button>
+          <button onclick="removeLogo()" class="danger-btn">Logo Verwijderen</button>
         </div>
       </div>
-
-      <!-- Tekst Header Optie -->
-      <div class="divider">
-        <label style="font-size:0.85em; color:var(--accent-color); font-weight:bold;">✍️ Tekstnaam als Header (als logo verwijderd is):</label>
+      <div id="text-brand-section" class="hidden" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 15px;">
+        <label style="font-size:0.85em; color:var(--accent-color); font-weight:bold;">✍️ Tekstnaam als Header:</label>
         <input type="text" id="setting-brand-name" placeholder="Bijv. MXT Productions">
         <button onclick="saveBrandName()">Tekstnaam Opslaan</button>
+        <button onclick="undoRemoveLogo()" class="secondary-btn" style="margin-top: 6px; font-size: 0.85em;">↩️ Toch weer logo gebruiken</button>
       </div>
     </div>
 
@@ -145,53 +137,7 @@
     document.addEventListener("DOMContentLoaded", () => {
       dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
       loadAdminSettings();
-      setupAdminEnterListeners();
     });
-
-    // Enter-toets afhandeling
-    function setupAdminEnterListeners() {
-      const pinInput = document.getElementById('admin-pin-input');
-      if (pinInput) {
-        pinInput.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            verifyAdminPin();
-          }
-        });
-      }
-
-      const brandInput = document.getElementById('setting-brand-name');
-      if (brandInput) {
-        brandInput.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            saveBrandName();
-          }
-        });
-      }
-
-      const pinSettingInput = document.getElementById('setting-pincode');
-      if (pinSettingInput) {
-        pinSettingInput.addEventListener('keydown', function(event) {
-          if (event.key === 'Enter') {
-            event.preventDefault();
-            savePincode();
-          }
-        });
-      }
-
-      ['setting-supabase-url', 'setting-supabase-key', 'setting-admin-pass'].forEach(id => {
-        const el = document.getElementById(id);
-        if (el) {
-          el.addEventListener('keydown', function(event) {
-            if (event.key === 'Enter') {
-              event.preventDefault();
-              saveSupabaseCredentials();
-            }
-          });
-        }
-      });
-    }
 
     function toonPopup(bericht) {
       const oude = document.getElementById('custom-toast');
@@ -238,12 +184,11 @@
             activeDjPin = item.value;
           }
           if (item.key === 'logo_url') {
-            const previewImg = document.getElementById('current-logo-preview');
             if (item.value === 'REMOVED' || !item.value) {
-              previewImg.style.display = 'none';
+              toggleTextBrandMode(true);
             } else {
-              previewImg.src = item.value;
-              previewImg.style.display = 'block';
+              toggleTextBrandMode(false);
+              document.getElementById('current-logo-preview').src = item.value + (item.value.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
             }
           }
           if (item.key === 'app_brand_name') {
@@ -256,39 +201,30 @@
       }
     }
 
-    // Logo uploaden via Base64 om bucketfouten te voorkomen
-    function uploadLogo() {
-      const fileInput = document.getElementById('logo-file-input');
-      const file = fileInput.files[0];
-      if (!file) return toonPopup('Kies eerst een afbeelding!');
-
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        const base64Data = e.target.result;
-        
-        const { error } = await dbClient.from('settings').upsert(
-          { key: 'logo_url', value: base64Data },
-          { onConflict: 'key' }
-        );
-
-        if (error) {
-          toonPopup('Fout bij opslaan van logo!');
-        } else {
-          const previewImg = document.getElementById('current-logo-preview');
-          previewImg.src = base64Data;
-          previewImg.style.display = 'block';
-          toonPopup('Logo succesvol opgeslagen!');
-          fileInput.value = '';
-        }
-      };
-      reader.readAsDataURL(file);
+    function toggleTextBrandMode(isTextMode) {
+      const logoSection = document.getElementById('logo-active-section');
+      const textSection = document.getElementById('text-brand-section');
+      if (isTextMode) {
+        logoSection.classList.add('hidden');
+        textSection.classList.remove('hidden');
+      } else {
+        logoSection.classList.remove('hidden');
+        textSection.classList.add('hidden');
+      }
     }
 
     async function removeLogo() {
       if (!confirm("Weet je zeker dat je het logo wilt verwijderen?")) return;
       await dbClient.from('settings').upsert({ key: 'logo_url', value: 'REMOVED' }, { onConflict: 'key' });
-      document.getElementById('current-logo-preview').style.display = 'none';
+      toggleTextBrandMode(true);
       toonPopup('Logo verwijderd!');
+    }
+
+    async function undoRemoveLogo() {
+      await dbClient.from('settings').upsert({ key: 'logo_url', value: 'Logo.png' }, { onConflict: 'key' });
+      toggleTextBrandMode(false);
+      document.getElementById('current-logo-preview').src = 'Logo.png?' + new Date().getTime();
+      toonPopup('Teruggeschakeld naar logo-modus.');
     }
 
     async function saveBrandName() {
@@ -340,6 +276,29 @@
         localStorage.setItem('custom_supabase_key', key);
         toonPopup('Opgeslagen. Bezig met herladen...');
         setTimeout(() => location.reload(), 1500);
+      }
+    }
+
+    async function uploadLogo() {
+      const fileInput = document.getElementById('logo-file-input');
+      const file = fileInput.files[0];
+      if (!file) return toonPopup('Kies eerst een afbeelding!');
+
+      const fileExt = file.name.split('.').pop();
+      const fileName = `logo_${Date.now()}.${fileExt}`;
+
+      const { error } = await dbClient.storage.from('media').upload(fileName, file, { upsert: true });
+      if (error) {
+        toonPopup('Fout bij uploaden naar bucket "media"!');
+      } else {
+        const { data: publicData } = dbClient.storage.from('media').getPublicUrl(fileName);
+        if (publicData && publicData.publicUrl) {
+          await dbClient.from('settings').upsert({ key: 'logo_url', value: publicData.publicUrl }, { onConflict: 'key' });
+          document.getElementById('current-logo-preview').src = publicData.publicUrl + '?' + new Date().getTime();
+          toggleTextBrandMode(false);
+        }
+        toonPopup('Logo opgeslagen!');
+        fileInput.value = '';
       }
     }
   </script>
