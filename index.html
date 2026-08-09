@@ -5,7 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>MXT Productions Verzoekjes</title>
   
+  <!-- 1. Laad eerst de huisstijl configuratie -->
   <script src="stijl.js"></script>
+
+  <!-- Supabase SDK -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
   <style>
@@ -22,7 +25,7 @@
     .top-nav { display: flex; justify-content: flex-end; align-items: center; min-height: 35px; margin-bottom: 10px; }
     .top-nav-btn { width: auto !important; padding: 6px 14px !important; font-size: 0.85em; background: transparent !important; color: var(--subtext-color) !important; border: 1px solid var(--border-color) !important; border-radius: 20px !important; }
     .top-nav-btn:hover { color: var(--accent-color) !important; border-color: var(--accent-color) !important; }
-    .header-bar { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 20px; text-align: center; }
+    .header-bar { display: flex; flex-direction: column; justify-content: center; align-items: center; margin-bottom: 20px; }
     .header-bar img { max-height: 140px; width: auto; object-fit: contain; transition: max-height 0.3s ease; }
     .welcome-banner { margin-top: 12px; font-size: 1.2em; font-weight: bold; color: var(--accent-color); text-align: center; padding: 8px 16px; background: rgba(125, 255, 0, 0.08); border: 1px solid rgba(125, 255, 0, 0.2); border-radius: 20px; }
     @media (max-width: 600px) { .header-bar img { max-height: 80px; } }
@@ -288,19 +291,62 @@
         listenToRealtime(); 
         setInterval(() => { loadAppSettings(); loadRequests(); pingPresence(); }, 3000); 
         setInterval(() => { fetchOnlineCount(); }, 5000); 
+
+        // --- ENTER-TOETS FUNCTIONALITEIT TOEVOEGEN ---
+        setupEnterListeners();
+
       } catch (err) { toonPopup('Fout bij verbinden met Supabase!'); } 
     }
 
-    function createBrandElement(logoImg) {
-      let el = document.getElementById('app-brand-text');
-      if (!el && logoImg) {
-        el = document.createElement('h1');
-        el.id = 'app-brand-text';
-        el.style.color = 'var(--accent-color)';
-        el.style.margin = '5px 0';
-        logoImg.parentNode.insertBefore(el, logoImg.nextSibling);
+    // Functie die luistert naar de Enter-toets op specifieke velden
+    function setupEnterListeners() {
+      // 1. Feestcode invoerveld
+      const partyInput = document.getElementById('guest-party-code-input');
+      if (partyInput) {
+        partyInput.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            submitPartyCode();
+          }
+        });
       }
-      return el;
+
+      // 2. DJ Pincode invoerveld
+      const djPinInput = document.getElementById('dj-pin-input');
+      if (djPinInput) {
+        djPinInput.addEventListener('keydown', function(event) {
+          if (event.key === 'Enter') {
+            event.preventDefault();
+            verifyPin();
+          }
+        });
+      }
+
+      // 3. Handmatig verzoekje toevoegen (Gast)
+      ['custom-title', 'custom-artist', 'custom-note'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              submitCustomRequest();
+            }
+          });
+        }
+      });
+
+      // 4. Handmatig verzoekje toevoegen (DJ)
+      ['dj-custom-title', 'dj-custom-artist', 'dj-custom-note'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener('keydown', function(event) {
+            if (event.key === 'Enter') {
+              event.preventDefault();
+              submitDjCustomRequest();
+            }
+          });
+        }
+      });
     }
 
     async function loadAppSettings() {
@@ -351,23 +397,12 @@
           }
           if (item.key === 'logo_url') {
             const logoImg = document.getElementById('app-logo');
-            const brandText = document.getElementById('app-brand-text') || createBrandElement(logoImg);
             if (logoImg) {
               if (item.value === 'REMOVED' || !item.value) {
-                logoImg.classList.add('hidden');
-                if (brandText) brandText.classList.remove('hidden');
+                // geen logo
               } else {
-                logoImg.classList.remove('hidden');
-                if (brandText) brandText.classList.add('hidden');
-                logoImg.src = item.value + (item.value.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
+                logoImg.src = item.value + '?' + new Date().getTime();
               }
-            }
-          }
-          if (item.key === 'app_brand_name') {
-            const logoImg = document.getElementById('app-logo');
-            const brandText = document.getElementById('app-brand-text') || createBrandElement(logoImg);
-            if (brandText) {
-              brandText.innerText = item.value || '';
             }
           }
         });
@@ -541,7 +576,7 @@
       const updateData = { 
         votes: newVotes, 
         status: 'requested', 
-        created_at: new Date().toISOString() 
+        created_at: new Date().toISOString()
       }; 
       if (optionalNote) updateData.note = optionalNote; 
       
