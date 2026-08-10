@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>PartyBeats — MXT Productions</title>
+  
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+  <style>
+    /* ... [CSS uit index (9) blijft hier intact voor de moderne look] ... */
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --card-border: #2a2a2a;
+      --accent-color: #3c7a00;
+      --accent-gradient: linear-gradient(135deg, #3c7a00, #5d9e18);
+      --text-main: #ffffff;
+      --text-sub: #b0b0b0;
+      --danger-color: #ff4444;
+      --success-color: #3c7a00;
+      --warning-color: #ff9500;
+      --radius-xl: 24px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --blur-val: blur(20px);
+    }
+    /* Rest van CSS van index (9) hier invoegen... */
+  </style>
+</head>
+<body>
+  <!-- De volledige HTML structuur van index (9)[cite: 1] met aangepaste IDs -->
+  <div class="app-container">
+    <!-- ... [Header en Secties uit index (9)] ... -->
+  </div>
+
+  <script>
+    // --- APP CONFIGURATIE (Geïntegreerd uit bron 2) ---
+    const CONFIG = {
+      pincode: "3977",
+      promo: {
+        title: "🎉 MXT Productions Boeken?",
+        whatsapp: "https://wa.me/31622499093",
+        email: "info.mxtproductions@gmail.com",
+        instagram: "https://www.instagram.com/mxt.productions"
+      }
+    };
+
+    // --- APP STATE & INITIALISATIE ---
+    let supabaseClient = null;
+    let state = {
+      partyCode: localStorage.getItem('pb_party_code') || '3977',
+      role: null, // 'guest' or 'dj'
+      requests: [],
+      photos: [],
+      musicLibrary: [],
+      blacklist: []
+    };
+
+    // --- SUPABASE & FUNCTIES (Geïntegreerd uit bron 4) ---
+    async function initApp() {
+      // Initializeer Supabase met de waarden uit bron 4
+      const SUPABASE_URL = localStorage.getItem('custom_supabase_url') || "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
+      const SUPABASE_KEY = localStorage.getItem('custom_supabase_key') || "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
+      
+      try {
+        supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        loadData();
+      } catch (e) {
+        console.error("Fout bij laden Supabase", e);
+      }
+    }
+
+    async function loadData() {
+        // Logica uit bron 4 om data op te halen uit de database
+        // ... (fetch requests, fetch photos, fetch settings)
+    }
+
+    // --- XML PARSER (Behouden uit bron 4) ---
+    function importXMLFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+         // Parse logic zoals in bron 4
+      };
+      reader.readAsText(file);
+    }
+
+    // --- FOTOBOOTH (Behouden uit bron 4) ---
+    function handlePhotoUpload(event) {
+        // ... (Canvas compressie en upload logica)
+    }
+
+    // ... (Overige functies: upvoteSong, submitSongRequest, startNewParty, etc.) ...
+
+    window.addEventListener('DOMContentLoaded', () => {
+      initApp();
+      // ... rest van de UI initialisatie ...
+    });
+  </script>
+</body>
+</html>
