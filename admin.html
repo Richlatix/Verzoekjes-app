@@ -1,60 +1,94 @@
-<!-- Inlogscherm -->
-<div id="admin-login-card">
-  <h2>Beheer Login</h2>
-  <input type="password" id="admin-pin-input" placeholder="Voer PIN of Master Key in">
-  <button onclick="verifyAdminPin()">Inloggen</button>
-</div>
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Beheerpaneel - DJ Live Dashboard</title>
+  <link rel="stylesheet" href="admin.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
 
-<!-- Dashboard (verborgen tot inloggen) -->
-<div id="admin-dashboard" class="hidden">
-  
-  <!-- Huisstijl & Kleuren -->
-  <section>
-    <h3>Kleureninstellingen</h3>
-    <label>Achtergrond: <input type="color" id="col-bg"></label>
-    <label>Kaarten: <input type="color" id="col-card"></label>
-    <label>Accent: <input type="color" id="col-accent"></label>
-    <label>Tekst: <input type="color" id="col-text"></label>
-    <button onclick="saveColors()">Kleuren Opslaan</button>
-  </section>
+  <!-- Inlogscherm -->
+  <div id="admin-login-card">
+    <h2>🔒 Beheer Login</h2>
+    <p>Voer de DJ-pincode of de Master Key in om toegang te krijgen tot het beheerpaneel.</p>
+    <input type="password" id="admin-pin-input" placeholder="Voer PIN of Master Key in">
+    <button onclick="verifyAdminPin()">Inloggen</button>
+  </div>
 
-  <!-- Logo & Branding -->
-  <section>
-    <h3>Branding & Logo</h3>
-    <div id="logo-active-section">
-      <img id="current-logo-preview" src="" alt="Logo preview" style="max-width: 150px;">
-      <input type="file" id="logo-file-input" accept="image/*">
-      <button onclick="uploadLogo()">Upload Nieuw Logo</button>
-      <button onclick="removeLogo()">Verwijder Logo</button>
-    </div>
+  <!-- Dashboard (standaard verborgen) -->
+  <div id="admin-dashboard" class="hidden">
+    
+    <h2>⚙️ Dashboard Beheer</h2>
 
-    <div id="text-brand-section" class="hidden">
-      <input type="text" id="setting-brand-name" placeholder="Merknaam in tekst">
-      <button onclick="saveBrandName()">Naam Opslaan</button>
-      <button onclick="undoRemoveLogo()">Herstel Logo Standaard</button>
-    </div>
-  </section>
+    <!-- Huisstijl & Kleuren -->
+    <section>
+      <h3>🎨 Kleuren & Huisstijl</h3>
+      <label for="col-bg">Achtergrondkleur <input type="color" id="col-bg" value="#0f172a"></label>
+      <label for="col-card">Kaartkleur <input type="color" id="col-card" value="#1e293b"></label>
+      <label for="col-accent">Accentkleur <input type="color" id="col-accent" value="#6366f1"></label>
+      <label for="col-text">Tekstkleur <input type="color" id="col-text" value="#f8fafc"></label>
+      <button onclick="saveColors()">Kleuren Opslaan</button>
+    </section>
 
-  <!-- Beveiliging & PIN -->
-  <section>
-    <h3>DJ PIN Wijzigen</h3>
-    <input type="text" id="setting-pincode" maxlength="4" placeholder="4-cijferige PIN">
-    <button onclick="savePincode()">PIN Opslaan</button>
-  </section>
+    <!-- Logo & Branding -->
+    <section>
+      <h3>🖼️ Branding & Logo</h3>
+      
+      <div id="logo-active-section">
+        <div style="margin-bottom: 12px;">
+          <img id="current-logo-preview" src="" alt="Huidig logo preview" style="max-width: 180px; height: auto; display: block; border-radius: 8px;">
+        </div>
+        <input type="file" id="logo-file-input" accept="image/*">
+        <div>
+          <button onclick="uploadLogo()">Upload Nieuw Logo</button>
+          <button onclick="removeLogo()">Verwijder Logo</button>
+        </div>
+      </div>
 
-  <!-- Database & Opschonen -->
-  <section>
-    <h3>Database Beheer</h3>
-    <button onclick="clearXmlDatabase()">⚠️ Alle nummers & verzoekjes wissen</button>
-  </section>
+      <div id="text-brand-section" class="hidden">
+        <label for="setting-brand-name">Merknaam (Tekst)</label>
+        <input type="text" id="setting-brand-name" placeholder="Vul merknaam in">
+        <div>
+          <button onclick="saveBrandName()">Naam Opslaan</button>
+          <button onclick="undoRemoveLogo()">Herstel Logo Modus</button>
+        </div>
+      </div>
+    </section>
 
-  <!-- Supabase Instellingen -->
-  <section>
-    <h3>Supabase Koppeling</h3>
-    <input type="text" id="setting-supabase-url" placeholder="Supabase URL">
-    <input type="text" id="setting-supabase-key" placeholder="Supabase Key">
-    <input type="password" id="setting-admin-pass" placeholder="Master Wachtwoord">
-    <button onclick="saveSupabaseCredentials()">Koppeling Opslaan</button>
-  </section>
+    <!-- Beveiliging & PIN -->
+    <section>
+      <h3>🔑 DJ PIN Wijzigen</h3>
+      <label for="setting-pincode">4-cijferige toegangscode voor de DJ</label>
+      <input type="text" id="setting-pincode" maxlength="4" placeholder="bijv. 3977">
+      <button onclick="savePincode()">PIN Opslaan</button>
+    </section>
 
-</div>
+    <!-- Database Beheer -->
+    <section>
+      <h3>🗑️ Database Beheer</h3>
+      <p style="color: var(--text-muted); font-size: 13px;">Let op: Dit wist de complete bibliotheek en actieve verzoekjes definitief uit Supabase.</p>
+      <button onclick="clearXmlDatabase()">⚠️ Alle nummers & verzoekjes wissen</button>
+    </section>
+
+    <!-- Supabase Instellingen -->
+    <section>
+      <h3>⚡ Supabase Koppeling</h3>
+      <label for="setting-supabase-url">Supabase URL</label>
+      <input type="text" id="setting-supabase-url" placeholder="https://xxx.supabase.co">
+      
+      <label for="setting-supabase-key">Supabase Key</label>
+      <input type="text" id="setting-supabase-key" placeholder="sb_publishable_...">
+      
+      <label for="setting-admin-pass">Master Wachtwoord (ter beveiliging)</label>
+      <input type="password" id="setting-admin-pass" placeholder="Master Wachtwoord">
+      
+      <button onclick="saveSupabaseCredentials()">Koppeling Opslaan</button>
+    </section>
+
+  </div>
+
+  <script src="admin.js"></script>
+</body>
+</html>
