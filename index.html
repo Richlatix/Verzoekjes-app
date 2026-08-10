@@ -36,6 +36,10 @@
     .promo-card p{color:var(--subtext-color);font-size:0.9em;margin-bottom:15px;}
     .contact-links-container{display:flex;flex-wrap:wrap;justify-content:center;gap:8px;margin-top:10px;}
     .contact-link{display:inline-block;background:var(--accent-color);color:#121212;padding:8px 16px;border-radius:20px;text-decoration:none;font-weight:bold;font-size:0.9em;}
+    .photo-grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(130px, 1fr));gap:10px;margin-top:15px;}
+    .photo-item{background:var(--card-bg);border:1px solid var(--border-color);border-radius:8px;overflow:hidden;display:flex;flex-direction:column;}
+    .photo-item img{width:100%;height:130px;object-fit:cover;cursor:pointer;}
+    .photo-info{padding:8px;font-size:0.75em;color:var(--subtext-color);word-break:break-word;}
     .toast-popup{position:fixed;bottom:25px;left:50%;transform:translateX(-50%);background:#1e1e1e;color:#ffffff;border:1.5px solid var(--accent-color);padding:12px 24px;border-radius:30px;box-shadow:0 6px 20px rgba(0,0,0,0.7);z-index:9999;font-weight:bold;text-align:center;min-width:250px;animation:fadeInOut 3s ease forwards;}
     @keyframes fadeInOut{0%{opacity:0;transform:translate(-50%,20px);}15%{opacity:1;transform:translate(-50%,0);}85%{opacity:1;transform:translate(-50%,0);}100%{opacity:0;transform:translate(-50%,-10px);}}
   </style>
@@ -63,6 +67,7 @@
         <div class="contact-links-container" id="promo-display-links-login"></div>
       </div>
     </div>
+    
     <div id="guest-view" class="hidden">
       <div class="request-box">
         <h2>Vraag een nummer aan</h2>
@@ -81,6 +86,20 @@
           </div>
         </div>
       </div>
+
+      <!-- FOTOBOOTH GAST SECTIE -->
+      <div id="guest-photobooth-container" class="request-box hidden" style="border-color:#ff007f;">
+        <h2 style="color:#ff007f;">📸 Feest Fotobooth</h2>
+        <p style="font-size:0.85em;color:var(--subtext-color);text-align:center;margin-bottom:10px;">Deel jouw leukste kiekjes van de avond met de rest van het feest!</p>
+        <input type="file" id="photo-file-input" accept="image/*" capture="environment" style="margin-bottom:8px;">
+        <input type="text" id="photo-uploader-name" placeholder="Jouw naam of groep (optioneel)..." style="margin-bottom:8px;">
+        <input type="text" id="photo-note" placeholder="Leuke opmerking bij de foto (optioneel)..." style="margin-bottom:8px;">
+        <button onclick="uploadPartyPhoto()" style="background:#ff007f;color:#fff;">Foto Uploaden 🚀</button>
+        
+        <h3 style="margin-top:20px;font-size:1.1em;color:#ff007f;">🎉 Live Feest Galerij</h3>
+        <div id="guest-photo-grid" class="photo-grid"></div>
+      </div>
+
       <h3>🔥 Aangevraagde Nummers</h3>
       <div id="guest-requested-list"></div>
       <div id="guest-done-section" style="margin-top:30px;">
@@ -93,6 +112,7 @@
         <div class="contact-links-container" id="promo-display-links"></div>
       </div>
     </div>
+
     <div id="pin-view" class="hidden">
       <h2>🎧 DJ Toegang</h2>
       <p style="text-align:center;color:var(--subtext-color);">Voer de DJ-pincode in om in te loggen:</p>
@@ -100,6 +120,7 @@
       <button onclick="verifyPin()">Inloggen</button>
       <button onclick="showView('guest')" class="secondary-btn" style="margin-top:10px;">Annuleren</button>
     </div>
+
     <div id="dj-view" class="hidden">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:15px;background:#1a1a1a;padding:10px 15px;border-radius:8px;border:1px solid var(--border-color);flex-wrap:wrap;gap:10px;">
         <div style="display:flex;flex-direction:column;">
@@ -121,8 +142,20 @@
           <button onclick="toggleSettingsMenu()" class="secondary-btn" style="width:auto;padding:6px 10px;margin:0;" id="settings-toggle-btn">⚙️</button>
         </div>
       </div>
+
       <div id="settings-panel" class="settings-panel hidden">
         <h3 style="margin-top:0;">⚙️ DJ Opties & Instellingen</h3>
+        
+        <!-- FOTOBOOTH AAN/UIT SCHAKELAAR -->
+        <div style="margin-bottom:15px;display:flex;align-items:center;justify-content:space-between;background:#121212;padding:10px;border-radius:8px;border:1px solid var(--border-color);">
+          <div>
+            <label style="font-weight:bold;font-size:0.9em;color:#ff007f;display:block;">📸 Feest Fotobooth Activeren</label>
+            <span style="font-size:0.75em;color:var(--subtext-color);">Laat gasten foto's uploaden en bekijken op hun telefoon.</span>
+          </div>
+          <input type="checkbox" id="dj-photobooth-toggle" style="width:24px;height:24px;cursor:pointer;accent-color:#ff007f;" onchange="savePhotoboothSetting()">
+        </div>
+        <hr style="border:0;border-top:1px solid var(--border-color);margin:15px 0;">
+
         <div style="margin-bottom:15px;">
           <label style="font-weight:bold;font-size:0.9em;color:var(--accent-color);">🚫 Woorden Blacklist (Beheren):</label>
           <p style="font-size:0.8em;color:var(--subtext-color);margin:4px 0 8px 0;">Hier zie je alle ingevoerde woorden. Klik op het kruisje om een woord te verwijderen:</p>
@@ -186,10 +219,11 @@
         <hr style="border:0;border-top:1px solid var(--border-color);margin:15px 0;">
         <div>
           <label style="font-weight:bold;font-size:0.9em;color:var(--accent-color);">🚀 Nieuw Evenement Starten:</label>
-          <p style="font-size:0.8em;color:var(--subtext-color);margin:4px 0 8px 0;">Dit reset alle nummers, zet ze op beschikbaar, genereert een nieuwe 4-cijferige Feestcode en blokkeert telefoons van het vorige feest.</p>
+          <p style="font-size:0.8em;color:var(--subtext-color);margin:4px 0 8px 0;">Dit reset alle nummers, verwijdert alle foto's, genereert een nieuwe feestcode en blokkeert telefoons van het vorige feest.</p>
           <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest (Nieuwe Code)</button>
         </div>
       </div>
+
       <div id="dj-search-panel" class="request-box hidden" style="margin-top:15px;">
         <h3 style="margin-top:0;">🔍 Verzoekje Toevoegen (Bibliotheek / Handmatig)</h3>
         <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()">
@@ -206,6 +240,7 @@
           </div>
         </div>
       </div>
+
       <div id="dj-blacklist-panel" class="request-box hidden" style="margin-top:15px;">
         <h3 style="margin-top:0;">🚫 Woord Toevoegen aan Blacklist</h3>
         <p style="font-size:0.8em;color:var(--subtext-color);margin:4px 0 8px 0;">Verzoekjes met dit woord of nummer worden direct geblokkeerd.</p>
@@ -214,11 +249,20 @@
           <button onclick="addBlacklistWord()" style="width:auto;padding:10px 15px;margin:0;">Toevoegen</button>
         </div>
       </div>
+
+      <!-- DJ FOTOBOOTH BEHEER PANEEL -->
+      <div id="dj-photos-panel" class="request-box hidden" style="margin-top:15px;border-color:#ff007f;">
+        <h3 style="margin-top:0;color:#ff007f;">📸 Fotobooth Moderatie Beheer</h3>
+        <p style="font-size:0.8em;color:var(--subtext-color);margin:4px 0 8px 0;">Hier zie je alle door gasten geüploade foto's. Verwijder eventuele ongewenste foto's direct.</p>
+        <div id="dj-photo-grid" class="photo-grid"></div>
+      </div>
+
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:15px;flex-wrap:wrap;gap:8px;">
         <h3 style="margin:0;text-align:left;">🔥 Live Verzoekjes</h3>
         <div style="display:flex;gap:6px;align-items:center;">
           <button onclick="toggleDjSearchMenu()" class="secondary-btn vote-btn" id="dj-search-toggle-btn" style="padding:6px 10px;font-size:0.85em;margin:0;" title="Verzoekje toevoegen">🔍</button>
           <button onclick="toggleBlacklistMenu()" class="secondary-btn vote-btn" id="dj-blacklist-toggle-btn" style="padding:6px 10px;font-size:0.85em;margin:0;" title="Zwarte lijst beheren">🚫</button>
+          <button onclick="toggleDjPhotosMenu()" class="secondary-btn vote-btn" id="dj-photos-toggle-btn" style="padding:6px 10px;font-size:0.85em;margin:0;border-color:#ff007f;color:#ff007f;" title="Fotobooth beheer">📸</button>
           <select id="sort-select" onchange="renderDjRequests()" style="width:auto;padding:6px 10px;margin:0;font-size:0.85em;">
             <option value="votes">🔥 Meeste stemmen</option>
             <option value="newest">⏱️ Nieuwste aanvragen</option>
@@ -243,10 +287,18 @@
       </div>
     </div>
   </div>
+
+  <!-- AFBEELDING MODAL VOOR GROOT BEKIJKEN -->
+  <div id="photo-modal" class="hidden" style="position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.9);z-index:99999;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;box-sizing:border-box;">
+    <img id="modal-img" src="" style="max-width:100%;max-height:80vh;border-radius:8px;object-fit:contain;">
+    <p id="modal-caption" style="color:#fff;margin-top:10px;text-align:center;font-size:0.9em;"></p>
+    <button onclick="closePhotoModal()" class="secondary-btn" style="width:auto;margin-top:15px;padding:8px 20px;">Sluiten ✕</button>
+  </div>
+
   <script>
     const SUPABASE_URL = localStorage.getItem('custom_supabase_url') || "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
     const SUPABASE_KEY = localStorage.getItem('custom_supabase_key') || "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
-    let dbClient = null, allSongs = [], isDjLoggedIn = false, currentPartyCode = null;
+    let dbClient = null, allSongs = [], allPhotos = [], isDjLoggedIn = false, currentPartyCode = null, isPhotoboothActive = false;
     let activeLibraryNoteId = null, activeDjLibraryNoteId = null, guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
     let blacklistedWords = [];
     let DJ_PIN = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.pincode) ? HUISSTIJL.pincode : "3977";
@@ -274,8 +326,9 @@
         await loadAppSettings();
         checkGuestAccess();
         loadRequests();
+        loadPhotos();
         listenToRealtime();
-        setInterval(() => { loadAppSettings(); loadRequests(); pingPresence(); }, 3000);
+        setInterval(() => { loadAppSettings(); loadRequests(); loadPhotos(); pingPresence(); }, 3000);
         setInterval(() => { fetchOnlineCount(); }, 5000);
       } catch(err) { toonPopup('Fout bij verbinden met Supabase!'); }
     }
@@ -307,6 +360,16 @@
               localStorage.removeItem('entered_party_code');
               checkGuestAccess();
               toonPopup('Het vorige feest is afgelopen! Voer de nieuwe code in.');
+            }
+          }
+          if (item.key === 'photobooth_active') {
+            isPhotoboothActive = (item.value === 'true');
+            const djToggle = document.getElementById('dj-photobooth-toggle');
+            if (djToggle && document.activeElement !== djToggle) djToggle.checked = isPhotoboothActive;
+            const guestContainer = document.getElementById('guest-photobooth-container');
+            if (guestContainer) {
+              if (isPhotoboothActive) guestContainer.classList.remove('hidden');
+              else guestContainer.classList.add('hidden');
             }
           }
           if (item.key === 'blacklist' && item.value) {
@@ -350,6 +413,177 @@
         });
       }
       loadPromoCard();
+    }
+
+    async function savePhotoboothSetting() {
+      const isChecked = document.getElementById('dj-photobooth-toggle').checked;
+      isPhotoboothActive = isChecked;
+      if (dbClient) {
+        await dbClient.from('settings').upsert({ key: 'photobooth_active', value: isChecked ? 'true' : 'false' }, { onConflict: 'key' });
+      }
+      loadAppSettings();
+      toonPopup(isChecked ? 'Fotobooth ingeschakeld voor gasten! 📸' : 'Fotobooth uitgeschakeld.');
+    }
+
+    // --- FOTOBOOTH LOGICA & COMPRESSIE ---
+    function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            let width = img.width, height = img.height;
+            if (width > height) {
+              if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
+            } else {
+              if (height > maxHeight) { width = Math.round((width * maxHeight) / height); height = maxHeight; }
+            }
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob(blob => {
+              if (!blob) { reject(new Error('Canvas is leeg')); return; }
+              resolve(blob);
+            }, 'image/jpeg', quality);
+          };
+          img.onerror = error => reject(error);
+        };
+        reader.onerror = error => reject(error);
+      });
+    }
+
+    async function uploadPartyPhoto() {
+      const fileInput = document.getElementById('photo-file-input');
+      const uploaderInput = document.getElementById('photo-uploader-name');
+      const noteInput = document.getElementById('photo-note');
+      
+      const file = fileInput.files[0];
+      if (!file) return toonPopup('Kies of maak eerst een foto!');
+      
+      toonPopup('Foto comprimeren en uploaden...');
+      try {
+        const compressedBlob = await compressImage(file, 1000, 1000, 0.7);
+        const fileName = `${currentPartyCode || 'party'}_${Date.now()}.jpg`;
+        const filePath = `uploads/${fileName}`;
+
+        const { error: uploadError } = await dbClient.storage.from('party-photos').upload(filePath, compressedBlob, { contentType: 'image/jpeg' });
+        if (uploadError) {
+          console.error(uploadError);
+          toonPopup('Upload mislukt. Controleer of de storage bucket "party-photos" bestaat.');
+          return;
+        }
+
+        const { data: publicUrlData } = dbClient.storage.from('party-photos').getPublicUrl(filePath);
+        const imageUrl = publicUrlData.publicUrl;
+
+        const { error: dbError } = await dbClient.from('photos').insert([{
+          party_code: currentPartyCode || '0000',
+          image_url: imageUrl,
+          storage_path: filePath,
+          uploader_name: uploaderInput.value.trim() || 'Anonieme Feestganger',
+          note: noteInput.value.trim(),
+          created_at: new Date().toISOString()
+        }]);
+
+        if (dbError) {
+          console.error(dbError);
+          toonPopup('Foto opgeslagen, maar opslaan in database mislukt.');
+        } else {
+          toonPopup('Foto succesvol gedeeld met het feest! 📸🎉');
+          fileInput.value = '';
+          uploaderInput.value = '';
+          noteInput.value = '';
+          loadPhotos();
+        }
+      } catch(err) {
+        console.error(err);
+        toonPopup('Fout bij verwerken van de foto.');
+      }
+    }
+
+    async function loadPhotos() {
+      if (!dbClient) return;
+      const { data, error } = await dbClient.from('photos').select('*').order('created_at', { ascending: false });
+      if (data && !error) {
+        allPhotos = data;
+        renderPhotoGalleries();
+      }
+    }
+
+    function renderPhotoGalleries() {
+      const guestGrid = document.getElementById('guest-photo-grid');
+      const djGrid = document.getElementById('dj-photo-grid');
+      
+      if (guestGrid) guestGrid.innerHTML = '';
+      if (djGrid) djGrid.innerHTML = '';
+
+      if (allPhotos.length === 0) {
+        const emptyMsg = '<p style="color:var(--subtext-color);font-size:0.85em;grid-column:1/-1;text-align:center;">Nog geen foto\'s geüpload. Wees de eerste! 📸</p>';
+        if (guestGrid) guestGrid.innerHTML = emptyMsg;
+        if (djGrid) djGrid.innerHTML = emptyMsg;
+        return;
+      }
+
+      allPhotos.forEach(photo => {
+        const uploader = photo.uploader_name || 'Anoniem';
+        const note = photo.note ? ` - "${photo.note}"` : '';
+        const itemHtml = `
+          <div class="photo-item">
+            <img src="${photo.image_url}" alt="Feestfoto" onclick="openPhotoModal('${photo.image_url}', '${uploader}${note}')">
+            <div class="photo-info">
+              <strong>👤 ${uploader}</strong>${note}
+              ${isDjLoggedIn ? `<button onclick="deletePhoto(${photo.id}, '${photo.storage_path}')" class="danger-btn" style="padding:4px;font-size:0.75em;margin-top:6px;">Verwijderen 🗑️</button>` : ''}
+            </div>
+          </div>
+        `;
+        if (guestGrid) guestGrid.innerHTML += itemHtml;
+        if (djGrid) djGrid.innerHTML += itemHtml;
+      });
+    }
+
+    function openPhotoModal(url, caption) {
+      const modal = document.getElementById('photo-modal');
+      const modalImg = document.getElementById('modal-img');
+      const modalCaption = document.getElementById('modal-caption');
+      modalImg.src = url;
+      modalCaption.innerText = caption;
+      modal.classList.remove('hidden');
+    }
+
+    function closePhotoModal() {
+      document.getElementById('photo-modal').classList.add('hidden');
+    }
+
+    async function deletePhoto(id, storagePath) {
+      if (!confirm('Weet je zeker dat je deze foto wilt verwijderen?')) return;
+      try {
+        if (storagePath) {
+          await dbClient.storage.from('party-photos').remove([storagePath]);
+        }
+        await dbClient.from('photos').delete().eq('id', id);
+        toonPopup('Foto succesvol verwijderd!');
+        loadPhotos();
+      } catch(err) {
+        console.error(err);
+        toonPopup('Fout bij verwijderen van foto.');
+      }
+    }
+
+    function toggleDjPhotosMenu() {
+      const panel = document.getElementById('dj-photos-panel');
+      const btn = document.getElementById('dj-photos-toggle-btn');
+      if (panel.classList.contains('hidden')) {
+        panel.classList.remove('hidden');
+        btn.style.background = '#ff007f';
+        btn.style.color = '#fff';
+      } else {
+        panel.classList.add('hidden');
+        btn.style.background = 'var(--secondary-btn)';
+        btn.style.color = '#ff007f';
+      }
     }
 
     function renderBlacklistUI() {
@@ -436,11 +670,12 @@
     }
     
     async function startNewSession() {
-      if (!confirm("Weet je zeker dat je een nieuw feest wilt starten? Alle nummers blijven behouden, maar hun statussen worden gereset en er wordt een nieuwe feestcode gegenereerd.")) return;
+      if (!confirm("Weet je zeker dat je een nieuw feest wilt starten? Alle nummers worden gereset, alle foto's worden gewist en er wordt een nieuwe feestcode gegenereerd.")) return;
       const newCode = Math.floor(1000 + Math.random() * 9000).toString();
       try {
         await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).neq('id', 0);
         await dbClient.from('presence').delete();
+        await dbClient.from('photos').delete().neq('id', 0);
         await dbClient.from('settings').delete().eq('key', 'party_code');
         await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]);
         currentPartyCode = newCode;
@@ -449,6 +684,7 @@
         if (djCodeDisplay) djCodeDisplay.innerText = newCode;
         toonPopup(`Nieuw feest gestart! Nieuwe code: ${newCode}`);
         loadRequests();
+        loadPhotos();
         fetchOnlineCount();
       } catch(err) {
         console.error(err);
@@ -612,7 +848,7 @@
       const { data, error } = await dbClient.from('requests').select('*');
       if (data && !error) { allSongs = data; renderAllViews(); }
     }
-    function renderAllViews() { renderGuestRequests(); renderDjRequests(); renderUploadedXmlFiles(); filterSongs(); filterDjSearchSongs(); }
+    function renderAllViews() { renderGuestRequests(); renderDjRequests(); renderUploadedXmlFiles(); filterSongs(); filterDjSearchSongs(); renderPhotoGalleries(); }
     function formatTime(isoString) { if (!isoString) return ''; return new Date(isoString).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }); }
     
     function renderGuestRequests() {
@@ -821,6 +1057,7 @@
         .on('postgres_changes', { event: '*', schema: 'public', table: 'requests' }, () => loadRequests())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'settings' }, () => loadAppSettings())
         .on('postgres_changes', { event: '*', schema: 'public', table: 'presence' }, () => fetchOnlineCount())
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'photos' }, () => loadPhotos())
         .subscribe();
     }
 
