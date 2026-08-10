@@ -6,6 +6,7 @@
   <title>MXT Productions Verzoekjes</title>
   <script src="stijl.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
   <style>
     :root {--bg-color:#121212;--card-bg:#1e1e1e;--text-color:#ffffff;--accent-color:#3c7a00;--border-color:#2a2a2a;--subtext-color:#b0b0b0;--danger-color:#ff4444;}
     body{font-family:'Segoe UI',Tahoma,Geneva,Verdana,sans-serif;background:var(--bg-color);color:var(--text-color);padding:20px;max-width:600px;margin:auto;}
@@ -57,7 +58,7 @@
     <div id="party-code-view" class="hidden" style="max-width:400px;margin:20px auto;text-align:center;flex-direction:column;">
       <div class="card" style="text-align:center;flex-direction:column;display:block;margin-bottom:0;">
         <h2>🎉Feestcode🎉</h2>
-        <p style="color:var(--subtext-color);font-size:0.9em;">Voer de 4-cijferige feestcode in die op de QR-poster of het DJ-scherm staat:</p>
+        <p style="color:var(--subtext-color);font-size:0.9em;">Voer de 4-cijferige feestcode in die op de QR-poster of het DJ-scherm staat[cite: 1]:</p>
         <input type="number" id="guest-party-code-input" placeholder="0000" maxlength="4" style="font-size:2em;letter-spacing:6px;text-align:center;width:80%;margin:15px auto;" onkeydown="if(event.key==='Enter') submitPartyCode()">
         <button onclick="submitPartyCode()" style="width:100%;padding:12px;font-size:1.1em;">Deelnemen aan dit Feest 🚀</button>
       </div>
@@ -69,6 +70,22 @@
     </div>
     
     <div id="guest-view" class="hidden">
+      <!-- FOTOBOOTH UITVOUWBARE GAST KNOP & SECTIE -->
+      <div id="guest-photobooth-wrapper" class="hidden" style="margin-bottom:25px;">
+        <button type="button" class="secondary-btn" onclick="toggleGuestPhotobooth()" id="toggle-photobooth-btn" style="border-color:#ff007f; color:#ff007f; font-weight:bold; width:100%;">📸 Feest Fotobooth (Openen)</button>
+        <div id="guest-photobooth-content" class="request-box hidden" style="border-color:#ff007f; margin-top:10px; margin-bottom:0;">
+          <h2 style="color:#ff007f; margin-top:0;">📸 Feest Fotobooth</h2>
+          <p style="font-size:0.85em;color:var(--subtext-color);text-align:center;margin-bottom:10px;">Deel jouw leukste kiekjes van de avond met de rest van het feest!</p>
+          <input type="file" id="photo-file-input" accept="image/*" capture="environment" style="margin-bottom:8px;">
+          <input type="text" id="photo-uploader-name" placeholder="Jouw naam of groep (optioneel)..." style="margin-bottom:8px;">
+          <input type="text" id="photo-note" placeholder="Leuke opmerking bij de foto (optioneel)..." style="margin-bottom:8px;">
+          <button onclick="uploadPartyPhoto()" style="background:#ff007f;color:#fff;">Foto Uploaden 🚀</button>
+          
+          <h3 style="margin-top:20px;font-size:1.1em;color:#ff007f;">🎉 Live Feest Galerij</h3>
+          <div id="guest-photo-grid" class="photo-grid"></div>
+        </div>
+      </div>
+
       <div class="request-box">
         <h2>Vraag een nummer aan</h2>
         <input type="text" id="search-input" placeholder="Zoek op titel of artiest..." onkeyup="filterSongs()">
@@ -85,19 +102,6 @@
             <button onclick="submitCustomRequest()">Verzoekje Versturen</button>
           </div>
         </div>
-      </div>
-
-      <!-- FOTOBOOTH GAST SECTIE -->
-      <div id="guest-photobooth-container" class="request-box hidden" style="border-color:#ff007f;">
-        <h2 style="color:#ff007f;">📸 Feest Fotobooth</h2>
-        <p style="font-size:0.85em;color:var(--subtext-color);text-align:center;margin-bottom:10px;">Deel jouw leukste kiekjes van de avond met de rest van het feest!</p>
-        <input type="file" id="photo-file-input" accept="image/*" capture="environment" style="margin-bottom:8px;">
-        <input type="text" id="photo-uploader-name" placeholder="Jouw naam of groep (optioneel)..." style="margin-bottom:8px;">
-        <input type="text" id="photo-note" placeholder="Leuke opmerking bij de foto (optioneel)..." style="margin-bottom:8px;">
-        <button onclick="uploadPartyPhoto()" style="background:#ff007f;color:#fff;">Foto Uploaden 🚀</button>
-        
-        <h3 style="margin-top:20px;font-size:1.1em;color:#ff007f;">🎉 Live Feest Galerij</h3>
-        <div id="guest-photo-grid" class="photo-grid"></div>
       </div>
 
       <h3>🔥 Aangevraagde Nummers</h3>
@@ -150,7 +154,7 @@
         <div style="margin-bottom:15px;display:flex;align-items:center;justify-content:space-between;background:#121212;padding:10px;border-radius:8px;border:1px solid var(--border-color);">
           <div>
             <label style="font-weight:bold;font-size:0.9em;color:#ff007f;display:block;">📸 Feest Fotobooth Activeren</label>
-            <span style="font-size:0.75em;color:var(--subtext-color);">Laat gasten foto's uploaden en bekijken op hun telefoon.</span>
+            <span style="font-size:0.75em;color:var(--subtext-color);">Laat gasten foto's uploaden en bekijken op hun telefoon[cite: 1].</span>
           </div>
           <input type="checkbox" id="dj-photobooth-toggle" style="width:24px;height:24px;cursor:pointer;accent-color:#ff007f;" onchange="savePhotoboothSetting()">
         </div>
@@ -219,7 +223,7 @@
         <hr style="border:0;border-top:1px solid var(--border-color);margin:15px 0;">
         <div>
           <label style="font-weight:bold;font-size:0.9em;color:var(--accent-color);">🚀 Nieuw Evenement Starten:</label>
-          <p style="font-size:0.8em;color:var(--subtext-color);margin:4px 0 8px 0;">Dit reset alle nummers, verwijdert alle foto's, genereert een nieuwe feestcode en blokkeert telefoons van het vorige feest.</p>
+          <p style="font-size:0.8em;color:var(--subtext-color);margin:4px 0 8px 0;">Dit reset alle nummers, verwijdert alle foto's, genereert een nieuwe feestcode en blokkeert telefoons van het vorige feest[cite: 1].</p>
           <button onclick="startNewSession()" class="danger-btn">🚀 Start Nieuw Feest (Nieuwe Code)</button>
         </div>
       </div>
@@ -254,6 +258,7 @@
       <div id="dj-photos-panel" class="request-box hidden" style="margin-top:15px;border-color:#ff007f;">
         <h3 style="margin-top:0;color:#ff007f;">📸 Fotobooth Moderatie Beheer</h3>
         <p style="font-size:0.8em;color:var(--subtext-color);margin:4px 0 8px 0;">Hier zie je alle door gasten geüploade foto's. Verwijder eventuele ongewenste foto's direct.</p>
+        <button onclick="downloadAllPhotos()" style="background:#ff007f;color:#fff;margin-bottom:12px;font-weight:bold;">📥 Download Alle Foto's als ZIP (Bulk)</button>
         <div id="dj-photo-grid" class="photo-grid"></div>
       </div>
 
@@ -366,10 +371,15 @@
             isPhotoboothActive = (item.value === 'true');
             const djToggle = document.getElementById('dj-photobooth-toggle');
             if (djToggle && document.activeElement !== djToggle) djToggle.checked = isPhotoboothActive;
-            const guestContainer = document.getElementById('guest-photobooth-container');
-            if (guestContainer) {
-              if (isPhotoboothActive) guestContainer.classList.remove('hidden');
-              else guestContainer.classList.add('hidden');
+            const guestWrapper = document.getElementById('guest-photobooth-wrapper');
+            if (guestWrapper) {
+              if (isPhotoboothActive) {
+                guestWrapper.classList.remove('hidden');
+              } else {
+                guestWrapper.classList.add('hidden');
+                document.getElementById('guest-photobooth-content').classList.add('hidden');
+                document.getElementById('toggle-photobooth-btn').innerText = '📸 Feest Fotobooth (Openen)';
+              }
             }
           }
           if (item.key === 'blacklist' && item.value) {
@@ -423,6 +433,18 @@
       }
       loadAppSettings();
       toonPopup(isChecked ? 'Fotobooth ingeschakeld voor gasten! 📸' : 'Fotobooth uitgeschakeld.');
+    }
+
+    function toggleGuestPhotobooth() {
+      const content = document.getElementById('guest-photobooth-content');
+      const btn = document.getElementById('toggle-photobooth-btn');
+      if (content.classList.contains('hidden')) {
+        content.classList.remove('hidden');
+        btn.innerText = '➖ Sluit Feest Fotobooth';
+      } else {
+        content.classList.add('hidden');
+        btn.innerText = '📸 Feest Fotobooth (Openen)';
+      }
     }
 
     // --- FOTOBOOTH LOGICA & COMPRESSIE ---
@@ -569,6 +591,44 @@
       } catch(err) {
         console.error(err);
         toonPopup('Fout bij verwijderen van foto.');
+      }
+    }
+
+    async function downloadAllPhotos() {
+      if (allPhotos.length === 0) return toonPopup('Geen foto\'s om te downloaden!');
+      if (typeof JSZip === 'undefined') {
+        toonPopup('JSZip bibliotheek is niet geladen.');
+        return;
+      }
+      toonPopup('Bezig met genereren van ZIP-bestand...');
+      const zip = new JSZip();
+      const folder = zip.folder("feest_fotos");
+      
+      for (let i = 0; i < allPhotos.length; i++) {
+        const photo = allPhotos[i];
+        try {
+          const response = await fetch(photo.image_url);
+          const blob = await response.blob();
+          const uploaderName = (photo.uploader_name || 'anoniem').replace(/[^a-zA-Z0-9]/g, '_');
+          const filename = `foto_${i + 1}_${uploaderName}.jpg`;
+          folder.file(filename, blob);
+        } catch (err) {
+          console.error('Fout bij ophalen foto:', err);
+        }
+      }
+      
+      try {
+        const content = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `feest_fotobooth_${currentPartyCode || 'export'}.zip`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        toonPopup('Alle foto\'s succesvol gedownload als ZIP! 📦');
+      } catch (err) {
+        console.error('Fout bij genereren ZIP:', err);
+        toonPopup('Fout bij maken van ZIP-bestand.');
       }
     }
 
