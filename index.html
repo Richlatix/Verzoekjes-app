@@ -2,1418 +2,1469 @@
 <html lang="nl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>BeatRequest - Live Feest Verzoekjes</title>
-  <script src="stijl.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Partyrequest — Next-Gen Event Requests & DJ Hub</title>
+  
+  <!-- Apple Font SF Pro / Inter & Icons -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  
+  <!-- Supabase JS Client & JSZip -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
   <style>
     :root {
-      --bg-color: #0b0c16;
-      --card-bg: #151728;
-      --card-hover: #1c1f36;
-      --text-color: #f3f4f6;
-      --accent-color: #7c3aed;
-      --accent-hover: #6d28d9;
-      --border-color: #242842;
-      --subtext-color: #9ca3af;
-      --danger-color: #ef4444;
-      --pink-accent: #ec4899;
+      --bg-color: #0d0f12;
+      --card-bg: rgba(26, 29, 36, 0.72);
+      --card-border: rgba(255, 255, 255, 0.1);
+      --accent-color: #007aff;
+      --accent-gradient: linear-gradient(135deg, #007aff, #5856d6);
+      --text-main: #f5f5f7;
+      --text-sub: #8e8e93;
+      --danger-color: #ff3b30;
+      --success-color: #34c759;
+      --warning-color: #ff9500;
+      --radius-xl: 24px;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --blur-val: blur(20px);
     }
-    
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+      -webkit-tap-highlight-color: transparent;
+      scroll-behavior: smooth;
+    }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-      background: var(--bg-color);
-      color: var(--text-color);
-      padding: 20px;
-      max-width: 1000px;
-      margin: auto;
-      line-height: 1.5;
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(0, 122, 255, 0.15) 0%, transparent 40%),
+        radial-gradient(circle at 90% 80%, rgba(88, 86, 214, 0.15) 0%, transparent 40%);
+      background-attachment: fixed;
+      padding-bottom: 80px;
     }
 
-    /* Top Navigation Header Bar */
-    .top-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 0 24px 0;
-      border-bottom: 1px solid var(--border-color);
-      margin-bottom: 24px;
-    }
-    .brand-logo-area {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
-    .brand-logo-area img {
-      max-height: 42px;
-      object-fit: contain;
-    }
-    .brand-title {
-      font-size: 1.25rem;
-      font-weight: 800;
-      letter-spacing: -0.02em;
-      color: #fff;
-    }
-    .brand-subtitle {
-      font-size: 0.75rem;
-      color: var(--subtext-color);
-      display: block;
-    }
-    
-    .nav-pills {
-      display: flex;
-      background: #111322;
-      padding: 4px;
-      border-radius: 9999px;
-      border: 1px solid var(--border-color);
-    }
-    .top-nav-btn {
-      padding: 8px 18px;
-      font-size: 0.85rem;
-      font-weight: 600;
-      border-radius: 9999px;
-      border: none;
-      background: transparent;
-      color: var(--subtext-color);
-      cursor: pointer;
-      transition: all 0.2s ease;
-    }
-    .top-nav-btn.active {
-      background: var(--accent-color);
-      color: #ffffff;
-      box-shadow: 0 4px 12px rgba(124, 58, 237, 0.4);
-    }
-
-    /* Hero Request Section */
-    .hero-card {
-      background: linear-gradient(135deg, rgba(124, 58, 237, 0.25) 0%, rgba(219, 39, 119, 0.15) 100%), var(--card-bg);
-      border: 1px solid rgba(124, 58, 237, 0.4);
-      border-radius: 20px;
-      padding: 28px;
-      margin-bottom: 24px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
-    }
-    .pill-badge {
-      display: inline-block;
-      background: rgba(124, 58, 237, 0.3);
-      border: 1px solid var(--accent-color);
-      color: #e9d5ff;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 9999px;
-      margin-bottom: 12px;
-      text-transform: uppercase;
-      letter-spacing: 0.05em;
-    }
-    .hero-title {
-      font-size: 1.8rem;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 6px;
-    }
-    .hero-subtitle {
-      color: var(--subtext-color);
-      font-size: 0.95rem;
-      margin-bottom: 20px;
-    }
-
-    .inline-form {
-      display: flex;
-      gap: 10px;
-      flex-wrap: wrap;
-    }
-    input, textarea, select {
-      background: #0d0f1d;
-      border: 1px solid var(--border-color);
-      color: var(--text-color);
-      padding: 12px 16px;
-      border-radius: 12px;
-      font-size: 0.9rem;
+    .app-container {
       width: 100%;
-      outline: none;
-      transition: border-color 0.2s;
-    }
-    input:focus, textarea:focus, select:focus {
-      border-color: var(--accent-color);
-    }
-    .inline-form input {
-      flex: 1;
-      min-width: 180px;
+      max-width: 480px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      position: relative;
     }
 
-    button {
-      background: var(--accent-color);
-      color: #ffffff;
-      font-weight: 700;
+    /* GLASS CARDS & UI COMPONENTS */
+    .glass-card {
+      background: var(--card-bg);
+      backdrop-filter: var(--blur-val);
+      -webkit-backdrop-filter: var(--blur-val);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.37);
+    }
+
+    .glass-header {
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      background: rgba(13, 15, 18, 0.82);
+      backdrop-filter: var(--blur-val);
+      -webkit-backdrop-filter: var(--blur-val);
+      border-bottom: 1px solid var(--card-border);
+      padding: 12px 16px;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+    }
+
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 30%, var(--accent-color));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 600;
+    }
+
+    .status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background-color: var(--success-color);
+      box-shadow: 0 0 8px var(--success-color);
+    }
+
+    /* BUTTONS & INPUTS */
+    .btn {
+      width: 100%;
+      padding: 14px 20px;
+      border-radius: var(--radius-lg);
       border: none;
-      padding: 12px 20px;
-      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s;
-      font-size: 0.9rem;
       display: inline-flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      transition: all 0.2s cubic-bezier(0.25, 1, 0.5, 1);
+      text-decoration: none;
     }
-    button:hover {
-      background: var(--accent-hover);
-      transform: translateY(-1px);
+
+    .btn:active {
+      transform: scale(0.97);
+      opacity: 0.9;
     }
-    button:disabled {
-      opacity: 0.5;
+
+    .btn-primary {
+      background: var(--accent-gradient);
+      color: #fff;
+      box-shadow: 0 4px 20px rgba(0, 122, 255, 0.35);
+    }
+
+    .btn-secondary {
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--text-main);
+      border: 1px solid var(--card-border);
+    }
+
+    .btn-danger {
+      background: rgba(255, 59, 48, 0.15);
+      color: var(--danger-color);
+      border: 1px solid rgba(255, 59, 48, 0.3);
+    }
+
+    .btn-sm {
+      padding: 8px 14px;
+      font-size: 0.82rem;
+      border-radius: var(--radius-md);
+      width: auto;
+    }
+
+    .btn:disabled {
+      background: rgba(255, 255, 255, 0.05);
+      color: #666;
       cursor: not-allowed;
-      transform: none;
+      box-shadow: none;
     }
-    .secondary-btn {
-      background: #1f233d;
-      color: #fff;
-      border: 1px solid var(--border-color);
-    }
-    .secondary-btn:hover { background: #2a2e4e; }
-    .danger-btn { background: var(--danger-color); }
-    .danger-btn:hover { background: #dc2626; }
 
-    /* Grid for Quick Stats Cards */
-    .stats-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-      gap: 16px;
-      margin-bottom: 24px;
+    .form-group {
+      margin-bottom: 14px;
     }
-    .stat-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-    }
-    .stat-icon {
-      width: 46px;
-      height: 46px;
-      border-radius: 12px;
-      background: rgba(124, 58, 237, 0.15);
-      border: 1px solid rgba(124, 58, 237, 0.3);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 1.3rem;
-      flex-shrink: 0;
-    }
-    .stat-label {
-      font-size: 0.7rem;
+
+    .form-label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-sub);
+      margin-bottom: 6px;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--subtext-color);
-      font-weight: 700;
-    }
-    .stat-value {
-      font-size: 1.05rem;
-      font-weight: 700;
-      color: #fff;
-      margin-top: 2px;
-    }
-    .stat-sub {
-      font-size: 0.75rem;
-      color: var(--accent-color);
+      letter-spacing: 0.5px;
     }
 
-    /* Container Box & Requests List */
-    .section-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 20px;
-      padding: 24px;
-      margin-bottom: 24px;
-    }
-    .section-title {
-      font-size: 1.2rem;
-      font-weight: 700;
+    .input-field {
+      width: 100%;
+      padding: 14px 16px;
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
       color: #fff;
-      margin-bottom: 16px;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .input-field:focus {
+      border-color: var(--accent-color);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.2);
+    }
+
+    /* SEGMENTED CONTROL */
+    .segmented-control {
+      display: flex;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+    }
+
+    .segment-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-sub);
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+
+    .segment-btn.active {
+      background: rgba(255, 255, 255, 0.15);
+      color: #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+
+    /* SEARCH RESULTS DROPDOWN */
+    .search-results-list {
+      max-height: 220px;
+      overflow-y: auto;
+      background: rgba(20, 22, 28, 0.95);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      margin-top: 6px;
+      display: none;
+    }
+
+    .search-result-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+      cursor: pointer;
       display: flex;
       justify-content: space-between;
       align-items: center;
     }
 
-    .song-item {
-      background: #0e101f;
-      border: 1px solid var(--border-color);
-      border-radius: 14px;
-      padding: 14px 18px;
+    .search-result-item:hover {
+      background: rgba(255, 255, 255, 0.08);
+    }
+
+    .search-result-title {
+      font-weight: 700;
+      font-size: 0.9rem;
+      color: #fff;
+    }
+
+    .search-result-artist {
+      font-size: 0.8rem;
+      color: var(--text-sub);
+    }
+
+    /* REQUEST ITEM LIST */
+    .request-card {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
       margin-bottom: 10px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 14px;
-      transition: background 0.2s;
-    }
-    .song-item:hover {
-      background: var(--card-hover);
-    }
-    .song-item.done {
-      opacity: 0.5;
-      border-style: dashed;
+      gap: 12px;
+      transition: transform 0.2s;
     }
 
-    .vote-box {
-      background: rgba(124, 58, 237, 0.15);
-      border: 1px solid rgba(124, 58, 237, 0.4);
-      color: #c084fc;
-      padding: 8px 12px;
-      border-radius: 10px;
-      font-weight: 800;
-      font-size: 0.9rem;
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      cursor: pointer;
-      border: none;
+    .request-info {
+      flex: 1;
     }
-    .vote-box:hover:not(:disabled) {
+
+    .request-song {
+      font-weight: 700;
+      font-size: 0.95rem;
+      color: #fff;
+      margin-bottom: 2px;
+    }
+
+    .request-artist {
+      font-size: 0.82rem;
+      color: var(--text-sub);
+    }
+
+    .request-note {
+      font-size: 0.78rem;
+      color: var(--warning-color);
+      margin-top: 4px;
+      font-style: italic;
+    }
+
+    .upvote-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 122, 255, 0.12);
+      border: 1px solid rgba(0, 122, 255, 0.3);
+      color: var(--accent-color);
+      padding: 8px 12px;
+      border-radius: 12px;
+      cursor: pointer;
+      min-width: 64px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      transition: all 0.2s;
+    }
+
+    .upvote-btn.voted {
       background: var(--accent-color);
       color: #fff;
     }
 
-    .status-badge {
-      background: rgba(245, 158, 11, 0.15);
-      border: 1px solid rgba(245, 158, 11, 0.4);
-      color: #fbbf24;
-      font-size: 0.75rem;
-      font-weight: 700;
-      padding: 4px 12px;
-      border-radius: 9999px;
+    .upvote-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
     }
 
-    /* Photobooth & Promo Card */
+    /* PHOTO BOOTH GRID */
     .photo-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+      grid-template-columns: repeat(2, 1fr);
       gap: 12px;
-      margin-top: 16px;
+      margin-top: 14px;
     }
-    .photo-item {
-      background: #0e101f;
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
+
+    .photo-card {
+      position: relative;
+      border-radius: var(--radius-md);
       overflow: hidden;
+      aspect-ratio: 1;
+      background: rgba(0,0,0,0.4);
+      border: 1px solid var(--card-border);
     }
-    .photo-item img {
+
+    .photo-card img {
       width: 100%;
-      height: 120px;
+      height: 100%;
       object-fit: cover;
       cursor: pointer;
     }
-    .photo-info {
+
+    .photo-meta {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
       padding: 8px;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
       font-size: 0.75rem;
-      color: var(--subtext-color);
-    }
-
-    .promo-card {
-      background: linear-gradient(135deg, #18112c 0%, #151728 100%);
-      border: 1px solid var(--accent-color);
-      border-radius: 20px;
-      padding: 24px;
-      text-align: center;
-      margin-top: 30px;
-    }
-    .contact-links-container {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      margin-top: 16px;
-    }
-    .contact-link {
-      background: var(--accent-color);
       color: #fff;
-      padding: 8px 18px;
-      border-radius: 9999px;
-      text-decoration: none;
-      font-weight: 700;
-      font-size: 0.85rem;
-      transition: opacity 0.2s;
     }
-    .contact-link:hover { opacity: 0.9; }
 
-    .hidden { display: none !important; }
-    
-    .toast-popup {
+    /* BOTTOM NAVBAR */
+    .app-navbar {
       position: fixed;
-      bottom: 25px;
+      bottom: 0;
       left: 50%;
       transform: translateX(-50%);
-      background: #1c1f36;
+      width: 100%;
+      max-width: 480px;
+      background: rgba(18, 20, 26, 0.85);
+      backdrop-filter: var(--blur-val);
+      -webkit-backdrop-filter: var(--blur-val);
+      border-top: 1px solid var(--card-border);
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0 20px 0;
+      z-index: 200;
+    }
+
+    .nav-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      color: var(--text-sub);
+      text-decoration: none;
+      font-size: 0.72rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .nav-item.active {
+      color: var(--accent-color);
+    }
+
+    .nav-icon {
+      font-size: 1.3rem;
+    }
+
+    /* TOAST / MODALS / FLOATING ACTION BUTTONS */
+    .toast-popup {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(20, 22, 28, 0.95);
       color: #ffffff;
       border: 1px solid var(--accent-color);
-      padding: 12px 24px;
-      border-radius: 9999px;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+      padding: 14px 24px;
+      border-radius: 30px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       z-index: 9999;
       font-weight: 700;
       text-align: center;
+      min-width: 280px;
       animation: fadeInOut 3s ease forwards;
+      backdrop-filter: blur(10px);
     }
+
     @keyframes fadeInOut {
       0% { opacity: 0; transform: translate(-50%, 20px); }
       15% { opacity: 1; transform: translate(-50%, 0); }
       85% { opacity: 1; transform: translate(-50%, 0); }
       100% { opacity: 0; transform: translate(-50%, -10px); }
     }
+
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
+      backdrop-filter: blur(10px);
+      z-index: 1000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .modal-card {
+      width: 100%;
+      max-width: 400px;
+      background: #1c1e24;
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-xl);
+      padding: 24px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+    }
+
+    #btn-scroll-top {
+      position: fixed;
+      bottom: 80px;
+      right: 20px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: var(--accent-gradient);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+      border: none;
+      z-index: 900;
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s;
+    }
+    #btn-scroll-top.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    /* UTILITIES */
+    .hidden { display: none !important; }
+    .flex-row { display: flex; gap: 10px; align-items: center; }
+    .mt-2 { margin-top: 8px; }
+    .mt-4 { margin-top: 16px; }
+    .mb-2 { margin-bottom: 8px; }
+    .mb-4 { margin-bottom: 20px; }
+    .text-center { text-align: center; }
+    .badge {
+      padding: 4px 8px;
+      border-radius: 8px;
+      font-size: 0.7rem;
+      font-weight: 700;
+      background: rgba(255,255,255,0.1);
+    }
   </style>
 </head>
 <body>
 
-  <!-- TOP HEADER NAVIGATIE -->
-  <header class="top-header">
-    <div class="brand-logo-area">
-      <img src="Logo.png" alt="Logo" id="app-logo">
-      <div>
-        <div class="brand-title" id="app-brand-text">BeatRequest</div>
-        <span class="brand-subtitle">Live Feest Verzoekjes Systeem</span>
+  <div class="app-container">
+    
+    <!-- HEADER -->
+    <header class="glass-header">
+      <div style="display: flex; align-items: center; justify-content: flex-start; overflow: hidden; height: 32px;">
+         <img id="header-logo" class="hidden" style="max-height: 100%; max-width: 100px; border-radius: 4px; object-fit: contain;">
       </div>
-    </div>
-    <div class="nav-pills" id="top-nav-bar">
-      <button id="guest-pill-btn" class="top-nav-btn active" onclick="showView('guest')">Gastendashboard</button>
-      <button id="dj-login-btn" class="top-nav-btn" onclick="checkDJPass()">DJ Dashboard</button>
-    </div>
-  </header>
-
-  <div id="welcome-banner" class="pill-badge hidden" style="display:block; text-align:center; margin: 0 auto 20px auto; max-width: 400px;"></div>
-
-  <div id="app-section">
-
-    <!-- 1. FEESTCODE SCHERM -->
-    <div id="party-code-view" class="hidden" style="max-width:440px; margin:40px auto; text-align:center;">
-      <div class="section-card">
-        <h2 style="color:#fff; margin-bottom:8px;">🎉 Deelnemen aan Feest</h2>
-        <p style="color:var(--subtext-color); font-size:0.9em; margin-bottom:20px;">Voer de 4-cijferige feestcode in die op het scherm staat[cite: 1]:</p>
-        <input type="number" id="guest-party-code-input" placeholder="0000" maxlength="4" style="font-size:2rem; letter-spacing:8px; text-align:center; margin-bottom:16px;" onkeydown="if(event.key==='Enter') submitPartyCode()">
-        <button onclick="submitPartyCode()" style="width:100%;">Deelnemen 🚀</button>
-      </div>
-      <div class="promo-card" id="login-promo-card">
-        <h3 id="promo-display-title-login">🎉 Drive-in Show Boeken?</h3>
-        <p id="promo-display-subtitle-login" style="color:var(--subtext-color); font-size:0.85em; margin-top:6px;">Zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
-        <div class="contact-links-container" id="promo-display-links-login"></div>
-      </div>
-    </div>
-
-    <!-- 2. GASTEN DASHBOARD -->
-    <div id="guest-view" class="hidden">
       
-      <!-- HERO REQUEST BANNER -->
-      <div class="hero-card">
-        <span class="pill-badge">Live in de zaal</span>
-        <h1 class="hero-title">Welke plaat draait de DJ straks?</h1>
-        <p class="hero-subtitle">Stuur jouw favoriete verzoekje in en laat de DJ weten wat je wilt horen!</p>
-        
-        <div class="inline-form">
-          <input type="text" id="search-input" placeholder="Zoek titel of artiest in bibliotheek..." onkeyup="filterSongs()">
-          <button onclick="toggleCustomForm()" class="secondary-btn" id="toggle-custom-btn">➕ Handmatig</button>
-        </div>
-
-        <div id="search-results-section" class="hidden" style="margin-top:16px; background:#0b0c16; padding:16px; border-radius:14px; border:1px solid var(--border-color);">
-          <h4 style="color:var(--subtext-color); font-size:0.85em; margin-bottom:10px;">🔍 Zoekresultaten uit bibliotheek</h4>
-          <div id="song-list"></div>
-        </div>
-
-        <div id="custom-form-container" class="hidden" style="margin-top:16px; background:#0b0c16; padding:16px; border-radius:14px; border:1px solid var(--border-color);">
-          <h4 style="color:#fff; font-size:0.9rem; margin-bottom:10px;">Eigen Verzoekje Invoeren</h4>
-          <input type="text" id="custom-title" placeholder="Nummer titel..." style="margin-bottom:8px;">
-          <input type="text" id="custom-artist" placeholder="Artiest (optioneel)..." style="margin-bottom:8px;">
-          <input type="text" id="custom-note" placeholder="Opmerking / Voor wie? (optioneel)..." style="margin-bottom:12px;">
-          <button onclick="submitCustomRequest()" style="width:100%;">Verzoekje Versturen 🚀</button>
-        </div>
-      </div>
-
-      <!-- QUICK STATS CARDS -->
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-icon">📻</div>
-          <div>
-            <div class="stat-label">STATUS FEEST</div>
-            <div class="stat-value" id="stat-current-track">Live Verzoekjes</div>
-            <div class="stat-sub">Systeem actief</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">🔥</div>
-          <div>
-            <div class="stat-label">AANWEZIGEN</div>
-            <div class="stat-value" id="guest-online-count">1 Live Feestganger</div>
-            <div class="stat-sub">Sfeer is uitstekend</div>
-          </div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-icon">⚡</div>
-          <div>
-            <div class="stat-label">FEESTCODE</div>
-            <div class="stat-value" id="guest-active-code">----</div>
-            <div class="stat-sub">Invoer bevestigd</div>
-          </div>
-        </div>
-      </div>
-
-      <!-- FOTOBOOTH SECTION -->
-      <div id="guest-photobooth-wrapper" class="hidden" style="margin-bottom:24px;">
-        <div class="section-card" style="border-color: var(--pink-accent);">
-          <div class="section-title" style="color: var(--pink-accent);">
-            <span>📸 Feest Fotobooth</span>
-            <button class="secondary-btn" onclick="toggleGuestPhotobooth()" id="toggle-photobooth-btn" style="font-size:0.8rem; padding:6px 12px; border-color:var(--pink-accent); color:var(--pink-accent);">Openen</button>
-          </div>
-          <div id="guest-photobooth-content" class="hidden">
-            <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:12px;">Deel jouw leukste kiekjes van de avond live met de rest van het feest!</p>
-            <input type="file" id="photo-file-input" accept="image/*" capture="environment" style="margin-bottom:8px;">
-            <input type="text" id="photo-uploader-name" placeholder="Jouw naam of groep..." style="margin-bottom:8px;">
-            <input type="text" id="photo-note" placeholder="Leuke opmerking bij de foto..." style="margin-bottom:12px;">
-            <button onclick="uploadPartyPhoto()" style="background:var(--pink-accent); width:100%;">Foto Uploaden 🚀</button>
-            
-            <h4 style="margin-top:20px; font-size:0.9rem; color:var(--pink-accent);">🎉 Live Feest Galerij</h4>
-            <div id="guest-photo-grid" class="photo-grid"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- WACHTRIJ CARDS -->
-      <div class="section-card">
-        <div class="section-title">Populaire Verzoekjes in de Wachtrij</div>
-        <div id="guest-requested-list"></div>
-      </div>
-
-      <div class="section-card">
-        <div class="section-title" style="color:var(--subtext-color);">🎉 Reeds Gedraaid</div>
-        <div id="guest-done-list"></div>
-      </div>
-
-      <!-- PROMO CARD -->
-      <div class="promo-card" id="guest-promo-card">
-        <h3 id="promo-display-title">🎉 Drive-in Show Boeken?</h3>
-        <p id="promo-display-subtitle" style="color:var(--subtext-color); font-size:0.9em; margin-top:6px;">Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?</p>
-        <div class="contact-links-container" id="promo-display-links"></div>
-      </div>
-    </div>
-
-    <!-- 3. DJ INLOG PIN SCHERM -->
-    <div id="pin-view" class="hidden" style="max-width:400px; margin:40px auto; text-align:center;">
-      <div class="section-card">
-        <h2 style="color:#fff; margin-bottom:8px;">🎧 DJ Toegang</h2>
-        <p style="color:var(--subtext-color); font-size:0.85em; margin-bottom:20px;">Voer de DJ-pincode in om in te loggen:</p>
-        <input type="password" id="dj-pin-input" placeholder="Pincode" maxlength="4" style="text-align:center; font-size:1.8rem; letter-spacing:8px; margin-bottom:16px;" onkeydown="if(event.key==='Enter') verifyPin()">
-        <button onclick="verifyPin()" style="width:100%;">Inloggen</button>
-        <button onclick="showView('guest')" class="secondary-btn" style="width:100%; margin-top:8px;">Annuleren</button>
-      </div>
-    </div>
-
-    <!-- 4. DJ LIVE DASHBOARD -->
-    <div id="dj-view" class="hidden">
+      <div id="header-dj-name" class="brand-title">Partyrequest</div>
       
-      <div class="section-card" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
-        <div>
-          <h2 style="color:#fff; font-size:1.4rem;">🎧 DJ Live Dashboard</h2>
-          <span style="font-size:0.8rem; color:var(--subtext-color);">Beheer live verzoekjes, fotobooth en feestsessies</span>
+      <div style="display: flex; justify-content: flex-end; align-items: center; height: 32px;">
+        <div id="header-status-badge" class="status-badge hidden">
+          <div class="status-dot"></div>
+          <span id="party-code-display">CODE: --</span>
+          <span style="opacity: 0.4; margin: 0 2px;">|</span>
+          <span id="online-users-count">👥 0</span>
         </div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <div class="pill-badge" style="margin:0;" id="dj-online-count">👥 0 Ingelogd</div>
-          <div class="pill-badge" style="margin:0; background:rgba(245,158,11,0.2); border-color:#f59e0b; color:#fbbf24;" id="dj-active-code-display">CODE: ----</div>
-          <button onclick="toggleSettingsMenu()" class="secondary-btn" id="settings-toggle-btn">⚙️ Opties</button>
-          <button onclick="window.location.href='admin.html'" class="secondary-btn">🔧 Admin</button>
-        </div>
+        <button id="btn-header-dj-login" class="btn btn-sm btn-secondary" style="width: auto; padding: 6px 12px; font-size: 0.75rem;" onclick="switchAuthTab('dj')">
+          🎧 DJ Login
+        </button>
       </div>
+    </header>
 
-      <!-- DJ INSTELINGEN PANEEL -->
-      <div id="settings-panel" class="section-card hidden" style="border-color:var(--accent-color);">
-        <h3 style="color:#fff; margin-bottom:16px;">⚙️ DJ Opties & Instellingen</h3>
+    <main style="padding: 16px;">
+
+      <!-- 1. AUTH SCREEN (LANDING PAGE) -->
+      <section id="screen-auth" class="glass-card text-center" style="margin-top: 40px;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 6px;">Welkom bij Partyrequest</h2>
+        <p style="color: var(--text-sub); font-size: 0.88rem; margin-bottom: 24px;" id="auth-subtitle">Voer de feestcode in om deel te nemen.</p>
         
-        <div style="display:flex; justify-content:space-between; align-items:center; background:#0d0f1d; padding:12px; border-radius:12px; margin-bottom:16px;">
-          <div>
-            <strong style="color:var(--pink-accent); font-size:0.9rem;">📸 Feest Fotobooth Activeren</strong>
-            <p style="font-size:0.75rem; color:var(--subtext-color);">Laat gasten foto's uploaden en bekijken op hun telefoon[cite: 1].</p>
+        <!-- GUEST LOGIN FORM -->
+        <div id="auth-guest-form">
+          <div class="form-group">
+            <input type="number" id="input-guest-code" class="input-field text-center" placeholder="Feestcode (bijv. 4920)" maxlength="4" style="font-size: 1.6rem; letter-spacing: 6px; font-weight: 800;" onkeydown="if(event.key==='Enter') loginGuest()">
           </div>
-          <input type="checkbox" id="dj-photobooth-toggle" style="width:22px; height:22px; cursor:pointer;" onchange="savePhotoboothSetting()">
+          <button class="btn btn-primary" onclick="loginGuest()">
+            <span>Betreed Feest</span> ➔
+          </button>
         </div>
 
-        <div style="margin-bottom:16px;">
-          <label style="font-size:0.85rem; color:var(--subtext-color); font-weight:700;">🚫 Woorden Blacklist (Beheren):</label>
-          <div id="blacklist-words-container" style="display:flex; flex-wrap:wrap; gap:6px; margin-top:8px;"></div>
-        </div>
-
-        <div style="margin-bottom:16px;">
-          <label style="font-size:0.85rem; color:var(--subtext-color); font-weight:700;">📢 Welkomsttekst Gastenscherm:</label>
-          <input type="text" id="welcome-text-input" placeholder="Bijv. Welkom op het feest van Marc!" style="margin-top:4px; margin-bottom:8px;">
-          <div style="display:flex; gap:8px;">
-            <button onclick="saveWelcomeText()">Opslaan</button>
-            <button onclick="clearWelcomeText()" class="secondary-btn">Wis Tekst</button>
+        <!-- DJ LOGIN FORM -->
+        <div id="auth-dj-form" class="hidden">
+          <div class="form-group">
+            <input type="password" id="input-dj-pin" class="input-field text-center" placeholder="••••" maxlength="4" style="font-size: 1.6rem; letter-spacing: 8px;" onkeydown="if(event.key==='Enter') loginDJ()">
           </div>
+          <button class="btn btn-primary" onclick="loginDJ()">
+            <span>Open DJ Dashboard</span> 🎛️
+          </button>
+          <button class="btn btn-secondary mt-4" onclick="switchAuthTab('guest')" style="font-size: 0.85rem;">
+            <span>← Terug naar Gast Inlog</span>
+          </button>
+        </div>
+      </section>
+
+      <!-- 2. GUEST VIEW -->
+      <section id="screen-guest" class="hidden">
+        
+        <div id="guest-welcome-banner" class="glass-card hidden" style="background: linear-gradient(135deg, rgba(0,122,255,0.2), rgba(88,86,214,0.2)); border-color: rgba(0,122,255,0.3);">
+          <h3 id="welcome-message-title" style="font-size: 1.1rem; font-weight: 800; margin-bottom: 4px;">🎉 Welkom op het feest!</h3>
+          <p id="welcome-message-text" style="font-size: 0.85rem; color: #e5e5ea;"></p>
         </div>
 
-        <div style="margin-bottom:16px; border-top:1px solid var(--border-color); padding-top:16px;">
-          <label style="font-size:0.85rem; color:var(--subtext-color); font-weight:700;">🏷️ Visitekaartje (Promo-kaart) Aanpassen:</label>
-          <input type="text" id="promo-title-input" placeholder="Titel..." style="margin-top:6px; margin-bottom:6px;">
-          <textarea id="promo-subtitle-input" placeholder="Beschrijving..." style="height:60px; margin-bottom:8px;"></textarea>
+        <!-- GUEST TAB 1: VERZOEKJES -->
+        <div id="guest-tab-requests">
           
-          <div style="background:#0d0f1d; padding:12px; border-radius:12px; font-size:0.85rem;">
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-              <span>💬 WhatsApp</span>
-              <input type="text" id="promo-whatsapp-input" style="width:60%; padding:6px;">
-              <input type="checkbox" id="promo-whatsapp-toggle" style="width:auto;">
+          <!-- BERICHT ALS VERZOEKJES ZIJN UITGESCHAKELD -->
+          <div id="guest-requests-disabled-msg" class="glass-card text-center hidden" style="border-color: var(--danger-color);">
+            <h3 style="color: var(--danger-color); margin-bottom: 6px;">🛑 Gesloten</h3>
+            <p style="font-size: 0.85rem; color: var(--text-sub);">Verzoekjes zijn helaas uitgeschakeld, geniet nog even van het feest!</p>
+          </div>
+
+          <div id="guest-requests-form-container" class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center;">
+              <span>🎵 Nummer Aanvragen</span>
+            </h3>
+
+            <div id="library-search-box" class="form-group" style="position: relative;">
+              <input type="text" id="input-search-library" class="input-field" placeholder="🔎 Zoek op titel of artiest uit bibliotheek..." onkeyup="filterSongs(this.value)">
+              <div id="search-results" class="search-results-list"></div>
             </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-              <span>✉️ E-mail</span>
-              <input type="text" id="promo-email-input" style="width:60%; padding:6px;">
-              <input type="checkbox" id="promo-email-toggle" style="width:auto;">
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-              <span>📸 Instagram</span>
-              <input type="text" id="promo-instagram-input" style="width:60%; padding:6px;">
-              <input type="checkbox" id="promo-instagram-toggle" style="width:auto;">
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
-              <span>🎵 TikTok</span>
-              <input type="text" id="promo-tiktok-input" style="width:60%; padding:6px;">
-              <input type="checkbox" id="promo-tiktok-toggle" style="width:auto;">
-            </div>
-            <div style="display:flex; align-items:center; justify-content:space-between;">
-              <span>👥 Facebook</span>
-              <input type="text" id="promo-facebook-input" style="width:60%; padding:6px;">
-              <input type="checkbox" id="promo-facebook-toggle" style="width:auto;">
+
+            <button class="btn btn-sm btn-secondary" style="margin-bottom: 14px; padding: 12px; width: 100%; border: 1px dashed var(--card-border);" onclick="toggleManualRequestForm()" id="btn-toggle-manual">
+              ➕ Staat je nummer er niet tussen? Klik hier!
+            </button>
+
+            <div id="manual-request-box" class="hidden" style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: var(--radius-md); margin-bottom: 14px;">
+              <div class="form-group">
+                <input type="text" id="req-title" class="input-field mb-2" placeholder="Nummer Titel *">
+                <input type="text" id="req-artist" class="input-field mb-2" placeholder="Artiest (optioneel)">
+                <input type="text" id="req-note" class="input-field" placeholder="Opmerking (bijv. 'Voor de jarige!')">
+              </div>
+              <button class="btn btn-primary" onclick="submitCustomRequest()">
+                <span>Verzoekje Versturen</span> 🚀
+              </button>
             </div>
           </div>
-          <button onclick="savePromoCard()" style="margin-top:10px;">Visitekaartje Opslaan</button>
-        </div>
 
-        <div style="border-top:1px solid var(--border-color); padding-top:16px;">
-          <button onclick="downloadCSV()" class="secondary-btn" style="width:100%; margin-bottom:8px;">📥 Exporteer Verzoekjes naar Excel/CSV</button>
-          <button onclick="startNewSession()" class="danger-btn" style="width:100%;">🚀 Start Nieuw Feest (Nieuwe Code)</button>
-        </div>
-      </div>
+          <div class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center;">
+              <span>🔥 Live Wachtrij</span>
+              <span id="queue-count-badge" class="badge">0 nummers</span>
+            </h3>
+            <div id="requests-queue-container"></div>
+          </div>
 
-      <!-- DJ VERZOEK TOEVOEGEN PANEEL -->
-      <div id="dj-search-panel" class="section-card hidden">
-        <h3>🔍 Verzoekje Handmatig Toevoegen</h3>
-        <input type="text" id="dj-search-input" placeholder="Zoek in bibliotheek op titel of artiest..." onkeyup="filterDjSearchSongs()" style="margin-top:8px;">
-        <div id="dj-search-results-section" class="hidden" style="margin-top:10px;">
-          <div id="dj-song-list"></div>
-        </div>
-        <div style="margin-top:12px;">
-          <button type="button" class="secondary-btn" onclick="toggleDjCustomForm()" id="dj-toggle-custom-btn" style="width:100%;">➕ Staat het nummer niet in de bibliotheek?</button>
-          <div id="dj-custom-form-container" class="hidden" style="margin-top:10px;">
-            <input type="text" id="dj-custom-title" placeholder="Nummer titel..." style="margin-bottom:6px;">
-            <input type="text" id="dj-custom-artist" placeholder="Artiest..." style="margin-bottom:6px;">
-            <input type="text" id="dj-custom-note" placeholder="Opmerking..." style="margin-bottom:8px;">
-            <button onclick="submitDjCustomRequest()" style="width:100%;">Toevoegen aan Verzoekjes</button>
+          <div class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--text-sub);">🎉 Reeds Gedraaid</h3>
+            <div id="requests-played-container"></div>
           </div>
         </div>
-      </div>
 
-      <!-- DJ BLACKLIST PANEEL -->
-      <div id="dj-blacklist-panel" class="section-card hidden">
-        <h3>🚫 Woord Toevoegen aan Blacklist</h3>
-        <div style="display:flex; gap:8px; margin-top:8px;">
-          <input type="text" id="blacklist-word-input" placeholder="Verboden woord..." onkeydown="if(event.key==='Enter') addBlacklistWord()">
-          <button onclick="addBlacklistWord()">Toevoegen</button>
-        </div>
-      </div>
+        <!-- GUEST TAB 2: FOTOBOOTH -->
+        <div id="guest-tab-photos" class="hidden">
+          <div id="photobooth-content">
+            <div class="glass-card text-center">
+              <h3 style="font-size: 1.1rem; margin-bottom: 6px;">📸 Feest Fotobooth</h3>
+              <p style="font-size: 0.85rem; color: var(--text-sub); margin-bottom: 16px;">Maak een foto en deel 'm direct op het grote scherm van de DJ!</p>
+              
+              <div class="form-group">
+                <input type="text" id="photo-uploader-name" class="input-field mb-2" placeholder="Jouw naam of groep (optioneel)">
+                <input type="text" id="photo-note" class="input-field" placeholder="Opmerking bij de foto (optioneel)">
+              </div>
 
-      <!-- DJ FOTOBOOTH MODERATIE -->
-      <div id="dj-photos-panel" class="section-card hidden" style="border-color:var(--pink-accent);">
-        <h3 style="color:var(--pink-accent);">📸 Fotobooth Beheer</h3>
-        <button onclick="downloadAllPhotos()" style="background:var(--pink-accent); margin:12px 0;">📥 Download Alle Foto's als ZIP</button>
-        <div id="dj-photo-grid" class="photo-grid"></div>
-      </div>
+              <input type="file" id="camera-file-input" accept="image/*" capture="environment" class="hidden" onchange="uploadPartyPhoto(event)">
+              
+              <button class="btn btn-primary" onclick="document.getElementById('camera-file-input').click()">
+                <span>📷 Maak / Upload Foto</span>
+              </button>
+            </div>
 
-      <!-- VERZOEKJES LIJST VOOR DJ -->
-      <div class="section-card">
-        <div class="section-title">
-          <span>🔥 Live Verzoekjes Wachtrij</span>
-          <div style="display:flex; gap:6px;">
-            <button onclick="toggleDjSearchMenu()" class="secondary-btn" style="padding:6px 12px; font-size:0.8rem;">🔍</button>
-            <button onclick="toggleBlacklistMenu()" class="secondary-btn" style="padding:6px 12px; font-size:0.8rem;">🚫</button>
-            <button onclick="toggleDjPhotosMenu()" class="secondary-btn" style="padding:6px 12px; font-size:0.8rem; border-color:var(--pink-accent); color:var(--pink-accent);">📸</button>
-            <select id="sort-select" onchange="renderDjRequests()" style="width:auto; padding:6px 10px; font-size:0.8rem;">
-              <option value="votes">🔥 Stemmen</option>
-              <option value="newest">⏱️ Nieuwste</option>
-              <option value="oldest">⌛ Oudste</option>
-            </select>
-            <button onclick="wipeRequests()" class="danger-btn" style="padding:6px 12px; font-size:0.8rem;">🧹 Wis</button>
+            <!-- GASTEN SLIDESHOW & KNOP ALLE FOTO'S -->
+            <div class="glass-card text-center" id="guest-slideshow-card">
+              <h3 style="font-size: 1.05rem; margin-bottom: 12px;">🖼️ Live Feest Slideshow</h3>
+              
+              <div id="guest-inline-slideshow" style="width: 100%; aspect-ratio: 1; background: #000; border-radius: var(--radius-md); overflow: hidden; position: relative; margin-bottom: 14px; border: 1px solid var(--card-border);">
+                <img id="inline-slideshow-img" style="width: 100%; height: 100%; object-fit: cover; transition: opacity 0.5s;" src="">
+              </div>
+              
+              <button class="btn btn-secondary" onclick="openGuestGalleryModal()">📸 Bekijk alle foto's</button>
+            </div>
+
+          </div>
+          
+          <div id="photobooth-disabled-msg" class="glass-card text-center hidden">
+            <h3 style="color: var(--warning-color);">Fotobooth Uitgeschakeld</h3>
+            <p style="font-size: 0.85rem; color: var(--text-sub);">De DJ heeft de fotobooth momenteel uitgeschakeld.</p>
           </div>
         </div>
-        <div id="request-list"></div>
-      </div>
 
-      <div class="section-card">
-        <div class="section-title" style="color:var(--subtext-color);">🎉 Reeds Gedraaid</div>
-        <div id="dj-done-list"></div>
-      </div>
+        <!-- GUEST TAB 3: PROMOTIE -->
+        <div id="guest-tab-promo" class="hidden">
+          <div class="glass-card text-center">
+            
+            <img id="promo-dj-photo" class="hidden" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; margin: 0 auto 12px; border: 2px solid var(--accent-color);">
+            <div id="promo-default-icon" style="width: 70px; height: 70px; border-radius: 50%; background: var(--accent-gradient); margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 2rem;">
+              🎧
+            </div>
+            
+            <h3 id="promo-dj-name" style="font-size: 1.3rem; font-weight: 800;">Berghmans & Von Hauze</h3>
+            <p id="promo-dj-bio" style="font-size: 0.88rem; color: var(--text-sub); margin-top: 4px; margin-bottom: 16px;"></p>
 
-      <!-- XML BIBLIOTHEEK -->
-      <div class="section-card">
-        <button onclick="toggleXmlMenu()" class="secondary-btn" id="xml-toggle-btn" style="width:100%;">📂 Muziekbibliotheek / XML Beheren</button>
-        <div id="xml-panel" class="hidden" style="margin-top:16px;">
-          <p style="font-size:0.85em; color:var(--subtext-color); margin-bottom:10px;">Upload hier je Rekordbox/Serato XML muziekbestand:</p>
-          <input type="file" id="xml-file" accept=".xml" style="margin-bottom:8px;">
-          <button onclick="uploadXML()" style="width:100%;">Importeer Muzieklijst</button>
-          <h4 style="margin-top:16px; color:#fff; font-size:0.9rem;">Geüploade XML Bestanden</h4>
-          <div id="uploaded-xml-list" style="margin-top:8px;"></div>
+            <div id="promo-display-links" style="display: flex; flex-direction: column; gap: 10px;"></div>
+          </div>
+          
+          <button class="btn btn-secondary mt-4" onclick="logoutGuest()">🚪 Afmelden als Gast</button>
+          <button class="btn btn-primary mt-2" onclick="showDJLoginFromGuest()" style="background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: var(--text-main); box-shadow: none;">
+            🎧 Inloggen als DJ
+          </button>
         </div>
+      </section>
+
+      <!-- 3. DJ DASHBOARD -->
+      <section id="screen-dj" class="hidden">
+        
+        <div class="segmented-control" style="margin-bottom: 14px;">
+          <button class="segment-btn active" onclick="switchDJTab('queue')">🎧 Wachtrij</button>
+          <button class="segment-btn" onclick="switchDJTab('photos')">📸 Foto's</button>
+          <button class="segment-btn" onclick="switchDJTab('settings')">⚙️ Opties</button>
+        </div>
+
+        <!-- DJ TAB 1: WACHTRIJ -->
+        <div id="dj-tab-queue">
+          <div class="glass-card">
+            
+            <!-- Quick Actions Toolbar -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
+              <div class="flex-row" style="gap: 6px;">
+                <button class="btn btn-sm btn-secondary" style="padding: 6px 10px;" onclick="toggleDjQuickPanel('add')" title="Verzoekje toevoegen">➕</button>
+                <button class="btn btn-sm btn-secondary" style="padding: 6px 10px;" onclick="toggleDjQuickPanel('blacklist')" title="Snel blacklist">🚫</button>
+                <button class="btn btn-sm btn-secondary" style="padding: 6px 10px;" onclick="toggleDjQuickPanel('photos')" title="Laatste 5 foto's">📸</button>
+                <button id="btn-toggle-requests" class="btn btn-sm btn-secondary" style="padding: 6px 10px;" onclick="toggleRequestsActive()" title="Verzoekjes uitschakelen">🛑 Sluit</button>
+              </div>
+
+              <div class="flex-row" style="gap: 6px;">
+                <select id="sort-select" class="input-field" style="padding: 6px; width: auto; font-size: 0.8rem;" onchange="renderDJQueue()">
+                  <option value="votes">🔥 Meeste stemmen</option>
+                  <option value="newest">⏱️ Nieuwste</option>
+                  <option value="oldest">⌛ Oudste</option>
+                </select>
+                <button class="btn btn-sm btn-danger" onclick="wipeRequests()">🧹 Wis Alles</button>
+              </div>
+            </div>
+
+            <!-- Verborgen Quick Action Panels -->
+            <div id="dj-quick-add" class="hidden" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: var(--radius-md); margin-bottom: 14px; border: 1px solid var(--accent-color);">
+              
+              <div class="form-group" style="position: relative; margin-bottom: 10px;">
+                <input type="text" id="quick-search-library" class="input-field" style="padding: 10px;" placeholder="🔎 Zoek in bibliotheek..." onkeyup="filterQuickDjSongs(this.value)">
+                <div id="quick-search-results" class="search-results-list"></div>
+              </div>
+              
+              <div style="font-size: 0.75rem; color: var(--text-sub); text-align: center; margin-bottom: 10px;">— OF HANDMATIG —</div>
+
+              <div class="flex-row mb-2">
+                <input type="text" id="quick-req-title" class="input-field" style="padding: 10px;" placeholder="Titel" onkeydown="if(event.key==='Enter') submitQuickDjRequest()">
+                <input type="text" id="quick-req-artist" class="input-field" style="padding: 10px;" placeholder="Artiest (optioneel)" onkeydown="if(event.key==='Enter') submitQuickDjRequest()">
+              </div>
+              <button class="btn btn-sm btn-primary" onclick="submitQuickDjRequest()">Nu Toevoegen</button>
+            </div>
+
+            <div id="dj-quick-blacklist" class="hidden" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: var(--radius-md); margin-bottom: 14px; border: 1px solid var(--danger-color);">
+              <div class="flex-row">
+                <input type="text" id="quick-blacklist-input" class="input-field" style="padding: 10px;" placeholder="Typ scheldwoord en druk Enter..." onkeydown="if(event.key==='Enter') addQuickBlacklistWord()">
+                <button class="btn btn-sm btn-danger" onclick="addQuickBlacklistWord()">Blokkeer</button>
+              </div>
+            </div>
+
+            <div id="dj-quick-photos" class="hidden" style="background: rgba(0,0,0,0.3); padding: 12px; border-radius: var(--radius-md); margin-bottom: 14px; border: 1px solid #ff007f;">
+              <h4 style="font-size: 0.85rem; margin-bottom: 8px; color: #ff007f;">Laatste 5 Foto's</h4>
+              <div id="dj-quick-photos-grid" style="display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px;"></div>
+            </div>
+
+            <!-- De Lijst -->
+            <div id="dj-queue-list" style="margin-top: 14px;"></div>
+          </div>
+
+          <div class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--text-sub);">🎉 Reeds Gedraaid</h3>
+            <div id="dj-done-list"></div>
+          </div>
+        </div>
+
+        <!-- DJ TAB 2: FOTO MODERATIE -->
+        <div id="dj-tab-photos" class="hidden">
+          <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+              <h3 style="font-size: 1.05rem;">📸 Foto Moderatie</h3>
+              <div style="display: flex; gap: 8px;">
+                <button class="btn btn-sm btn-secondary" onclick="startFullscreenSlideshow()">▶️ Slideshow</button>
+                <button class="btn btn-sm btn-primary" onclick="downloadAllPhotosZip()">📦 Download</button>
+                <button class="btn btn-sm btn-danger" onclick="deleteAllPhotos()">🗑️ Wis Alles</button>
+              </div>
+            </div>
+            <div class="form-group">
+              <label style="display:flex; align-items:center; gap:8px; font-size:0.9rem; margin-bottom:10px;">
+                <input type="checkbox" id="dj-photobooth-toggle" onchange="savePhotoboothSetting()" style="width:20px;height:20px;">
+                Fotobooth inschakelen voor gasten
+              </label>
+            </div>
+            <div id="dj-photo-grid" class="photo-grid"></div>
+          </div>
+        </div>
+
+        <!-- DJ TAB 3: INSTELLINGEN & BIEB -->
+        <div id="dj-tab-settings" class="hidden">
+          
+          <div class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 12px;">Welkomsttekst & Blacklist</h3>
+            <div class="form-group">
+              <label class="form-label">Titel Gastenscherm</label>
+              <input type="text" id="welcome-title-input" class="input-field" placeholder="Bijv. 🎉 Welkom op het feest!" onkeydown="if(event.key==='Enter') saveWelcomeText()">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Welkomstbericht Gasten</label>
+              <input type="text" id="welcome-text-input" class="input-field" placeholder="Korte uitleg..." onkeydown="if(event.key==='Enter') saveWelcomeText()">
+            </div>
+            <button class="btn btn-secondary btn-sm mb-4" onclick="saveWelcomeText()">Sla Welkomsttekst Op</button>
+
+            <div class="form-group">
+              <label class="form-label">Woord Blacklist Toevoegen</label>
+              <div style="display:flex; gap:8px;">
+                <input type="text" id="blacklist-word-input" class="input-field" placeholder="Verboden woord" style="margin:0;" onkeydown="if(event.key==='Enter') addBlacklistWordFromSettings()">
+                <button class="btn btn-secondary btn-sm" onclick="addBlacklistWordFromSettings()">Voeg toe</button>
+              </div>
+              <div id="blacklist-words-container" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;"></div>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 12px;">🛡️ Spam Protectie</h3>
+            <div class="form-group">
+              <label class="form-label">Cooldown tijd (seconden)</label>
+              <div style="display:flex; gap:8px;">
+                <input type="number" id="setting-spam-cooldown" class="input-field" value="30" style="margin:0;">
+                <button class="btn btn-secondary btn-sm" onclick="saveSpamSettings()">Opslaan</button>
+              </div>
+              <p style="font-size: 0.75rem; color: var(--text-sub); margin-top: 6px;">Voorkomt dat gasten de hele wachtrij volspamen in korte tijd.</p>
+            </div>
+          </div>
+
+          <div class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--warning-color);">🚀 Nieuw Feest Starten</h3>
+            <p style="font-size: 0.82rem; color: var(--text-sub); margin-bottom: 12px;">Genereert een nieuwe code, wist huidige verzoekjes en foto's.</p>
+            <button class="btn btn-primary" onclick="startNewSession()">✨ Start Nieuw Feest</button>
+          </div>
+          
+          <div class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 12px; color: var(--accent-color);">🎨 Vormgeving & Profiel</h3>
+            <p style="font-size: 0.82rem; color: var(--text-sub); margin-bottom: 12px;">Pas je logo, DJ-naam, profielfoto en social media links aan.</p>
+            <button class="btn btn-primary" style="background: rgba(0, 122, 255, 0.2); border: 1px solid var(--accent-color); box-shadow: none;" onclick="openAdminPanel()">🛠️ Branding & Profiel Beheren</button>
+          </div>
+
+          <div class="glass-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+              <h3 style="font-size: 1.05rem; margin: 0;">📚 Muziekbibliotheek (XML)</h3>
+              <button class="btn btn-sm btn-danger" style="width: auto;" onclick="resetLibraryDatabase()">🗑️ Reset Database</button>
+            </div>
+            <p style="font-size: 0.82rem; color: var(--text-sub); margin-bottom: 14px;">Upload je VirtualDJ of Rekordbox XML om nummers direct zoekbaar te maken voor gasten.</p>
+
+            <div class="form-group">
+              <input type="file" id="xml-file" accept=".xml" class="hidden" onchange="uploadXML(event)">
+              <button class="btn btn-secondary" onclick="document.getElementById('xml-file').click()">
+                <span>📄 Nieuw XML Bestand Uploaden</span>
+              </button>
+              <div id="xml-progress-text" style="font-size: 0.85rem; color: var(--accent-color); font-weight: bold; margin-top: 8px; text-align: center;"></div>
+            </div>
+            
+            <h4 style="margin-top:20px; font-size: 0.9rem; color: var(--accent-color);">📂 Actieve Bestanden</h4>
+            <div id="uploaded-xml-list" style="margin-top: 8px;"></div>
+          </div>
+
+          <div class="glass-card">
+            <h3 style="font-size: 1.05rem; margin-bottom: 12px;">📊 Data</h3>
+            <button class="btn btn-secondary" onclick="downloadCSV()">📥 Exporteer Verzoekjes (CSV)</button>
+          </div>
+          
+          <button class="btn btn-secondary mt-4" onclick="switchToGuestFromDJ()">🏠 Wissel naar Gastenscherm</button>
+          <button class="btn btn-danger mt-2" onclick="logoutDJ()">🚪 Volledig Uitloggen</button>
+
+        </div>
+      </section>
+
+      <!-- 4. ADMIN PANEL (BRANDING & DJ INFO) -->
+      <section id="screen-admin" class="hidden" style="padding-top: 10px;">
+        <div class="glass-header mb-4" style="border-radius: var(--radius-xl); position: relative; top: 0; padding: 12px;">
+          <button class="btn btn-sm btn-secondary" style="width: auto; padding: 6px 12px;" onclick="closeAdminPanel()">← Terug</button>
+          <h3 style="margin:0; font-size: 1.1rem; flex: 1; text-align: center;">🛠️ Beheer</h3>
+          <div style="width: 70px;"></div> <!-- Spacer voor balans -->
+        </div>
+
+        <div class="glass-card">
+          <h3 style="font-size: 1.05rem; margin-bottom: 14px; color: var(--accent-color);">🎨 Algemene Branding</h3>
+          
+          <label class="form-label">DJ Naam (Bovenkant scherm)</label>
+          <input type="text" id="admin-dj-name" class="input-field mb-4" placeholder="Bijv. Berghmans & Von Hauze">
+          
+          <label class="form-label">Header Logo (Links bovenin)</label>
+          <div class="flex-row mb-2">
+            <input type="file" id="admin-logo-upload" accept="image/*" class="hidden" onchange="handleAdminUpload(event, 'logo')">
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="document.getElementById('admin-logo-upload').click()">Upload Logo</button>
+            <button class="btn btn-danger btn-sm" style="width: auto;" onclick="removeAdminLogo()">Wis Logo</button>
+          </div>
+          <img id="admin-logo-preview" class="hidden mt-2" style="max-height: 50px; border-radius: 6px; border: 1px solid var(--card-border);">
+        </div>
+
+        <div class="glass-card">
+          <h3 style="font-size: 1.05rem; margin-bottom: 14px; color: var(--accent-color);">🎎 Profiel & Contact (Gastenscherm)</h3>
+          
+          <label class="form-label">Profielfoto</label>
+          <div class="flex-row mb-2">
+            <input type="file" id="admin-promo-photo-upload" accept="image/*" class="hidden" onchange="handleAdminUpload(event, 'promo_photo')">
+            <button class="btn btn-secondary btn-sm" style="flex:1;" onclick="document.getElementById('admin-promo-photo-upload').click()">Upload Profielfoto</button>
+            <button class="btn btn-danger btn-sm" style="width: auto;" onclick="removeAdminPromoPhoto()">Wis Foto</button>
+          </div>
+          <img id="admin-promo-photo-preview" class="hidden mb-4" style="width: 70px; height: 70px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent-color);">
+          
+          <label class="form-label">Titel / Artiestennaam</label>
+          <input type="text" id="admin-promo-title" class="input-field mb-4" placeholder="Berghmans & Von Hauze">
+          
+          <label class="form-label">Korte Bio / Tekst</label>
+          <textarea id="admin-promo-bio" class="input-field mb-4" style="height: 80px; resize: none;" placeholder="Professionele allround DJ voor al uw feesten..."></textarea>
+          
+          <label class="form-label">Socials & Links</label>
+          <div style="background: rgba(0,0,0,0.2); padding: 12px; border-radius: var(--radius-md); border: 1px solid var(--card-border);">
+            
+            <div class="flex-row mb-2">
+              <input type="checkbox" id="admin-link-wa-active" style="width: 20px; height: 20px;">
+              <input type="text" id="admin-link-wa-url" class="input-field" placeholder="WhatsApp (bijv. 31612345678)" style="padding: 10px;">
+            </div>
+            <div class="flex-row mb-2">
+              <input type="checkbox" id="admin-link-em-active" style="width: 20px; height: 20px;">
+              <input type="text" id="admin-link-em-url" class="input-field" placeholder="E-mail" style="padding: 10px;">
+            </div>
+            <div class="flex-row mb-2">
+              <input type="checkbox" id="admin-link-ig-active" style="width: 20px; height: 20px;">
+              <input type="text" id="admin-link-ig-url" class="input-field" placeholder="Instagram URL" style="padding: 10px;">
+            </div>
+            <div class="flex-row mb-2">
+              <input type="checkbox" id="admin-link-tt-active" style="width: 20px; height: 20px;">
+              <input type="text" id="admin-link-tt-url" class="input-field" placeholder="TikTok URL" style="padding: 10px;">
+            </div>
+            <div class="flex-row">
+              <input type="checkbox" id="admin-link-fb-active" style="width: 20px; height: 20px;">
+              <input type="text" id="admin-link-fb-url" class="input-field" placeholder="Facebook URL" style="padding: 10px;">
+            </div>
+            
+          </div>
+        </div>
+
+        <button class="btn btn-primary" style="margin-bottom: 30px;" onclick="saveAdminSettings()">💾 Alles Opslaan</button>
+      </section>
+
+    </main>
+
+    <!-- BOTTOM NAVBAR (ONLY SHOWN FOR GUEST VIEW) -->
+    <nav id="guest-navbar" class="app-navbar hidden">
+      <div class="nav-item active" onclick="switchGuestTab('requests', this)">
+        <span class="nav-icon">🎵</span>
+        <span>Verzoekjes</span>
       </div>
-
-    </div>
-
+      <div class="nav-item" onclick="switchGuestTab('photos', this)">
+        <span class="nav-icon">📸</span>
+        <span>Fotobooth</span>
+      </div>
+      <div class="nav-item" onclick="switchGuestTab('promo', this)">
+        <span class="nav-icon">🎎</span>
+        <span>DJ Info</span>
+      </div>
+    </nav>
   </div>
 
-  <!-- AFBEELDING MODAL -->
-  <div id="photo-modal" class="hidden" style="position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.95); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; padding:20px;">
-    <img id="modal-img" src="" style="max-width:100%; max-height:80vh; border-radius:12px; object-fit:contain;">
-    <p id="modal-caption" style="color:#fff; margin-top:12px; text-align:center; font-size:0.9rem;"></p>
-    <button onclick="closePhotoModal()" class="secondary-btn" style="margin-top:16px;">Sluiten ✕</button>
+  <!-- FLOATING SCROLL TO TOP BUTTON -->
+  <button id="btn-scroll-top" onclick="scrollToTop()">↑</button>
+
+  <!-- GUEST GALLERY MODAL (PAGINATED) -->
+  <div id="guest-gallery-modal" class="modal-overlay hidden" style="flex-direction: column; justify-content: flex-start; padding-top: 60px; overflow-y: auto;">
+    <div style="width: 100%; max-width: 480px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+      <h3 style="color: white; margin: 0; font-size: 1.2rem;">Alle Foto's</h3>
+      <button class="btn btn-sm btn-secondary" style="width: auto;" onclick="closeGuestGalleryModal()">Sluiten</button>
+    </div>
+    
+    <div id="guest-gallery-grid" class="photo-grid" style="width: 100%; max-width: 480px; gap: 12px; margin-bottom: 20px;"></div>
+    
+    <div style="width: 100%; max-width: 480px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 40px; background: rgba(0,0,0,0.5); padding: 12px; border-radius: 12px;">
+      <button class="btn btn-sm btn-secondary" style="width: auto;" id="btn-gallery-prev" onclick="changeGalleryPage(-1)">← Vorige</button>
+      <span id="gallery-page-indicator" style="color: white; font-weight: 600; font-size: 0.9rem;">Pagina 1</span>
+      <button class="btn btn-sm btn-secondary" style="width: auto;" id="btn-gallery-next" onclick="changeGalleryPage(1)">Volgende →</button>
+    </div>
+  </div>
+
+  <!-- SINGLE PHOTO MODAL -->
+  <div id="photo-modal" class="modal-overlay hidden" style="flex-direction:column; z-index: 2000;">
+    <img id="modal-img" src="" style="max-width:100%;max-height:75vh;border-radius:12px;object-fit:contain;">
+    <p id="modal-caption" style="color:#fff;margin-top:16px;text-align:center;font-size:0.95rem;font-weight:600;"></p>
+    <button onclick="closePhotoModal()" class="btn btn-secondary" style="width:auto;margin-top:20px;padding:10px 24px;">Sluiten</button>
+  </div>
+
+  <!-- FULLSCREEN SLIDESHOW MODAL (FOR DJ/SCREENS) -->
+  <div id="fullscreen-slideshow-modal" class="modal-overlay hidden" style="flex-direction:column; z-index: 3000; background: #000; padding: 0;">
+    <img id="fs-slideshow-img" src="" style="width: 100vw; height: 100vh; object-fit: contain; transition: opacity 1s ease-in-out;">
+    <button onclick="stopFullscreenSlideshow()" class="btn btn-sm btn-secondary" style="position: absolute; top: 20px; right: 20px; width: auto; background: rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.2);">❌ Sluiten</button>
   </div>
 
   <script>
+    // --- SUPABASE CONFIGURATION ---
     const SUPABASE_URL = localStorage.getItem('custom_supabase_url') || "https://vwbhqtmrenfaqcbwmmqx.supabase.co";
     const SUPABASE_KEY = localStorage.getItem('custom_supabase_key') || "sb_publishable_BZTtNRR2HHFUGZm_R3LahA_XcfQwqHX";
-    let dbClient = null, allSongs = [], allPhotos = [], isDjLoggedIn = false, currentPartyCode = null, isPhotoboothActive = false;
-    let activeLibraryNoteId = null, activeDjLibraryNoteId = null, guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
-    let blacklistedWords = [];
-    let DJ_PIN = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.pincode) ? HUISSTIJL.pincode : "3977";
-    const defaultPromoCard = (typeof HUISSTIJL !== 'undefined' && HUISSTIJL.standaardPromo) ? HUISSTIJL.standaardPromo : { title: "🎉 MXT Productions Boeken?", subtitle: "Vond je het een tof feest en zoek je een DJ voor jouw verjaardag, bruiloft of evenement?", whatsapp: "https://wa.me/31622499093", whatsapp_active: true, email: "info.mxtproductions@gmail.com", email_active: true, instagram: "https://www.instagram.com/mxt.productions?igsh=Nmp4YW50d3JrajNz&utm_source=qr", instagram_active: false, tiktok: "https://www.tiktok.com/@mxtproductions?_r=1&_t=ZN-98fFhDOpgvO", tiktok_active: false, facebook: "https://www.facebook.com/share/1DArnr8LVu/?mibextid=wwXIfr", facebook_active: false };
+    let dbClient = null;
     
+    // --- GLOBAL STATE ---
+    let allSongs = [];
+    let allPhotos = [];
+    let isDjLoggedIn = false;
+    let currentPartyCode = null;
+    let isPhotoboothActive = true;
+    let isRequestsDisabled = false;
+    let blacklistedWords = [];
+    let DJ_PIN = "3977";
+    let guestSessionId = 'guest_' + Math.random().toString(36).substring(2, 9);
+    
+    // Spam protection & Gallery variables
+    let spamCooldownSeconds = 30; 
+    let inlineSlideshowInterval = null;
+    let inlineSlideshowIndex = 0;
+    let fsSlideshowInterval = null;
+    let fsSlideshowIndex = 0;
+    
+    let galleryCurrentPage = 1;
+    const galleryItemsPerPage = 20;
+    
+    // SCROLL TO TOP LOGIC
+    window.addEventListener('scroll', () => {
+      const btn = document.getElementById('btn-scroll-top');
+      if (window.scrollY > 300) btn.classList.add('visible');
+      else btn.classList.remove('visible');
+    });
+    function scrollToTop() { window.scrollTo({ top: 0, behavior: 'smooth' }); }
+
     function toonPopup(bericht) {
       const oude = document.getElementById('custom-toast');
       if (oude) oude.remove();
-      const popup = document.createElement('div');
-      popup.id = 'custom-toast';
-      popup.className = 'toast-popup';
-      popup.innerText = bericht;
-      document.body.appendChild(popup);
-      setTimeout(() => { if (popup) popup.remove(); }, 3000);
+      const p = document.createElement('div');
+      p.id = 'custom-toast';
+      p.className = 'toast-popup';
+      p.innerText = bericht;
+      document.body.appendChild(p);
+      setTimeout(() => { if (p) p.remove(); }, 3000);
     }
+    
     function getVotedSongIds() { try { return JSON.parse(localStorage.getItem('voted_song_ids')) || []; } catch(e){ return []; } }
-    function recordVote(id) { const voted = getVotedSongIds(); if (!voted.includes(id)) { voted.push(id); localStorage.setItem('voted_song_ids', JSON.stringify(voted)); } }
+    function recordVote(id) { 
+        const voted = getVotedSongIds(); 
+        if (!voted.includes(id)) { voted.push(id); localStorage.setItem('voted_song_ids', JSON.stringify(voted)); } 
+        if (!isDjLoggedIn) sessionStorage.setItem('last_request_time', Date.now()); // Record time for spam check
+    }
 
-    async function initSupabase() {
+    function checkSpam() {
+      if (isDjLoggedIn) return true; // DJ kan altijd toevoegen
+      const lastTime = sessionStorage.getItem('last_request_time');
+      if (lastTime) {
+        const diff = Math.floor((Date.now() - parseInt(lastTime)) / 1000);
+        if (diff < spamCooldownSeconds) {
+          toonPopup(`⏳ Ho even! Wacht nog ${spamCooldownSeconds - diff} seconden voordat je weer een verzoekje plaatst.`);
+          return false;
+        }
+      }
+      return true;
+    }
+
+    window.onload = async () => {
       try {
         dbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        
         const urlParams = new URLSearchParams(window.location.search);
         const codeFromUrl = urlParams.get('code');
-        if (codeFromUrl) localStorage.setItem('entered_party_code', codeFromUrl);
+        if (codeFromUrl && codeFromUrl.length === 4) {
+          document.getElementById('input-guest-code').value = codeFromUrl;
+        }
+
         await loadAppSettings();
-        checkGuestAccess();
         loadRequests();
         loadPhotos();
         listenToRealtime();
-        setInterval(() => { loadAppSettings(); loadRequests(); loadPhotos(); pingPresence(); }, 3000);
-        setInterval(() => { fetchOnlineCount(); }, 5000);
-      } catch(err) { toonPopup('Fout bij verbinden met Supabase!'); }
+        checkActiveSession();
+        
+        setInterval(() => { fetchOnlineCount(); pingPresence(); }, 5000);
+      } catch(err) {
+        toonPopup('Fout bij verbinden met Supabase!');
+      }
+    };
+
+    // --- NAVIGATION & TABS ---
+    function switchAuthTab(tab) {
+      document.getElementById('auth-guest-form').classList.toggle('hidden', tab !== 'guest');
+      document.getElementById('auth-dj-form').classList.toggle('hidden', tab !== 'dj');
+      
+      document.getElementById('auth-subtitle').innerText = tab === 'guest' ? 'Voer de feestcode in om deel te nemen.' : 'Voer de DJ-pincode in om in te loggen.';
+      document.getElementById('btn-header-dj-login').classList.toggle('hidden', tab === 'dj');
     }
 
+    function switchGuestTab(tab, el) {
+      document.querySelectorAll('#guest-navbar .nav-item').forEach(item => item.classList.remove('active'));
+      el.classList.add('active');
+      document.getElementById('guest-tab-requests').classList.toggle('hidden', tab !== 'requests');
+      document.getElementById('guest-tab-photos').classList.toggle('hidden', tab !== 'photos');
+      document.getElementById('guest-tab-promo').classList.toggle('hidden', tab !== 'promo');
+    }
+
+    function switchDJTab(tab) {
+      const buttons = document.querySelectorAll('#screen-dj .segment-btn');
+      const tabs = ['queue', 'photos', 'settings'];
+      tabs.forEach((t, idx) => {
+        if(buttons[idx]) buttons[idx].classList.toggle('active', t === tab);
+        const panel = document.getElementById(`dj-tab-${t}`);
+        if(panel) panel.classList.toggle('hidden', t !== tab);
+      });
+    }
+
+    function toggleDjQuickPanel(panelType) {
+      const add = document.getElementById('dj-quick-add');
+      const bl = document.getElementById('dj-quick-blacklist');
+      const ph = document.getElementById('dj-quick-photos');
+      
+      if(panelType !== 'add') add.classList.add('hidden');
+      if(panelType !== 'blacklist') bl.classList.add('hidden');
+      if(panelType !== 'photos') ph.classList.add('hidden');
+      
+      if (panelType === 'add') {
+          add.classList.toggle('hidden');
+          if(!add.classList.contains('hidden')) document.getElementById('quick-search-library').focus();
+      }
+      if (panelType === 'blacklist') {
+          bl.classList.toggle('hidden');
+          if(!bl.classList.contains('hidden')) document.getElementById('quick-blacklist-input').focus();
+      }
+      if (panelType === 'photos') {
+          ph.classList.toggle('hidden');
+          if(!ph.classList.contains('hidden')) renderQuickPhotos();
+      }
+    }
+
+    // --- AUTHENTICATION ---
+    function checkActiveSession() {
+      const savedGuestCode = sessionStorage.getItem('entered_party_code');
+      if (savedGuestCode && currentPartyCode && savedGuestCode === currentPartyCode && !isDjLoggedIn) {
+        document.getElementById('screen-auth').classList.add('hidden');
+        document.getElementById('screen-guest').classList.remove('hidden');
+        document.getElementById('guest-navbar').classList.remove('hidden');
+        document.getElementById('screen-admin').classList.add('hidden');
+        
+        document.getElementById('header-status-badge').classList.remove('hidden');
+        document.getElementById('btn-header-dj-login').classList.add('hidden');
+        
+        pingPresence();
+      } else if (!isDjLoggedIn) {
+        document.getElementById('screen-auth').classList.remove('hidden');
+        document.getElementById('screen-guest').classList.add('hidden');
+        document.getElementById('guest-navbar').classList.add('hidden');
+        document.getElementById('screen-dj').classList.add('hidden');
+        document.getElementById('screen-admin').classList.add('hidden');
+        
+        document.getElementById('header-status-badge').classList.add('hidden');
+        document.getElementById('btn-header-dj-login').classList.remove('hidden');
+        switchAuthTab('guest');
+      }
+    }
+
+    function loginGuest() {
+      const enteredCode = document.getElementById('input-guest-code').value.trim();
+      if (!currentPartyCode) return toonPopup('Er is momenteel geen actief feest.');
+      if (enteredCode === currentPartyCode) {
+        sessionStorage.setItem('entered_party_code', enteredCode);
+        isDjLoggedIn = false;
+        checkActiveSession();
+        toonPopup('Succesvol ingelogd!');
+      } else {
+        toonPopup('Onjuiste feestcode!');
+      }
+    }
+
+    function loginDJ() {
+      const enteredPin = document.getElementById('input-dj-pin').value.trim();
+      if (enteredPin === DJ_PIN) {
+        isDjLoggedIn = true;
+        document.getElementById('input-dj-pin').value = '';
+        
+        document.getElementById('screen-auth').classList.add('hidden');
+        document.getElementById('screen-dj').classList.remove('hidden');
+        document.getElementById('screen-admin').classList.add('hidden');
+        
+        document.getElementById('header-status-badge').classList.remove('hidden');
+        document.getElementById('btn-header-dj-login').classList.add('hidden');
+        
+        toonPopup('Succesvol ingelogd als DJ!');
+        renderDJQueue();
+      } else {
+        toonPopup('Onjuiste DJ Pincode!');
+      }
+    }
+    
+    function showDJLoginFromGuest() {
+      document.getElementById('screen-guest').classList.add('hidden');
+      document.getElementById('guest-navbar').classList.add('hidden');
+      document.getElementById('screen-auth').classList.remove('hidden');
+      switchAuthTab('dj');
+    }
+
+    function switchToGuestFromDJ() {
+      if (currentPartyCode) sessionStorage.setItem('entered_party_code', currentPartyCode);
+      isDjLoggedIn = false;
+      document.getElementById('screen-dj').classList.add('hidden');
+      checkActiveSession();
+      toonPopup('Omgeschakeld naar gastenscherm!');
+    }
+
+    function logoutGuest() { sessionStorage.removeItem('entered_party_code'); location.reload(); }
+    function logoutDJ() { isDjLoggedIn = false; sessionStorage.removeItem('entered_party_code'); location.reload(); }
+
+    // --- ADMIN PANEL LOGIC ---
+    function openAdminPanel() {
+      document.getElementById('screen-dj').classList.add('hidden');
+      document.getElementById('screen-admin').classList.remove('hidden');
+    }
+
+    function closeAdminPanel() {
+      document.getElementById('screen-admin').classList.add('hidden');
+      document.getElementById('screen-dj').classList.remove('hidden');
+    }
+
+    async function handleAdminUpload(event, type) {
+      const file = event.target.files[0];
+      if (!file) return;
+      toonPopup('Bezig met uploaden...');
+      
+      try {
+        const compressedBlob = await compressImage(file, 800, 800, 0.8);
+        const fileName = `${type}_${Date.now()}.png`;
+        
+        let bucketName = 'media';
+        let uploadAttempt = await dbClient.storage.from(bucketName).upload(fileName, compressedBlob, { contentType: file.type, upsert: true });
+        
+        if (uploadAttempt.error) {
+          bucketName = 'party-photos';
+          uploadAttempt = await dbClient.storage.from(bucketName).upload(fileName, compressedBlob, { contentType: file.type, upsert: true });
+          if (uploadAttempt.error) throw uploadAttempt.error;
+        }
+
+        const { data: publicUrlData } = dbClient.storage.from(bucketName).getPublicUrl(fileName);
+        const keyName = type === 'logo' ? 'logo_url' : 'promo_photo_url';
+        
+        await dbClient.from('settings').upsert({ key: keyName, value: publicUrlData.publicUrl }, { onConflict: 'key' });
+        
+        toonPopup(type === 'logo' ? 'Logo succesvol opgeslagen!' : 'Profielfoto succesvol opgeslagen!');
+        event.target.value = '';
+        loadAppSettings(); 
+      } catch (err) {
+        toonPopup('Upload mislukt. Controleer je instellingen.');
+      }
+    }
+
+    async function removeAdminLogo() {
+      await dbClient.from('settings').upsert({ key: 'logo_url', value: 'REMOVED' }, { onConflict: 'key' });
+      toonPopup('Logo verwijderd!');
+      loadAppSettings();
+    }
+
+    async function removeAdminPromoPhoto() {
+      await dbClient.from('settings').upsert({ key: 'promo_photo_url', value: 'REMOVED' }, { onConflict: 'key' });
+      toonPopup('Profielfoto verwijderd!');
+      loadAppSettings();
+    }
+
+    async function saveAdminSettings() {
+      const brandName = document.getElementById('admin-dj-name').value.trim();
+      await dbClient.from('settings').upsert({ key: 'app_brand_name', value: brandName }, { onConflict: 'key' });
+
+      const promoData = {
+        title: document.getElementById('admin-promo-title').value.trim(),
+        subtitle: document.getElementById('admin-promo-bio').value.trim(),
+        whatsapp: document.getElementById('admin-link-wa-url').value.trim(),
+        whatsapp_active: document.getElementById('admin-link-wa-active').checked,
+        email: document.getElementById('admin-link-em-url').value.trim(),
+        email_active: document.getElementById('admin-link-em-active').checked,
+        instagram: document.getElementById('admin-link-ig-url').value.trim(),
+        instagram_active: document.getElementById('admin-link-ig-active').checked,
+        tiktok: document.getElementById('admin-link-tt-url').value.trim(),
+        tiktok_active: document.getElementById('admin-link-tt-active').checked,
+        facebook: document.getElementById('admin-link-fb-url').value.trim(),
+        facebook_active: document.getElementById('admin-link-fb-active').checked,
+      };
+      
+      await dbClient.from('settings').upsert({ key: 'promo_card', value: JSON.stringify(promoData) }, { onConflict: 'key' });
+
+      toonPopup('Instellingen succesvol opgeslagen!');
+      loadAppSettings();
+      closeAdminPanel();
+    }
+
+    // --- DB SYNC & LOAD ---
     async function loadAppSettings() {
       if (!dbClient) return;
       const { data } = await dbClient.from('settings').select('*');
       if (data) {
         data.forEach(item => {
           if (item.key === 'app_pincode' && item.value) DJ_PIN = item.value;
+          
           if (item.key === 'party_code' && item.value) {
             currentPartyCode = item.value;
-            const djCodeDisplay = document.getElementById('dj-active-code-display');
-            if (djCodeDisplay) djCodeDisplay.innerText = "CODE: " + currentPartyCode;
-            const guestActiveCode = document.getElementById('guest-active-code');
-            if (guestActiveCode) guestActiveCode.innerText = currentPartyCode;
-            const savedGuestCode = localStorage.getItem('entered_party_code');
+            document.getElementById('party-code-display').innerText = `CODE: ${currentPartyCode}`;
+            const savedGuestCode = sessionStorage.getItem('entered_party_code');
             if (savedGuestCode && savedGuestCode !== currentPartyCode && !isDjLoggedIn) {
-              localStorage.removeItem('entered_party_code');
-              checkGuestAccess();
-              toonPopup('Het vorige feest is afgelopen! Voer de nieuwe code in.');
+              sessionStorage.removeItem('entered_party_code');
+              checkActiveSession();
+              toonPopup('Feest veranderd! Voer de nieuwe code in.');
             }
           }
+          
+          if (item.key === 'spam_cooldown') {
+              spamCooldownSeconds = parseInt(item.value) || 30;
+              const spEl = document.getElementById('setting-spam-cooldown');
+              if (spEl && document.activeElement !== spEl) spEl.value = spamCooldownSeconds;
+          }
+
           if (item.key === 'photobooth_active') {
             isPhotoboothActive = (item.value === 'true');
             const djToggle = document.getElementById('dj-photobooth-toggle');
             if (djToggle && document.activeElement !== djToggle) djToggle.checked = isPhotoboothActive;
-            const guestWrapper = document.getElementById('guest-photobooth-wrapper');
-            if (guestWrapper) {
-              if (isPhotoboothActive) guestWrapper.classList.remove('hidden');
-              else {
-                guestWrapper.classList.add('hidden');
-                document.getElementById('guest-photobooth-content').classList.add('hidden');
-                document.getElementById('toggle-photobooth-btn').innerText = 'Openen';
+            if (isPhotoboothActive) {
+              document.getElementById('photobooth-content').classList.remove('hidden');
+              document.getElementById('photobooth-disabled-msg').classList.add('hidden');
+            } else {
+              document.getElementById('photobooth-content').classList.add('hidden');
+              document.getElementById('photobooth-disabled-msg').classList.remove('hidden');
+            }
+          }
+
+          if (item.key === 'requests_disabled') {
+            isRequestsDisabled = (item.value === 'true');
+            const guestFormContainer = document.getElementById('guest-requests-form-container');
+            const guestDisabledMsg = document.getElementById('guest-requests-disabled-msg');
+            const djBtnToggle = document.getElementById('btn-toggle-requests');
+            
+            if (isRequestsDisabled) {
+              if (guestFormContainer) guestFormContainer.classList.add('hidden');
+              if (guestDisabledMsg) guestDisabledMsg.classList.remove('hidden');
+              if (djBtnToggle) {
+                djBtnToggle.style.background = 'var(--danger-color)';
+                djBtnToggle.style.color = '#fff';
+                djBtnToggle.innerText = '✅ Open';
+                djBtnToggle.title = 'Verzoekjes weer inschakelen';
+              }
+            } else {
+              if (guestFormContainer) guestFormContainer.classList.remove('hidden');
+              if (guestDisabledMsg) guestDisabledMsg.classList.add('hidden');
+              if (djBtnToggle) {
+                djBtnToggle.style.background = '';
+                djBtnToggle.style.color = '';
+                djBtnToggle.innerText = '🛑 Sluit';
+                djBtnToggle.title = 'Verzoekjes uitschakelen (einde feest)';
               }
             }
           }
+          
           if (item.key === 'blacklist' && item.value) {
             try { blacklistedWords = JSON.parse(item.value); } catch(e){ blacklistedWords = []; }
             renderBlacklistUI();
           }
-          if (item.key === 'welcome_text') {
-            const banner = document.getElementById('welcome-banner'), input = document.getElementById('welcome-text-input');
-            if (item.value && item.value.trim() !== "") {
-              banner.innerText = item.value; banner.classList.remove('hidden');
-              if (input && document.activeElement !== input) input.value = item.value;
-            } else {
-              banner.innerText = ""; banner.classList.add('hidden');
-              if (input && document.activeElement !== input) input.value = "";
-            }
-          }
-          if (item.key === 'app_colors' && item.value) {
-            try {
-              const c = JSON.parse(item.value), root = document.documentElement;
-              if (c.bg) root.style.setProperty('--bg-color', c.bg);
-              if (c.card) root.style.setProperty('--card-bg', c.card);
-              if (c.accent) root.style.setProperty('--accent-color', c.accent);
-              if (c.text) root.style.setProperty('--text-color', c.text);
-            } catch(e){}
-          }
+
+          // BRANDING: Header Logo
           if (item.key === 'logo_url') {
-            const logoImg = document.getElementById('app-logo'), brandText = document.getElementById('app-brand-text');
-            if (logoImg) {
-              if (item.value === 'REMOVED' || !item.value) {
-                logoImg.classList.add('hidden');
-              } else {
-                logoImg.classList.remove('hidden');
-                logoImg.src = item.value + (item.value.includes('?') ? '&' : '?') + 't=' + new Date().getTime();
-              }
-            }
-          }
-          if (item.key === 'app_brand_name') {
-            const brandText = document.getElementById('app-brand-text');
-            if (brandText) brandText.innerText = item.value || 'BeatRequest';
-          }
-        });
-      }
-      loadPromoCard();
-    }
-
-    async function savePhotoboothSetting() {
-      const isChecked = document.getElementById('dj-photobooth-toggle').checked;
-      isPhotoboothActive = isChecked;
-      if (dbClient) {
-        await dbClient.from('settings').upsert({ key: 'photobooth_active', value: isChecked ? 'true' : 'false' }, { onConflict: 'key' });
-      }
-      loadAppSettings();
-      toonPopup(isChecked ? 'Fotobooth ingeschakeld! 📸' : 'Fotobooth uitgeschakeld.');
-    }
-
-    function toggleGuestPhotobooth() {
-      const content = document.getElementById('guest-photobooth-content');
-      const btn = document.getElementById('toggle-photobooth-btn');
-      if (content.classList.contains('hidden')) {
-        content.classList.remove('hidden');
-        btn.innerText = 'Sluiten';
-      } else {
-        content.classList.add('hidden');
-        btn.innerText = 'Openen';
-      }
-    }
-
-    function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) {
-      return new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = event => {
-          const img = new Image();
-          img.src = event.target.result;
-          img.onload = () => {
-            let width = img.width, height = img.height;
-            if (width > height) {
-              if (width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
+            const logoImg = document.getElementById('header-logo');
+            const adminPreview = document.getElementById('admin-logo-preview');
+            if (item.value === 'REMOVED' || !item.value) {
+              logoImg.classList.add('hidden');
+              adminPreview.classList.add('hidden');
             } else {
-              if (height > maxHeight) { width = Math.round((width * maxHeight) / height); height = maxHeight; }
+              logoImg.src = item.value;
+              logoImg.classList.remove('hidden');
+              adminPreview.src = item.value;
+              adminPreview.classList.remove('hidden');
             }
-            const canvas = document.createElement('canvas');
-            canvas.width = width; canvas.height = height;
-            const ctx = canvas.getContext('2d');
-            ctx.drawImage(img, 0, 0, width, height);
-            canvas.toBlob(blob => {
-              if (!blob) { reject(new Error('Canvas is leeg')); return; }
-              resolve(blob);
-            }, 'image/jpeg', quality);
-          };
-          img.onerror = error => reject(error);
-        };
-        reader.onerror = error => reject(error);
-      });
-    }
-
-    async function uploadPartyPhoto() {
-      const fileInput = document.getElementById('photo-file-input');
-      const uploaderInput = document.getElementById('photo-uploader-name');
-      const noteInput = document.getElementById('photo-note');
-      
-      const file = fileInput.files[0];
-      if (!file) return toonPopup('Kies of maak eerst een foto!');
-      
-      toonPopup('Foto comprimeren en uploaden...');
-      try {
-        const compressedBlob = await compressImage(file, 1000, 1000, 0.7);
-        const fileName = `${currentPartyCode || 'party'}_${Date.now()}.jpg`;
-        const filePath = `uploads/${fileName}`;
-
-        const { error: uploadError } = await dbClient.storage.from('party-photos').upload(filePath, compressedBlob, { contentType: 'image/jpeg' });
-        if (uploadError) {
-          toonPopup('Upload mislukt. Controleer bucket "party-photos".');
-          return;
-        }
-
-        const { data: publicUrlData } = dbClient.storage.from('party-photos').getPublicUrl(filePath);
-        const imageUrl = publicUrlData.publicUrl;
-
-        await dbClient.from('photos').insert([{
-          party_code: currentPartyCode || '0000',
-          image_url: imageUrl,
-          storage_path: filePath,
-          uploader_name: uploaderInput.value.trim() || 'Anonieme Feestganger',
-          note: noteInput.value.trim(),
-          created_at: new Date().toISOString()
-        }]);
-
-        toonPopup('Foto succesvol gedeeld met het feest! 📸🎉');
-        fileInput.value = ''; uploaderInput.value = ''; noteInput.value = '';
-        loadPhotos();
-      } catch(err) {
-        toonPopup('Fout bij verwerken van de foto.');
-      }
-    }
-
-    async function loadPhotos() {
-      if (!dbClient) return;
-      const { data, error } = await dbClient.from('photos').select('*').order('created_at', { ascending: false });
-      if (data && !error) {
-        allPhotos = data;
-        renderPhotoGalleries();
-      }
-    }
-
-    function renderPhotoGalleries() {
-      const guestGrid = document.getElementById('guest-photo-grid'), djGrid = document.getElementById('dj-photo-grid');
-      if (guestGrid) guestGrid.innerHTML = '';
-      if (djGrid) djGrid.innerHTML = '';
-
-      if (allPhotos.length === 0) {
-        const emptyMsg = '<p style="color:var(--subtext-color); font-size:0.85em; grid-column:1/-1;">Nog geen foto\'s geüpload. Wees de eerste! 📸</p>';
-        if (guestGrid) guestGrid.innerHTML = emptyMsg;
-        if (djGrid) djGrid.innerHTML = emptyMsg;
-        return;
-      }
-
-      allPhotos.forEach(photo => {
-        const uploader = photo.uploader_name || 'Anoniem';
-        const note = photo.note ? ` - "${photo.note}"` : '';
-        const itemHtml = `
-          <div class="photo-item">
-            <img src="${photo.image_url}" alt="Feestfoto" onclick="openPhotoModal('${photo.image_url}', '${uploader}${note}')">
-            <div class="photo-info">
-              <strong>👤 ${uploader}</strong>${note}
-              ${isDjLoggedIn ? `<button onclick="deletePhoto(${photo.id}, '${photo.storage_path}')" class="danger-btn" style="padding:4px 8px; font-size:0.7rem; margin-top:6px; width:100%;">Wis 🗑️</button>` : ''}
-            </div>
-          </div>
-        `;
-        if (guestGrid) guestGrid.innerHTML += itemHtml;
-        if (djGrid) djGrid.innerHTML += itemHtml;
-      });
-    }
-
-    function openPhotoModal(url, caption) {
-      document.getElementById('modal-img').src = url;
-      document.getElementById('modal-caption').innerText = caption;
-      document.getElementById('photo-modal').classList.remove('hidden');
-    }
-    function closePhotoModal() { document.getElementById('photo-modal').classList.add('hidden'); }
-
-    async function deletePhoto(id, storagePath) {
-      if (!confirm('Weet je zeker dat je deze foto wilt verwijderen?')) return;
-      if (storagePath) await dbClient.storage.from('party-photos').remove([storagePath]);
-      await dbClient.from('photos').delete().eq('id', id);
-      toonPopup('Foto succesvol verwijderd!');
-      loadPhotos();
-    }
-
-    async function downloadAllPhotos() {
-      if (allPhotos.length === 0) return toonPopup('Geen foto\'s om te downloaden!');
-      if (typeof JSZip === 'undefined') return toonPopup('JSZip bibliotheek ontbreekt.');
-      
-      toonPopup('ZIP-bestand maken...');
-      const zip = new JSZip(), folder = zip.folder("feest_fotos");
-      
-      for (let i = 0; i < allPhotos.length; i++) {
-        try {
-          const photo = allPhotos[i];
-          const response = await fetch(photo.image_url);
-          const blob = await response.blob();
-          const uploaderName = (photo.uploader_name || 'anoniem').replace(/[^a-zA-Z0-9]/g, '_');
-          folder.file(`foto_${i + 1}_${uploaderName}.jpg`, blob);
-        } catch (err) {}
-      }
-      
-      const content = await zip.generateAsync({ type: 'blob' });
-      const link = document.createElement('a');
-      link.href = URL.createObjectURL(content);
-      link.download = `feest_fotos_${currentPartyCode || 'export'}.zip`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      toonPopup('Foto\'s gedownload als ZIP! 📦');
-    }
-
-    function toggleDjPhotosMenu() {
-      const panel = document.getElementById('dj-photos-panel');
-      panel.classList.toggle('hidden');
-    }
-
-    function renderBlacklistUI() {
-      const container = document.getElementById('blacklist-words-container');
-      if (!container) return;
-      if (blacklistedWords.length === 0) {
-        container.innerHTML = '<small style="color:var(--subtext-color);">Geen woorden op zwarte lijst.</small>';
-        return;
-      }
-      container.innerHTML = '';
-      blacklistedWords.forEach(word => {
-        container.innerHTML += `<span style="background:#0d0f1d; border:1px solid var(--border-color); padding:4px 10px; border-radius:9999px; font-size:0.8rem; display:inline-flex; align-items:center; gap:6px;">${word} <span style="cursor:pointer; color:var(--danger-color); font-weight:bold;" onclick="removeBlacklistWord('${word}')">×</span></span>`;
-      });
-    }
-
-    async function addBlacklistWord() {
-      const input = document.getElementById('blacklist-word-input'), word = input.value.trim().toLowerCase();
-      if (!word) return;
-      if (!blacklistedWords.includes(word)) {
-        blacklistedWords.push(word);
-        await saveBlacklistToDb();
-        input.value = '';
-      }
-    }
-    async function removeBlacklistWord(word) {
-      blacklistedWords = blacklistedWords.filter(w => w !== word);
-      await saveBlacklistToDb();
-    }
-    async function saveBlacklistToDb() {
-      if (dbClient) await dbClient.from('settings').upsert({ key: 'blacklist', value: JSON.stringify(blacklistedWords) }, { onConflict: 'key' });
-      renderBlacklistUI();
-      toonPopup('Zwarte lijst bijgewerkt!');
-    }
-    function containsBlacklistedWord(...texts) {
-      const combined = texts.join(' ').toLowerCase();
-      return blacklistedWords.some(word => combined.includes(word.toLowerCase()));
-    }
-
-    async function pingPresence() {
-      const savedGuestCode = localStorage.getItem('entered_party_code');
-      if (!savedGuestCode || !currentPartyCode || savedGuestCode !== currentPartyCode || isDjLoggedIn) return;
-      await dbClient.from('presence').upsert({ session_id: guestSessionId, party_code: currentPartyCode, last_seen: new Date().toISOString() }, { onConflict: 'session_id' });
-    }
-    
-    async function fetchOnlineCount() {
-      if (!dbClient || !currentPartyCode) return;
-      const threshold = new Date(Date.now() - 15000).toISOString();
-      await dbClient.from('presence').delete().lt('last_seen', threshold);
-      const { count, error } = await dbClient.from('presence').select('*', { count: 'exact', head: true }).eq('party_code', currentPartyCode);
-      if (!error && count !== null) {
-        const djCount = document.getElementById('dj-online-count');
-        const guestCount = document.getElementById('guest-online-count');
-        if (djCount) djCount.innerText = `👥 ${count} Ingelogd`;
-        if (guestCount) guestCount.innerText = `${count} Live Feestganger${count !== 1 ? 's' : ''}`;
-      }
-    }
-    
-    function checkGuestAccess() {
-      if (isDjLoggedIn) return;
-      const savedGuestCode = localStorage.getItem('entered_party_code');
-      if (savedGuestCode && currentPartyCode && savedGuestCode === currentPartyCode) {
-        document.getElementById('party-code-view').classList.add('hidden');
-        document.getElementById('guest-view').classList.remove('hidden');
-        pingPresence();
-      } else {
-        document.getElementById('guest-view').classList.add('hidden');
-        document.getElementById('party-code-view').classList.remove('hidden');
-      }
-    }
-
-    function submitPartyCode() {
-      const inputCode = document.getElementById('guest-party-code-input').value.trim();
-      if (!currentPartyCode) return toonPopup('Er is momenteel geen actief feest gestart.');
-      if (inputCode === currentPartyCode) {
-        localStorage.setItem('entered_party_code', inputCode);
-        checkGuestAccess();
-        pingPresence();
-        toonPopup('Succesvol ingelogd op het feest!');
-      } else {
-        toonPopup('Onjuiste feestcode! Kijk op het scherm.');
-      }
-    }
-    
-    async function startNewSession() {
-      if (!confirm("Weet je zeker dat je een nieuw feest wilt starten? Alle verzoekjes & foto's worden gewist.")) return;
-      const newCode = Math.floor(1000 + Math.random() * 9000).toString();
-      try {
-        await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).neq('id', 0);
-        await dbClient.from('presence').delete();
-        await dbClient.from('photos').delete().neq('id', 0);
-        await dbClient.from('settings').delete().eq('key', 'party_code');
-        await dbClient.from('settings').insert([{ key: 'party_code', value: newCode }]);
-        currentPartyCode = newCode;
-        localStorage.removeItem('voted_song_ids');
-        document.getElementById('dj-active-code-display').innerText = "CODE: " + newCode;
-        toonPopup(`Nieuw feest gestart! Code: ${newCode}`);
-        loadRequests(); loadPhotos(); fetchOnlineCount();
-      } catch(err) {
-        toonPopup("Fout bij starten van nieuw feest.");
-      }
-    }
-    
-    function toggleSettingsMenu() { document.getElementById('settings-panel').classList.toggle('hidden'); }
-    function toggleDjSearchMenu() { document.getElementById('dj-search-panel').classList.toggle('hidden'); }
-    function toggleBlacklistMenu() { document.getElementById('dj-blacklist-panel').classList.toggle('hidden'); }
-    function toggleXmlMenu() { document.getElementById('xml-panel').classList.toggle('hidden'); }
-    
-    async function saveWelcomeText() {
-      const text = document.getElementById('welcome-text-input').value.trim();
-      if (dbClient) await dbClient.from('settings').upsert({ key: 'welcome_text', value: text }, { onConflict: 'key' });
-      loadAppSettings();
-      toonPopup('Welkomsttekst bijgewerkt!');
-    }
-    async function clearWelcomeText() { document.getElementById('welcome-text-input').value = ""; saveWelcomeText(); }
-    
-    async function loadPromoCard() {
-      if (!dbClient) return;
-      const { data } = await dbClient.from('settings').select('value').eq('key', 'promo_card').maybeSingle();
-      let promoData = defaultPromoCard;
-      if (data && data.value) { try { promoData = JSON.parse(data.value); } catch(e){ promoData = defaultPromoCard; } }
-      
-      const displayTitle = document.getElementById('promo-display-title'), displaySubtitle = document.getElementById('promo-display-subtitle'), displayLinks = document.getElementById('promo-display-links');
-      const displayTitleLogin = document.getElementById('promo-display-title-login'), displaySubtitleLogin = document.getElementById('promo-display-subtitle-login'), displayLinksLogin = document.getElementById('promo-display-links-login');
-      const cardTitle = promoData.title || defaultPromoCard.title, cardSubtitle = promoData.subtitle || defaultPromoCard.subtitle;
-      
-      if (displayTitle) displayTitle.innerText = cardTitle; if (displaySubtitle) displaySubtitle.innerText = cardSubtitle;
-      if (displayTitleLogin) displayTitleLogin.innerText = cardTitle; if (displaySubtitleLogin) displaySubtitleLogin.innerText = cardSubtitle;
-      
-      const platforms = [
-        { key: 'whatsapp', label: '💬 WhatsApp', isLink: true },
-        { key: 'email', label: '✉️ E-mail', isLink: false },
-        { key: 'instagram', label: '📸 Instagram', isLink: true },
-        { key: 'tiktok', label: '🎵 TikTok', isLink: true },
-        { key: 'facebook', label: '👥 Facebook', isLink: true }
-      ];
-      let linksHtml = '';
-      platforms.forEach(p => {
-        if (promoData[`${p.key}_active`] && promoData[p.key]) {
-          let val = promoData[p.key].trim(), href = val;
-          if (!p.isLink && !href.startsWith('mailto:')) href = 'mailto:' + href;
-          else if (p.isLink && !href.startsWith('http')) href = 'https://' + href;
-          linksHtml += `<a href="${href}" target="_blank" class="contact-link">${p.label}</a>`;
-        }
-      });
-      if (displayLinks) displayLinks.innerHTML = linksHtml;
-      if (displayLinksLogin) displayLinksLogin.innerHTML = linksHtml;
-    }
-    
-    async function savePromoCard() {
-      const promoData = {
-        title: document.getElementById('promo-title-input').value.trim(),
-        subtitle: document.getElementById('promo-subtitle-input').value.trim(),
-        whatsapp: document.getElementById('promo-whatsapp-input').value.trim(),
-        whatsapp_active: document.getElementById('promo-whatsapp-toggle').checked,
-        email: document.getElementById('promo-email-input').value.trim(),
-        email_active: document.getElementById('promo-email-toggle').checked,
-        instagram: document.getElementById('promo-instagram-input').value.trim(),
-        instagram_active: document.getElementById('promo-instagram-toggle').checked,
-        tiktok: document.getElementById('promo-tiktok-input').value.trim(),
-        tiktok_active: document.getElementById('promo-tiktok-toggle').checked,
-        facebook: document.getElementById('promo-facebook-input').value.trim(),
-        facebook_active: document.getElementById('promo-facebook-toggle').checked,
-      };
-      if (dbClient) await dbClient.from('settings').upsert({ key: 'promo_card', value: JSON.stringify(promoData) }, { onConflict: 'key' });
-      loadPromoCard();
-      toonPopup('Visitekaartje opgeslagen!');
-    }
-    
-    function toggleCustomForm() {
-      const form = document.getElementById('custom-form-container');
-      form.classList.toggle('hidden');
-    }
-    function toggleDjCustomForm() {
-      const form = document.getElementById('dj-custom-form-container');
-      form.classList.toggle('hidden');
-    }
-    
-    function showView(view) {
-      ['party-code-view', 'guest-view', 'pin-view', 'dj-view'].forEach(id => document.getElementById(id).classList.add('hidden'));
-      document.getElementById('guest-pill-btn').classList.remove('active');
-      document.getElementById('dj-login-btn').classList.remove('active');
-      
-      if (view === 'guest') {
-        document.getElementById('guest-pill-btn').classList.add('active');
-        checkGuestAccess();
-      } else if (view === 'dj') {
-        document.getElementById('dj-login-btn').classList.add('active');
-        document.getElementById('dj-view').classList.remove('hidden');
-        loadAppSettings(); fetchOnlineCount();
-      } else {
-        document.getElementById(view + '-view').classList.remove('hidden');
-      }
-    }
-    function checkDJPass() { if (isDjLoggedIn) showView('dj'); else showView('pin'); }
-    
-    function verifyPin() {
-      const enteredPin = document.getElementById('dj-pin-input').value.trim();
-      if (enteredPin === DJ_PIN) {
-        isDjLoggedIn = true; document.getElementById('dj-pin-input').value = ''; showView('dj'); toonPopup('Welkom DJ!');
-      } else {
-        toonPopup('Onjuiste pincode!'); document.getElementById('dj-pin-input').value = '';
-      }
-    }
-    
-    async function vote(id, optionalNote = null, isDjAction = false) {
-      const song = allSongs.find(s => s.id === id);
-      if (!song) return;
-      if (!isDjAction && containsBlacklistedWord(song.title, song.artist, optionalNote)) {
-        toonPopup('Oeps, dit nummer mag niet aangevraagd worden.');
-        return;
-      }
-      const currentVotes = Number(song.votes) || 0;
-      const newVotes = isDjAction ? currentVotes : (song.status === 'done' ? 1 : currentVotes + 1);
-      const updateData = { votes: newVotes, status: 'requested', created_at: new Date().toISOString() };
-      if (optionalNote) updateData.note = optionalNote;
-      
-      const { error } = await dbClient.from('requests').update(updateData).eq('id', id);
-      if (error) {
-        toonPopup('Fout bij stemmen!');
-      } else {
-        if (!isDjAction) recordVote(id);
-        toonPopup(`Verzoekje voor "${song.title}" verstuurd!`);
-        activeLibraryNoteId = null; activeDjLibraryNoteId = null; loadRequests();
-      }
-    }
-
-    async function loadRequests() {
-      if (!dbClient) return;
-      const { data, error } = await dbClient.from('requests').select('*');
-      if (data && !error) { allSongs = data; renderAllViews(); }
-    }
-    function renderAllViews() { renderGuestRequests(); renderDjRequests(); renderUploadedXmlFiles(); filterSongs(); filterDjSearchSongs(); renderPhotoGalleries(); }
-    function formatTime(isoString) { if (!isoString) return ''; return new Date(isoString).toLocaleTimeString('nl-NL', { hour: '2-digit', minute: '2-digit' }); }
-    
-    function renderGuestRequests() {
-      const guestList = document.getElementById('guest-requested-list'), guestDoneList = document.getElementById('guest-done-list');
-      guestList.innerHTML = ''; guestDoneList.innerHTML = '';
-      const requested = allSongs.filter(s => s.status === 'requested').sort((a,b) => (b.votes || 0) - (a.votes || 0));
-      const done = allSongs.filter(s => s.status === 'done'), votedIds = getVotedSongIds();
-      
-      // Dynamic stat update
-      const statCurrent = document.getElementById('stat-current-track');
-      if (statCurrent && requested.length > 0) {
-        statCurrent.innerText = `${requested[0].title} - ${requested[0].artist}`;
-      } else if (statCurrent) {
-        statCurrent.innerText = "Klaar voor verzoekjes";
-      }
-
-      if (requested.length === 0) {
-        guestList.innerHTML = '<p style="text-align:center; color:var(--subtext-color); padding:16px 0;">Er zijn nog geen verzoekjes. Wees de eerste! 🚀</p>';
-      } else {
-        requested.forEach(song => {
-          const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:8px;">⏱️ ${formatTime(song.created_at)}</small>` : '';
-          const noteText = song.note ? `<br><small style="color:#c084fc;">💬 "${song.note}"</small>` : '';
-          const hasVoted = votedIds.includes(song.id);
-          guestList.innerHTML += `
-            <div class="song-item">
-              <div>
-                <strong style="color:#fff; font-size:1rem;">${song.title}</strong> ${timeStr}<br>
-                <small style="color:var(--subtext-color); font-size:0.85rem;">${song.artist}</small>${noteText}
-              </div>
-              <div style="display:flex; align-items:center; gap:10px;">
-                <button class="vote-box" onclick="vote(${song.id})" ${hasVoted ? 'disabled' : ''}>
-                  ▲ ${song.votes || 0}
-                </button>
-                <span class="status-badge">Wachtrij</span>
-              </div>
-            </div>`;
-        });
-      }
-
-      if (done.length === 0) {
-        guestDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color); padding:10px 0;">Nog geen nummers afgevinkt.</p>';
-      } else {
-        done.forEach(song => {
-          guestDoneList.innerHTML += `
-            <div class="song-item done">
-              <div>
-                <strong>${song.title}</strong><br>
-                <small style="color:var(--subtext-color);">${song.artist}</small>
-              </div>
-              <span class="status-badge" style="background:rgba(34,197,94,0.15); border-color:#22c55e; color:#4ade80;">Gedraaid ✅</span>
-            </div>`;
-        });
-      }
-    }
-
-    function renderDjRequests() {
-      const djList = document.getElementById('request-list'), djDoneList = document.getElementById('dj-done-list');
-      djList.innerHTML = ''; djDoneList.innerHTML = '';
-      let requested = allSongs.filter(s => s.status === 'requested');
-      const done = allSongs.filter(s => s.status === 'done'), sortOption = document.getElementById('sort-select') ? document.getElementById('sort-select').value : 'votes';
-      
-      if (sortOption === 'votes') requested.sort((a,b) => (b.votes || 0) - (a.votes || 0));
-      else if (sortOption === 'newest') requested.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-      else if (sortOption === 'oldest') requested.sort((a,b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
-      
-      if (requested.length === 0) {
-        djList.innerHTML = '<p style="text-align:center; color:var(--subtext-color); padding:16px 0;">Geen verzoekjes in de wachtrij 🎉</p>';
-      } else {
-        requested.forEach(song => {
-          const timeStr = song.created_at ? `<small style="color:var(--subtext-color); margin-left:6px;">⏱️ ${formatTime(song.created_at)}</small>` : '';
-          const noteText = song.note ? `<br><small style="color:#c084fc;">💬 "${song.note}"</small>` : '';
-          djList.innerHTML += `
-            <div class="song-item">
-              <div>
-                <strong>${song.title}</strong> ${timeStr}<br>
-                <small style="color:var(--subtext-color);">${song.artist}</small>${noteText}
-              </div>
-              <div style="display:flex; align-items:center; gap:8px;">
-                <span class="vote-box">👍 ${song.votes || 0}</span>
-                <button onclick="markDone(${song.id})" style="padding:6px 12px; font-size:0.8rem;">Gedraaid ✅</button>
-              </div>
-            </div>`;
-        });
-      }
-
-      if (done.length === 0) {
-        djDoneList.innerHTML = '<p style="text-align:center; color:var(--subtext-color); padding:10px 0;">Nog geen nummers afgevinkt.</p>';
-      } else {
-        done.forEach(song => {
-          djDoneList.innerHTML += `
-            <div class="song-item done">
-              <div>
-                <strong>${song.title}</strong><br>
-                <small style="color:var(--subtext-color);">${song.artist}</small>
-              </div>
-              <button class="secondary-btn" onclick="unmarkDone(${song.id})" style="padding:6px 12px; font-size:0.8rem;">↩️ Terugzetten</button>
-            </div>`;
-        });
-      }
-    }
-
-    function renderUploadedXmlFiles() {
-      const xmlListContainer = document.getElementById('uploaded-xml-list');
-      xmlListContainer.innerHTML = '';
-      const xmlSongs = allSongs.filter(s => s.source_file);
-      if (xmlSongs.length === 0) { xmlListContainer.innerHTML = '<p style="color:var(--subtext-color); font-size:0.85em;">Geen XML bestanden geüpload.</p>'; return; }
-      const filesMap = {};
-      xmlSongs.forEach(song => {
-        const fileName = song.source_file || 'Onbekend XML';
-        if (!filesMap[fileName]) filesMap[fileName] = { name: fileName, count: 0 };
-        filesMap[fileName].count++;
-      });
-      Object.values(filesMap).forEach(file => {
-        xmlListContainer.innerHTML += `<div style="background:#0d0f1d; padding:8px 12px; border-radius:8px; margin-top:6px; font-size:0.85rem; display:flex; justify-content:space-between;"><span>📄 <strong>${file.name}</strong></span><span style="color:var(--subtext-color);">${file.count} nummers</span></div>`;
-      });
-    }
-    
-    function filterSongs() {
-      const query = document.getElementById('search-input').value.toLowerCase(), resultsSection = document.getElementById('search-results-section'), songList = document.getElementById('song-list');
-      songList.innerHTML = '';
-      if (query.length < 2) { resultsSection.classList.add('hidden'); return; }
-      resultsSection.classList.remove('hidden');
-      const matches = allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 8);
-      
-      if (matches.length === 0) { songList.innerHTML = '<p style="color:var(--subtext-color); font-size:0.85rem;">Geen nummers gevonden in de bibliotheek. Gebruik de knop "Handmatig".</p>'; return; }
-      
-      matches.forEach(song => {
-        songList.innerHTML += `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#151728; padding:8px 12px; border-radius:8px; margin-bottom:6px;">
-            <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
-            <button onclick="vote(${song.id})" style="padding:6px 12px; font-size:0.8rem;">Aanvragen</button>
-          </div>`;
-      });
-    }
-
-    function filterDjSearchSongs() {
-      const query = document.getElementById('dj-search-input').value.toLowerCase(), resultsSection = document.getElementById('dj-search-results-section'), songList = document.getElementById('dj-song-list');
-      songList.innerHTML = '';
-      if (query.length < 2) { resultsSection.classList.add('hidden'); return; }
-      resultsSection.classList.remove('hidden');
-      const matches = allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(query)).slice(0, 8);
-      
-      matches.forEach(song => {
-        songList.innerHTML += `
-          <div style="display:flex; justify-content:space-between; align-items:center; background:#0d0f1d; padding:8px 12px; border-radius:8px; margin-bottom:6px;">
-            <div><strong>${song.title}</strong><br><small style="color:var(--subtext-color);">${song.artist}</small></div>
-            <button onclick="vote(${song.id}, null, true)" style="padding:6px 12px; font-size:0.8rem;">Toevoegen</button>
-          </div>`;
-      });
-    }
-
-    async function submitCustomRequest() {
-      const titleInput = document.getElementById('custom-title'), artistInput = document.getElementById('custom-artist'), noteInput = document.getElementById('custom-note');
-      const title = titleInput.value.trim(), artist = artistInput.value.trim() || 'Los Verzoek', note = noteInput.value.trim();
-      if (!title) return toonPopup('Vul een titel in!');
-      if (containsBlacklistedWord(title, artist, note)) { toonPopup('Oeps, dit mag niet verstuurd worden.'); return; }
-      
-      const { data, error } = await dbClient.from('requests').insert([{ title, artist, note, votes: 1, status: 'requested', created_at: new Date().toISOString() }]).select();
-      if (!error) {
-        toonPopup(`Verzoekje "${title}" verstuurd!`);
-        if (data && data[0]) recordVote(data[0].id);
-        titleInput.value = ''; artistInput.value = ''; noteInput.value = ''; toggleCustomForm(); loadRequests();
-      }
-    }
-
-    async function submitDjCustomRequest() {
-      const titleInput = document.getElementById('dj-custom-title'), artistInput = document.getElementById('dj-custom-artist'), noteInput = document.getElementById('dj-custom-note');
-      const title = titleInput.value.trim(), artist = artistInput.value.trim() || 'DJ Verzoek', note = noteInput.value.trim();
-      if (!title) return toonPopup('Vul een titel in!');
-      await dbClient.from('requests').insert([{ title, artist, note, votes: 0, status: 'requested', created_at: new Date().toISOString() }]);
-      toonPopup(`Verzoekje "${title}" toegevoegd!`);
-      titleInput.value = ''; artistInput.value = ''; noteInput.value = ''; toggleDjCustomForm(); loadRequests();
-    }
-    
-    async function markDone(id) {
-      await dbClient.from('requests').update({ status: 'done' }).eq('id', id);
-      toonPopup('Gemarkeerd als gedraaid!'); loadRequests();
-    }
-    async function unmarkDone(id) {
-      await dbClient.from('requests').update({ status: 'requested' }).eq('id', id);
-      toonPopup('Teruggezet naar wachtrij!'); loadRequests();
-    }
-    async function wipeRequests() {
-      if (!confirm("Weet je ZEKER dat je alle actieve verzoekjes wilt wissen?")) return;
-      await dbClient.from('requests').update({ status: 'available', votes: 0, note: null }).eq('status', 'requested');
-      await dbClient.from('requests').update({ status: 'available', votes: 0, note: null }).eq('status', 'done');
-      toonPopup('Wachtrij gewist!'); localStorage.removeItem('voted_song_ids'); loadRequests();
-    }
-
-    function downloadCSV() {
-      const requested = allSongs.filter(s => s.status === 'requested' || s.status === 'done');
-      if (requested.length === 0) return toonPopup('Geen verzoekjes om te exporteren!');
-      let csvContent = "data:text/csv;charset=utf-8,Titel;Artiest;Stemmen;Tijd;Opmerking;Status\n";
-      requested.forEach(s => {
-        csvContent += `"${s.title}";"${s.artist}";"${s.votes}";"${formatTime(s.created_at)}";"${(s.note||'').replace(/;/g,',')}";"${s.status}"\n`;
-      });
-      const link = document.createElement("a");
-      link.setAttribute("href", encodeURI(csvContent));
-      link.setAttribute("download", `verzoekjes_${new Date().toISOString().slice(0,10)}.csv`);
-      document.body.appendChild(link); link.click(); document.body.removeChild(link);
-    }
-    
-    async function uploadXML() {
-      const fileInput = document.getElementById('xml-file'), file = fileInput.files[0];
-      if (!file) return toonPopup('Kies een .xml bestand!');
-      const fileName = file.name, reader = new FileReader();
-      reader.onload = function(e) {
-        (async () => {
-          const parser = new DOMParser(), xmlDoc = parser.parseFromString(e.target.result, "text/xml"), tracks = xmlDoc.getElementsByTagName("TRACK");
-          let imported = [];
-          for (let i = 0; i < tracks.length; i++) {
-            const title = tracks[i].getAttribute("Name"), artist = tracks[i].getAttribute("Artist");
-            if (title) imported.push({ title, artist: artist || "Onbekend", votes: 0, status: 'available', source_file: fileName });
           }
-          await dbClient.from('requests').insert(imported);
-          toonPopup(`${imported.length} nummers geïmporteerd!`);
-          fileInput.value = ''; loadRequests();
-        })();
-      };
-      reader.readAsText(file);
+
+          // BRANDING: App Brand Name
+          if (item.key === 'app_brand_name') {
+            const headerName = document.getElementById('header-dj-name');
+            const adminInput = document.getElementById('admin-dj-name');
+            const val = item.value || 'Partyrequest';
+            if (headerName) headerName.innerHTML = val;
+            if (adminInput && document.activeElement !== adminInput) adminInput.value = val;
+          }
+
+          // BRANDING: Promo Photo
+          if (item.key === 'promo_photo_url') {
+            const guestPhoto = document.getElementById('promo-dj-photo');
+            const adminPreview = document.getElementById('admin-promo-photo-preview');
+            const defaultIcon = document.getElementById('promo-default-icon');
+            
+            if (item.value === 'REMOVED' || !item.value) {
+              guestPhoto.classList.add('hidden');
+              adminPreview.classList.add('hidden');
+              defaultIcon.classList.remove('hidden');
+            } else {
+              guestPhoto.src = item.value;
+              guestPhoto.classList.remove('hidden');
+              adminPreview.src = item.value;
+              adminPreview.classList.remove('hidden');
+              defaultIcon.classList.add('hidden');
+            }
+          }
+          
+          // BRANDING: Promo Card Texts & Links
+          if (item.key === 'promo_card' && item.value) {
+            try {
+              const p = JSON.parse(item.value);
+              
+              document.getElementById('promo-dj-name').innerText = p.title || 'Berghmans & Von Hauze';
+              document.getElementById('promo-dj-bio').innerText = p.subtitle || '';
+              
+              let linksHtml = '';
+              const platforms = [
+                { key: 'whatsapp', label: '💬 WhatsApp' },
+                { key: 'email', label: '✉️ E-mail' },
+                { key: 'instagram', label: '📸 Instagram' },
+                { key: 'tiktok', label: '🎵 TikTok' },
+                { key: 'facebook', label: '👥 Facebook' }
+              ];
+              platforms.forEach(plat => {
+                if(p[`${plat.key}_active`] && p[plat.key]) {
+                  let href = p[plat.key].trim();
+                  if (plat.key === 'email' && !href.startsWith('mailto:')) href = 'mailto:' + href;
+                  else if (plat.key !== 'email' && !href.startsWith('http')) href = 'https://' + href.replace(/^wa.me\//, '');
+                  linksHtml += `<a href="${href}" target="_blank" class="btn btn-secondary" style="justify-content:flex-start;gap:12px;">${plat.label}</a>`;
+                }
+              });
+              document.getElementById('promo-display-links').innerHTML = linksHtml;
+
+              if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'TEXTAREA') {
+                document.getElementById('admin-promo-title').value = p.title || '';
+                document.getElementById('admin-promo-bio').value = p.subtitle || '';
+                
+                document.getElementById('admin-link-wa-url').value = p.whatsapp || '';
+                document.getElementById('admin-link-wa-active').checked = !!p.whatsapp_active;
+                
+                document.getElementById('admin-link-em-url').value = p.email || '';
+                document.getElementById('admin-link-em-active').checked = !!p.email_active;
+                
+                document.getElementById('admin-link-ig-url').value = p.instagram || '';
+                document.getElementById('admin-link-ig-active').checked = !!p.instagram_active;
+                
+                document.getElementById('admin-link-tt-url').value = p.tiktok || '';
+                document.getElementById('admin-link-tt-active').checked = !!p.tiktok_active;
+                
+                document.getElementById('admin-link-fb-url').value = p.facebook || '';
+                document.getElementById('admin-link-fb-active').checked = !!p.facebook_active;
+              }
+            } catch(e) {}
+          }
+        });
+
+        // VERWERK WELKOMST TEKSTEN
+        let wtRow = data.find(d => d.key === 'welcome_title');
+        let wxRow = data.find(d => d.key === 'welcome_text');
+        
+        let wt = wtRow ? (wtRow.value || "") : "";
+        let wx = wxRow ? (wxRow.value || "") : "";
+
+        const banner = document.getElementById('guest-welcome-banner');
+        if (wt.trim() !== "" || wx.trim() !== "") {
+          banner.classList.remove('hidden');
+          document.getElementById('welcome-message-title').innerText = wt.trim() !== "" ? wt : "🎉 Welkom op het feest!";
+          document.getElementById('welcome-message-text').innerText = wx;
+          document.getElementById('welcome-message-title').style.display = 'block';
+          document.getElementById('welcome-message-text').style.display = wx.trim() !== "" ? 'block' : 'none';
+        } else {
+          banner.classList.add('hidden');
+        }
+        
+        const iTitle = document.getElementById('welcome-title-input');
+        const iText = document.getElementById('welcome-text-input');
+        if (iTitle && document.activeElement !== iTitle) iTitle.value = wt;
+        if (iText && document.activeElement !== iText) iText.value = wx;
+      }
+    }
+
+    async function saveWelcomeText() {
+      const title = document.getElementById('welcome-title-input').value.trim();
+      const text = document.getElementById('welcome-text-input').value.trim();
+      await dbClient.from('settings').upsert([
+          { key: 'welcome_title', value: title },
+          { key: 'welcome_text', value: text }
+      ], { onConflict: 'key' });
+      toonPopup('Welkomsttekst bijgewerkt!');
+      loadAppSettings();
+    }
+    
+    async function saveSpamSettings() {
+      const val = document.getElementById('setting-spam-cooldown').value;
+      await dbClient.from('settings').upsert({ key: 'spam_cooldown', value: val }, { onConflict: 'key' });
+      toonPopup('Spam protectie aangepast!');
+      loadAppSettings();
     }
 
     function listenToRealtime() {
@@ -1426,7 +1477,788 @@
         .subscribe();
     }
 
-    window.onload = initSupabase;
+    async function loadRequests() {
+      if (!dbClient) return;
+      const { data, error } = await dbClient.from('requests').select('*');
+      if (data && !error) { 
+        allSongs = data; 
+        renderGuestRequests(); 
+        renderDJQueue();
+        renderUploadedXmlFiles();
+      }
+    }
+
+    // --- REQUESTS LOGIC ---
+    function containsBlacklistedWord(...texts) {
+      const combined = texts.join(' ').toLowerCase();
+      return blacklistedWords.some(word => combined.includes(word.toLowerCase()));
+    }
+
+    function toggleManualRequestForm() {
+      const box = document.getElementById('manual-request-box');
+      box.classList.toggle('hidden');
+      const btn = document.getElementById('btn-toggle-manual');
+      if(box.classList.contains('hidden')) {
+        btn.innerText = '➕ Staat je nummer er niet tussen? Klik hier!';
+      } else {
+        btn.innerText = '➖ Verberg handmatige invoer';
+      }
+    }
+
+    function filterSongs(query) {
+      const resultsDiv = document.getElementById('search-results');
+      if (!query || query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+      
+      const q = query.toLowerCase();
+      const filtered = allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(q)).slice(0, 6);
+
+      if (filtered.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+
+      resultsDiv.innerHTML = filtered.map(s => {
+        let statusBadge = '';
+        if (s.status === 'requested') statusBadge = '<span class="badge" style="background: var(--accent-color); margin-left: 8px; font-size: 0.65rem; padding: 2px 6px;">Aangevraagd</span>';
+        if (s.status === 'done') statusBadge = '<span class="badge" style="background: var(--success-color); margin-left: 8px; font-size: 0.65rem; padding: 2px 6px;">Al Gedraaid</span>';
+
+        return `
+        <div class="search-result-item" onclick="selectLibrarySong(${s.id}, '${s.title.replace(/'/g, "\\'")}', '${s.artist.replace(/'/g, "\\'")}')">
+          <div>
+            <div class="search-result-title" style="display:flex; align-items:center;">
+              ${s.title} ${statusBadge}
+            </div>
+            <div class="search-result-artist">${s.artist}</div>
+          </div>
+          <span style="color: var(--accent-color); font-size:1.2rem;">+</span>
+        </div>
+        `;
+      }).join('');
+      resultsDiv.style.display = 'block';
+    }
+
+    function filterQuickDjSongs(query) {
+      const resultsDiv = document.getElementById('quick-search-results');
+      if (!query || query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+      
+      const q = query.toLowerCase();
+      const filtered = allSongs.filter(s => (s.title + ' ' + s.artist).toLowerCase().includes(q)).slice(0, 6);
+
+      if (filtered.length === 0) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+
+      resultsDiv.innerHTML = filtered.map(s => {
+        let statusBadge = '';
+        if (s.status === 'requested') statusBadge = '<span class="badge" style="background: var(--accent-color); margin-left: 8px; font-size: 0.65rem; padding: 2px 6px;">Aangevraagd</span>';
+        if (s.status === 'done') statusBadge = '<span class="badge" style="background: var(--success-color); margin-left: 8px; font-size: 0.65rem; padding: 2px 6px;">Al Gedraaid</span>';
+
+        return `
+        <div class="search-result-item" onclick="vote(${s.id}, null, true); document.getElementById('quick-search-library').value=''; document.getElementById('quick-search-results').style.display='none'; toggleDjQuickPanel('add');">
+          <div>
+            <div class="search-result-title" style="display:flex; align-items:center;">
+              ${s.title} ${statusBadge}
+            </div>
+            <div class="search-result-artist">${s.artist}</div>
+          </div>
+          <span style="color: var(--accent-color); font-size:1.2rem;">+</span>
+        </div>
+        `;
+      }).join('');
+      resultsDiv.style.display = 'block';
+    }
+
+    function selectLibrarySong(id, title, artist) {
+      document.getElementById('input-search-library').value = '';
+      document.getElementById('search-results').style.display = 'none';
+      vote(id);
+    }
+
+    async function submitCustomRequest() {
+      if(!checkSpam()) return;
+        
+      const titleInput = document.getElementById('req-title');
+      const artistInput = document.getElementById('req-artist');
+      const noteInput = document.getElementById('req-note');
+      
+      const title = titleInput.value.trim();
+      const artist = artistInput.value.trim() || 'Onbekende Artiest';
+      const note = noteInput.value.trim();
+
+      if (!title) return toonPopup('Vul tenminste een titel in!');
+      if (containsBlacklistedWord(title, artist, note)) {
+        return toonPopup('Oeps, er is iets misgegaan bij het verzenden.');
+      }
+
+      const { data, error } = await dbClient.from('requests').insert([{ 
+        title, artist, note, votes: 1, status: 'requested', created_at: new Date().toISOString() 
+      }]).select();
+      
+      if (error) {
+        toonPopup('Er ging iets mis bij het verzenden!');
+      } else {
+        toonPopup(`🎉 Verzoekje "${title}" verstuurd!`);
+        if (data && data[0]) recordVote(data[0].id);
+        titleInput.value = ''; artistInput.value = ''; noteInput.value = '';
+        toggleManualRequestForm();
+        loadRequests();
+      }
+    }
+
+    async function vote(id, optionalNote = null, isDjAction = false) {
+      if (!isDjAction && !checkSpam()) return;
+        
+      const song = allSongs.find(s => s.id === id);
+      if (!song) return;
+      if (!isDjAction && containsBlacklistedWord(song.title, song.artist, optionalNote)) {
+        return toonPopup('Oeps, er is iets misgegaan bij het verzenden.');
+      }
+      
+      const currentVotes = Number(song.votes) || 0;
+      const newVotes = isDjAction ? currentVotes : (song.status === 'done' ? 1 : currentVotes + 1);
+      const updateData = { votes: newVotes, status: 'requested', created_at: new Date().toISOString() };
+      if (optionalNote) updateData.note = optionalNote;
+      
+      const { error } = await dbClient.from('requests').update(updateData).eq('id', id);
+      if (error) {
+        toonPopup('Fout bij toevoegen!');
+      } else {
+        if (!isDjAction) recordVote(id);
+        toonPopup(`🎵 Verzoekje voor "${song.title}" doorgegeven!`);
+        loadRequests();
+      }
+    }
+
+    function renderGuestRequests() {
+      const queueDiv = document.getElementById('requests-queue-container');
+      const playedDiv = document.getElementById('requests-played-container');
+      
+      const queue = allSongs.filter(r => r.status === 'requested').sort((a,b) => (b.votes||0) - (a.votes||0));
+      const played = allSongs.filter(r => r.status === 'done');
+      const votedIds = getVotedSongIds();
+
+      document.getElementById('queue-count-badge').innerText = `${queue.length} nummers`;
+
+      if (queue.length === 0) {
+        queueDiv.innerHTML = `<p style="text-align: center; color: var(--text-sub); font-size: 0.85rem; padding: 20px 0;">Er zijn nog geen actieve verzoekjes.</p>`;
+      } else {
+        queueDiv.innerHTML = queue.map(r => {
+          const hasVoted = votedIds.includes(r.id);
+          return `
+          <div class="request-card">
+            <div class="request-info">
+              <div class="request-song">${r.title}</div>
+              <div class="request-artist">${r.artist}</div>
+              ${r.note ? `<div class="request-note">💬 "${r.note}"</div>` : ''}
+            </div>
+            <button class="upvote-btn ${hasVoted ? 'voted' : ''}" onclick="vote(${r.id})" ${hasVoted ? 'disabled' : ''}>
+              <span>▲</span>
+              <span>${r.votes || 0}</span>
+            </button>
+          </div>
+        `}).join('');
+      }
+
+      if (played.length === 0) {
+        playedDiv.innerHTML = `<p style="text-align: center; color: var(--text-sub); font-size: 0.85rem;">Nog geen nummers afgevinkt.</p>`;
+      } else {
+        playedDiv.innerHTML = played.map(r => `
+          <div class="request-card" style="opacity: 0.5;">
+            <div class="request-info">
+              <div class="request-song" style="text-decoration: line-through;">${r.title}</div>
+              <div class="request-artist">${r.artist}</div>
+            </div>
+            <span class="badge" style="background: var(--success-color);">✓ Gedraaid</span>
+          </div>
+        `).join('');
+      }
+    }
+
+    // --- DJ QUEUE MANAGEMENT (QUICK ACTIONS) ---
+    async function submitQuickDjRequest() {
+      const title = document.getElementById('quick-req-title').value.trim();
+      const artist = document.getElementById('quick-req-artist').value.trim() || 'DJ Verzoek';
+      if (!title) return toonPopup('Vul op zijn minst een titel in!');
+      
+      const { error } = await dbClient.from('requests').insert([{ 
+          title, artist, note: '', votes: 0, status: 'requested', created_at: new Date().toISOString() 
+      }]);
+      
+      if (error) toonPopup('Fout bij toevoegen');
+      else {
+          toonPopup(`Verzoekje "${title}" in de wachtrij!`);
+          document.getElementById('quick-req-title').value = '';
+          document.getElementById('quick-req-artist').value = '';
+          toggleDjQuickPanel('add');
+          loadRequests();
+      }
+    }
+
+    async function addQuickBlacklistWord() {
+      const input = document.getElementById('quick-blacklist-input');
+      const word = input.value.trim().toLowerCase();
+      if (word && !blacklistedWords.includes(word)) {
+          blacklistedWords.push(word);
+          await dbClient.from('settings').upsert({ key: 'blacklist', value: JSON.stringify(blacklistedWords) }, { onConflict: 'key' });
+          input.value = '';
+          renderBlacklistUI();
+          toonPopup(`'${word}' direct geblokkeerd.`);
+          toggleDjQuickPanel('blacklist');
+      }
+    }
+
+    function renderQuickPhotos() {
+      const container = document.getElementById('dj-quick-photos-grid');
+      if (!allPhotos || allPhotos.length === 0) {
+          container.innerHTML = '<span style="font-size:0.85rem; color:var(--text-sub);">Geen foto\'s beschikbaar.</span>';
+          return;
+      }
+      const recent = allPhotos.slice(0, 5);
+      container.innerHTML = recent.map(p => `
+          <div style="position:relative; width: 60px; height: 60px; border-radius: 8px; overflow: hidden; flex-shrink: 0; border: 1px solid var(--card-border);">
+              <img src="${p.image_url}" style="width:100%; height:100%; object-fit:cover; cursor:pointer;" onclick="openPhotoModal('${p.image_url}', '${(p.uploader_name || '').replace(/'/g, "\\'")}')">
+              <button class="btn btn-danger" style="position: absolute; top: 2px; right: 2px; padding: 2px; width: 20px; height: 20px; font-size: 0.6rem; min-width: 0;" onclick="deletePhoto(${p.id}, '${p.storage_path}')">✕</button>
+          </div>
+      `).join('');
+    }
+
+    async function toggleRequestsActive() {
+      const willDisable = !isRequestsDisabled;
+      await dbClient.from('settings').upsert({ key: 'requests_disabled', value: willDisable ? 'true' : 'false' }, { onConflict: 'key' });
+      toonPopup(willDisable ? 'Verzoekjes gesloten!' : 'Verzoekjes geopend!');
+      loadAppSettings();
+    }
+
+    function renderDJQueue() {
+      if(!document.getElementById('dj-queue-list')) return;
+      const queueDiv = document.getElementById('dj-queue-list');
+      const playedDiv = document.getElementById('dj-done-list');
+      
+      let queue = allSongs.filter(r => r.status === 'requested');
+      const sortOption = document.getElementById('sort-select').value;
+      
+      if (sortOption === 'votes') queue.sort((a,b) => (b.votes || 0) - (a.votes || 0));
+      else if (sortOption === 'newest') queue.sort((a,b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+      else if (sortOption === 'oldest') queue.sort((a,b) => new Date(a.created_at || 0) - new Date(b.created_at || 0));
+
+      const played = allSongs.filter(r => r.status === 'done');
+
+      if (queue.length === 0) {
+        queueDiv.innerHTML = `<p style="text-align: center; color: var(--text-sub); font-size: 0.85rem; padding: 20px 0;">Geen actieve verzoekjes.</p>`;
+      } else {
+        queueDiv.innerHTML = queue.map(r => `
+          <div class="request-card">
+            <div class="request-info">
+              <div class="request-song">${r.title}</div>
+              <div class="request-artist">${r.artist}</div>
+              ${r.note ? `<div class="request-note">💬 "${r.note}"</div>` : ''}
+            </div>
+            <div class="flex-row">
+              <span class="badge">🔥 ${r.votes || 0}</span>
+              <button class="btn btn-sm btn-secondary" onclick="markDone(${r.id})">✓</button>
+            </div>
+          </div>
+        `).join('');
+      }
+
+      if (played.length === 0) {
+        playedDiv.innerHTML = `<p style="text-align: center; color: var(--text-sub); font-size: 0.85rem;">Niets afgevinkt.</p>`;
+      } else {
+        playedDiv.innerHTML = played.map(r => `
+          <div class="request-card" style="opacity: 0.6;">
+            <div class="request-info">
+              <div class="request-song">${r.title}</div>
+              <div class="request-artist">${r.artist}</div>
+            </div>
+            <button class="btn btn-sm btn-secondary" onclick="unmarkDone(${r.id})">↩️ Terugzetten</button>
+          </div>
+        `).join('');
+      }
+    }
+
+    async function markDone(id) {
+      await dbClient.from('requests').update({ status: 'done' }).eq('id', id);
+      loadRequests();
+    }
+    async function unmarkDone(id) {
+      await dbClient.from('requests').update({ status: 'requested' }).eq('id', id);
+      loadRequests();
+    }
+    async function wipeRequests() {
+      if (confirm("Weet je ZEKER dat je alle live verzoekjes wilt wissen?")) {
+        await dbClient.from('requests').update({ status: 'available', votes: 0, note: null }).eq('status', 'requested');
+        localStorage.removeItem('voted_song_ids');
+        toonPopup('Wachtrij is gewist!');
+        loadRequests();
+      }
+    }
+
+    // --- PHOTOBOOTH LOGIC ---
+    function compressImage(file, maxWidth = 1000, maxHeight = 1000, quality = 0.7) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = event => {
+          const img = new Image();
+          img.src = event.target.result;
+          img.onload = () => {
+            let width = img.width, height = img.height;
+            if (width > height && width > maxWidth) { height = Math.round((height * maxWidth) / width); width = maxWidth; }
+            else if (height > maxHeight) { width = Math.round((width * maxHeight) / height); height = maxHeight; }
+            
+            const canvas = document.createElement('canvas');
+            canvas.width = width; canvas.height = height;
+            const ctx = canvas.getContext('2d');
+            ctx.drawImage(img, 0, 0, width, height);
+            canvas.toBlob(blob => {
+              if (blob) resolve(blob); else reject(new Error('Canvas leeg'));
+            }, 'image/jpeg', quality);
+          };
+        };
+      });
+    }
+
+    async function uploadPartyPhoto(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const uploaderInput = document.getElementById('photo-uploader-name').value.trim() || 'Feestganger';
+      const noteInput = document.getElementById('photo-note').value.trim();
+      
+      toonPopup('Foto voorbereiden...');
+      try {
+        const compressedBlob = await compressImage(file, 1000, 1000, 0.7);
+        const fileName = `${currentPartyCode || 'party'}_${Date.now()}.jpg`;
+        const filePath = `uploads/${fileName}`;
+
+        const { error: uploadError } = await dbClient.storage.from('party-photos').upload(filePath, compressedBlob, { contentType: 'image/jpeg' });
+        if (uploadError) return toonPopup('Upload mislukt.');
+
+        const { data: publicUrlData } = dbClient.storage.from('party-photos').getPublicUrl(filePath);
+        
+        await dbClient.from('photos').insert([{
+          party_code: currentPartyCode || '0000',
+          image_url: publicUrlData.publicUrl,
+          storage_path: filePath,
+          uploader_name: uploaderInput,
+          note: noteInput,
+          created_at: new Date().toISOString()
+        }]);
+
+        toonPopup('📸 Foto succesvol gedeeld met het feest!');
+        event.target.value = '';
+        document.getElementById('photo-uploader-name').value = '';
+        document.getElementById('photo-note').value = '';
+        loadPhotos();
+      } catch(err) {
+        toonPopup('Fout bij verwerken van foto.');
+      }
+    }
+
+    async function loadPhotos() {
+      if (!dbClient) return;
+      const { data, error } = await dbClient.from('photos').select('*').order('created_at', { ascending: false });
+      if (data && !error) { 
+          allPhotos = data; 
+          renderPhotoGallery(); 
+          startInlineSlideshow();
+      }
+    }
+
+    // SLIDESHOW LOGIC (GUEST)
+    function startInlineSlideshow() {
+      if (inlineSlideshowInterval) clearInterval(inlineSlideshowInterval);
+      const imgEl = document.getElementById('inline-slideshow-img');
+      if (!imgEl) return;
+      
+      if (allPhotos.length === 0) {
+        imgEl.src = 'data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="400" height="400"><rect width="400" height="400" fill="%231c1e24"/><text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" fill="%238e8e93" font-family="sans-serif" font-size="20">Nog geen foto\'s</text></svg>';
+        return;
+      }
+      
+      const updateImg = () => {
+        if(inlineSlideshowIndex >= allPhotos.length) inlineSlideshowIndex = 0;
+        imgEl.style.opacity = 0;
+        setTimeout(() => {
+            imgEl.src = allPhotos[inlineSlideshowIndex].image_url;
+            imgEl.style.opacity = 1;
+            inlineSlideshowIndex++;
+        }, 500); // fade out duration
+      };
+      
+      imgEl.src = allPhotos[inlineSlideshowIndex]?.image_url || '';
+      inlineSlideshowIndex++;
+      inlineSlideshowInterval = setInterval(updateImg, 5000);
+    }
+
+    // FULLSCREEN SLIDESHOW LOGIC (DJ)
+    function startFullscreenSlideshow() {
+      if (allPhotos.length === 0) return toonPopup("Er zijn nog geen foto's om te tonen.");
+      const modal = document.getElementById('fullscreen-slideshow-modal');
+      const imgEl = document.getElementById('fs-slideshow-img');
+      modal.classList.remove('hidden');
+      
+      fsSlideshowIndex = 0;
+      if (fsSlideshowInterval) clearInterval(fsSlideshowInterval);
+
+      const updateImg = () => {
+        if(fsSlideshowIndex >= allPhotos.length) fsSlideshowIndex = 0;
+        imgEl.style.opacity = 0;
+        setTimeout(() => {
+            imgEl.src = allPhotos[fsSlideshowIndex].image_url;
+            imgEl.style.opacity = 1;
+            fsSlideshowIndex++;
+        }, 1000);
+      };
+      
+      imgEl.src = allPhotos[fsSlideshowIndex].image_url;
+      fsSlideshowIndex++;
+      fsSlideshowInterval = setInterval(updateImg, 6000);
+    }
+
+    function stopFullscreenSlideshow() {
+      if (fsSlideshowInterval) clearInterval(fsSlideshowInterval);
+      document.getElementById('fullscreen-slideshow-modal').classList.add('hidden');
+    }
+
+    // GUEST GALLERY PAGINATION LOGIC
+    function openGuestGalleryModal() {
+        galleryCurrentPage = 1;
+        renderGuestGalleryPage();
+        document.getElementById('guest-gallery-modal').classList.remove('hidden');
+    }
+
+    function closeGuestGalleryModal() {
+        document.getElementById('guest-gallery-modal').classList.add('hidden');
+    }
+
+    function changeGalleryPage(dir) {
+        const maxPage = Math.ceil(allPhotos.length / galleryItemsPerPage) || 1;
+        galleryCurrentPage += dir;
+        if (galleryCurrentPage < 1) galleryCurrentPage = 1;
+        if (galleryCurrentPage > maxPage) galleryCurrentPage = maxPage;
+        renderGuestGalleryPage();
+        // scroll slightly up inside the modal if needed
+        document.getElementById('guest-gallery-modal').scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    function renderGuestGalleryPage() {
+        const grid = document.getElementById('guest-gallery-grid');
+        const totalItems = allPhotos.length;
+        const maxPage = Math.ceil(totalItems / galleryItemsPerPage) || 1;
+        
+        document.getElementById('gallery-page-indicator').innerText = `Pagina ${galleryCurrentPage} van ${maxPage}`;
+        document.getElementById('btn-gallery-prev').disabled = galleryCurrentPage === 1;
+        document.getElementById('btn-gallery-next').disabled = galleryCurrentPage === maxPage;
+
+        const startIndex = (galleryCurrentPage - 1) * galleryItemsPerPage;
+        const endIndex = startIndex + galleryItemsPerPage;
+        const photosToShow = allPhotos.slice(startIndex, endIndex);
+
+        if (photosToShow.length === 0) {
+            grid.innerHTML = '<p style="color:var(--text-sub); text-align:center; grid-column:1/-1;">Nog geen foto\'s geüpload.</p>';
+            return;
+        }
+
+        grid.innerHTML = photosToShow.map(p => `
+            <div class="photo-card">
+              <img src="${p.image_url}" alt="Feestfoto" onclick="openPhotoModal('${p.image_url}', '${(p.uploader_name || '').replace(/'/g, "\\'")}')">
+              <div class="photo-meta">👤 ${p.uploader_name || 'Anoniem'}</div>
+            </div>
+        `).join('');
+    }
+
+    function renderPhotoGallery() {
+      // Alleen DJ grid updaten hier, guest grid wordt in de modal via renderGuestGalleryPage gedaan.
+      const djGrid = document.getElementById('dj-photo-grid');
+      const emptyMsg = `<p style="grid-column: 1/-1; text-align: center; color: var(--text-sub); padding: 20px 0;">Nog geen foto's geüpload.</p>`;
+      
+      if (allPhotos.length === 0) {
+        if (djGrid) djGrid.innerHTML = emptyMsg;
+        return;
+      }
+
+      const htmlBlocks = allPhotos.map(p => `
+        <div class="photo-card">
+          <img src="${p.image_url}" alt="Feestfoto" onclick="openPhotoModal('${p.image_url}', '${(p.uploader_name || '').replace(/'/g, "\\'")}')">
+          <div class="photo-meta">👤 ${p.uploader_name || 'Anoniem'}</div>
+          ${isDjLoggedIn ? `<button class="btn btn-sm btn-danger" style="position: absolute; top: 6px; right: 6px; padding:4px;" onclick="deletePhoto(${p.id}, '${p.storage_path}')">🗑️</button>` : ''}
+        </div>
+      `).join('');
+
+      if (djGrid) djGrid.innerHTML = htmlBlocks;
+      
+      // Update quick photos if open
+      if (!document.getElementById('dj-quick-photos').classList.contains('hidden')) {
+          renderQuickPhotos();
+      }
+      
+      // Als de guest modal toevallig open staat, update deze dan ook mee
+      if (!document.getElementById('guest-gallery-modal').classList.contains('hidden')) {
+          renderGuestGalleryPage();
+      }
+    }
+
+    function openPhotoModal(url, caption) {
+      document.getElementById('modal-img').src = url;
+      document.getElementById('modal-caption').innerText = caption;
+      document.getElementById('photo-modal').classList.remove('hidden');
+    }
+    function closePhotoModal() { document.getElementById('photo-modal').classList.add('hidden'); }
+
+    async function deleteAllPhotos() {
+      if (allPhotos.length === 0) return toonPopup('Geen foto\'s om te wissen!');
+      if (confirm('Weet je ZEKER dat je alle foto\'s definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) {
+        toonPopup('Bezig met wissen van alle foto\'s...');
+        
+        // 1. Verzamel alle storage paths
+        const paths = allPhotos.map(p => p.storage_path).filter(path => path);
+        
+        try {
+            // 2. Wis bestanden uit de storage emmer
+            if (paths.length > 0) {
+                const { error: storageError } = await dbClient.storage.from('party-photos').remove(paths);
+                if (storageError) console.error("Storage delete error:", storageError);
+            }
+            
+            // 3. Wis de database rijen
+            const { error: dbError } = await dbClient.from('photos').delete().neq('id', 0); // Wist alle rijen
+            if (dbError) throw dbError;
+            
+            toonPopup('Alle foto\'s zijn verwijderd!');
+            loadPhotos();
+        } catch (err) {
+            toonPopup('Fout bij wissen van foto\'s: ' + err.message);
+        }
+      }
+    }
+
+    async function deletePhoto(id, storagePath) {
+      if (confirm('Foto definitief verwijderen?')) {
+        if (storagePath) await dbClient.storage.from('party-photos').remove([storagePath]);
+        await dbClient.from('photos').delete().eq('id', id);
+        toonPopup('Foto verwijderd!');
+        loadPhotos();
+      }
+    }
+
+    async function downloadAllPhotosZip() {
+      if (allPhotos.length === 0) return toonPopup('Geen foto\'s om te downloaden!');
+      toonPopup('ZIP-bestand genereren...');
+      const zip = new JSZip();
+      for (let i = 0; i < allPhotos.length; i++) {
+        try {
+          const response = await fetch(allPhotos[i].image_url);
+          const blob = await response.blob();
+          zip.file(`foto_${i + 1}.jpg`, blob);
+        } catch (e) {}
+      }
+      zip.generateAsync({ type: 'blob' }).then(content => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(content);
+        link.download = `Partyrequest_Fotos_${currentPartyCode || 'export'}.zip`;
+        link.click();
+        toonPopup('Download gestart!');
+      });
+    }
+
+    // --- DJ SETTINGS & XML ---
+    async function startNewSession() {
+      if (confirm("Weet je zeker dat je een nieuw feest wilt starten? Nieuwe code wordt gemaakt en data wordt gewist.")) {
+        const newCode = Math.floor(1000 + Math.random() * 9000).toString();
+        await dbClient.from('requests').update({ votes: 0, status: 'available', note: null }).neq('id', 0);
+        await dbClient.from('presence').delete();
+        await dbClient.from('photos').delete().neq('id', 0);
+        
+        await dbClient.from('settings').upsert({ key: 'requests_disabled', value: 'false' }, { onConflict: 'key' });
+        await dbClient.from('settings').upsert({ key: 'party_code', value: newCode }, { onConflict: 'key' });
+        
+        currentPartyCode = newCode;
+        document.getElementById('party-code-display').innerText = `CODE: ${newCode}`;
+        localStorage.removeItem('voted_song_ids');
+        toonPopup(`Nieuw feest gestart! Code: ${newCode}`);
+        loadRequests(); loadPhotos(); loadAppSettings();
+      }
+    }
+
+    async function saveWelcomeText() {
+      const title = document.getElementById('welcome-title-input').value.trim();
+      const text = document.getElementById('welcome-text-input').value.trim();
+      await dbClient.from('settings').upsert([
+          { key: 'welcome_title', value: title },
+          { key: 'welcome_text', value: text }
+      ], { onConflict: 'key' });
+      toonPopup('Welkomsttekst bijgewerkt!');
+      loadAppSettings();
+    }
+
+    async function savePhotoboothSetting() {
+      const isChecked = document.getElementById('dj-photobooth-toggle').checked;
+      await dbClient.from('settings').upsert({ key: 'photobooth_active', value: isChecked ? 'true' : 'false' }, { onConflict: 'key' });
+      toonPopup(isChecked ? 'Fotobooth AAN' : 'Fotobooth UIT');
+      loadAppSettings();
+    }
+
+    // Wordt gebruikt in de instellingen tab
+    async function addBlacklistWordFromSettings() {
+      const input = document.getElementById('blacklist-word-input');
+      const word = input.value.trim().toLowerCase();
+      if (word && !blacklistedWords.includes(word)) {
+        blacklistedWords.push(word);
+        await dbClient.from('settings').upsert({ key: 'blacklist', value: JSON.stringify(blacklistedWords) }, { onConflict: 'key' });
+        input.value = '';
+        renderBlacklistUI();
+        toonPopup('Woord toegevoegd aan blacklist.');
+      }
+    }
+
+    async function removeBlacklistWord(word) {
+      blacklistedWords = blacklistedWords.filter(w => w !== word);
+      await dbClient.from('settings').upsert({ key: 'blacklist', value: JSON.stringify(blacklistedWords) }, { onConflict: 'key' });
+      renderBlacklistUI();
+    }
+
+    function renderBlacklistUI() {
+      const container = document.getElementById('blacklist-words-container');
+      if (!container) return;
+      container.innerHTML = blacklistedWords.map(w => `
+        <span class="badge" style="display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.15);">
+          ${w} <span style="cursor:pointer;color:var(--danger-color);" onclick="removeBlacklistWord('${w}')">×</span>
+        </span>
+      `).join('');
+    }
+
+    function downloadCSV() {
+      const reqs = allSongs.filter(s => s.status === 'requested' || s.status === 'done');
+      if (reqs.length === 0) return toonPopup('Niets om te exporteren.');
+      let csv = "Titel;Artiest;Stemmen;Opmerking;Status\n";
+      reqs.forEach(s => { csv += `"${s.title}";"${s.artist}";"${s.votes||0}";"${s.note||''}";"${s.status}"\n`; });
+      const a = document.createElement("a");
+      a.href = encodeURI("data:text/csv;charset=utf-8," + csv);
+      a.download = `Partyrequest_Verzoekjes_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    async function uploadXML(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const fileName = file.name;
+      const reader = new FileReader();
+      const progressText = document.getElementById('xml-progress-text');
+      
+      reader.onload = async (e) => {
+        progressText.innerText = 'Bestand inlezen... Een moment geduld aub.';
+        const xmlDoc = new DOMParser().parseFromString(e.target.result, "text/xml");
+        const tracks = xmlDoc.getElementsByTagName("TRACK");
+        let imported = [];
+        
+        for (let i = 0; i < tracks.length; i++) {
+          const title = tracks[i].getAttribute("Name");
+          const artist = tracks[i].getAttribute("Artist");
+          if (title) imported.push({ title, artist: artist || "Onbekend", votes: 0, status: 'available', source_file: fileName });
+        }
+        
+        if(imported.length === 0) {
+          progressText.innerText = 'Geen nummers gevonden in dit bestand.';
+          event.target.value = '';
+          return;
+        }
+
+        progressText.innerText = `Bezig met opschonen van oude versie (indien aanwezig)...`;
+        await dbClient.from('requests').delete().eq('source_file', fileName).eq('status', 'available');
+
+        const chunkSize = 500;
+        let successCount = 0;
+        for (let i = 0; i < imported.length; i += chunkSize) {
+          const chunk = imported.slice(i, i + chunkSize);
+          const { error } = await dbClient.from('requests').insert(chunk);
+          if (error) {
+            toonPopup('Fout tijdens uploaden van een deel van de lijst.');
+          } else {
+            successCount += chunk.length;
+            progressText.innerText = `Bezig met uploaden... ${successCount} van ${imported.length} nummers verwerkt.`;
+          }
+        }
+
+        toonPopup(`${successCount} nummers succesvol geïmporteerd!`);
+        progressText.innerText = 'Upload voltooid!';
+        setTimeout(() => { progressText.innerText = ''; }, 4000);
+        event.target.value = '';
+        loadRequests();
+      };
+      reader.readAsText(file);
+    }
+    
+    async function deleteXMLFile(fileName) {
+      if(confirm(`Weet je zeker dat je alle beschikbare nummers uit '${fileName}' wilt wissen? (Actieve verzoekjes blijven bewaard)`)) {
+        const { error } = await dbClient.from('requests').delete().eq('source_file', fileName).eq('status', 'available');
+        if (error) {
+          toonPopup('Fout bij verwijderen: ' + error.message);
+        } else {
+          toonPopup(`Bestand '${fileName}' verwijderd!`);
+          loadRequests();
+        }
+      }
+    }
+
+    async function resetLibraryDatabase() {
+      const pinCheck = prompt("Voer de DJ Pincode in om de gehele bibliotheek te wissen:");
+      if (pinCheck !== DJ_PIN) {
+        if (pinCheck !== null) toonPopup("Onjuiste pincode. Actie geannuleerd.");
+        return;
+      }
+
+      if (confirm("WEET JE HET HEEL ZEKER? Dit wist álle geüploade XML nummers uit de database. (Actieve en gedraaide verzoekjes blijven bewaard).")) {
+        toonPopup("Bezig met wissen van de bibliotheek...");
+        const { error } = await dbClient.from('requests').delete().eq('status', 'available');
+        if (error) {
+          toonPopup('Fout bij wissen: ' + error.message);
+        } else {
+          toonPopup("Bibliotheek is volledig leeggemaakt!");
+          loadRequests();
+        }
+      }
+    }
+
+    function renderUploadedXmlFiles() {
+      const cont = document.getElementById('uploaded-xml-list');
+      if(!cont) return;
+      const xmlSongs = allSongs.filter(s => s.source_file && s.status === 'available');
+      if (xmlSongs.length === 0) { cont.innerHTML = '<span style="font-size:0.8rem;color:var(--text-sub);">Geen actieve XML bibliotheek bestanden.</span>'; return; }
+      
+      const map = {};
+      xmlSongs.forEach(s => { map[s.source_file] = (map[s.source_file] || 0) + 1; });
+      
+      cont.innerHTML = Object.keys(map).map(k => `
+        <div class="badge mt-2" style="display:flex; justify-content:space-between; align-items:center; background:rgba(255,255,255,0.05); padding: 8px 12px;">
+          <span>📄 ${k} (${map[k]} nummers)</span>
+          <button class="btn btn-sm btn-danger" style="padding: 4px 8px;" onclick="deleteXMLFile('${k.replace(/'/g, "\\'")}')">🗑️ Wis</button>
+        </div>
+      `).join('');
+    }
+
+    // --- PRESENCE LOGIC ---
+    async function pingPresence() {
+      const savedCode = sessionStorage.getItem('entered_party_code');
+      if (savedCode === currentPartyCode && !isDjLoggedIn && currentPartyCode) {
+        await dbClient.from('presence').upsert({ session_id: guestSessionId, party_code: currentPartyCode, last_seen: new Date().toISOString() }, { onConflict: 'session_id' });
+      }
+    }
+    
+    async function fetchOnlineCount() {
+      if (!dbClient || !currentPartyCode) return;
+      await dbClient.from('presence').delete().lt('last_seen', new Date(Date.now() - 15000).toISOString());
+      const { count } = await dbClient.from('presence').select('*', { count: 'exact', head: true }).eq('party_code', currentPartyCode);
+      const counter = document.getElementById('online-users-count');
+      if (counter && count !== null) counter.innerText = `👥 ${count}`;
+    }
   </script>
 </body>
 </html>
