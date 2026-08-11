@@ -678,17 +678,13 @@
 
       <!-- 3. DJ DASHBOARD -->
       <section id="screen-dj" class="hidden">
-        
-        <div class="segmented-control" style="margin-bottom: 14px;">
-          <button class="segment-btn active" onclick="switchDJTab('queue')">🎧 Wachtrij</button>
-          <button class="segment-btn" onclick="switchDJTab('photos')">📸 Foto's</button>
-          <button class="segment-btn" onclick="switchDJTab('settings')">⚙️ Opties</button>
-        </div>
 
         <!-- DJ TAB 1: WACHTRIJ -->
         <div id="dj-tab-queue">
           <div class="glass-card">
             
+            <h3 style="font-size: 1.05rem; margin-bottom: 14px;">🔥 Live Wachtrij</h3>
+
             <!-- Quick Actions Toolbar -->
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; flex-wrap: wrap; gap: 8px;">
               <div class="flex-row" style="gap: 6px;">
@@ -934,6 +930,22 @@
         <span>DJ Info</span>
       </div>
     </nav>
+    
+    <!-- BOTTOM NAVBAR FOR DJ -->
+    <nav id="dj-navbar" class="app-navbar hidden">
+      <div class="nav-item active" onclick="switchDJTab('queue', this)">
+        <span class="nav-icon">🎵</span>
+        <span>Wachtrij</span>
+      </div>
+      <div class="nav-item" onclick="switchDJTab('photos', this)">
+        <span class="nav-icon">📸</span>
+        <span>Foto's</span>
+      </div>
+      <div class="nav-item" onclick="switchDJTab('settings', this)">
+        <span class="nav-icon">⚙️</span>
+        <span>Opties</span>
+      </div>
+    </nav>
   </div>
 
   <!-- FLOATING SCROLL TO TOP BUTTON -->
@@ -1066,18 +1078,22 @@
     }
 
     function switchGuestTab(tab, el) {
-      document.querySelectorAll('#guest-navbar .nav-item').forEach(item => item.classList.remove('active'));
-      el.classList.add('active');
+      if(el) {
+        document.querySelectorAll('#guest-navbar .nav-item').forEach(item => item.classList.remove('active'));
+        el.classList.add('active');
+      }
       document.getElementById('guest-tab-requests').classList.toggle('hidden', tab !== 'requests');
       document.getElementById('guest-tab-photos').classList.toggle('hidden', tab !== 'photos');
       document.getElementById('guest-tab-promo').classList.toggle('hidden', tab !== 'promo');
     }
 
-    function switchDJTab(tab) {
-      const buttons = document.querySelectorAll('#screen-dj .segment-btn');
+    function switchDJTab(tab, el) {
+      if(el) {
+        document.querySelectorAll('#dj-navbar .nav-item').forEach(item => item.classList.remove('active'));
+        el.classList.add('active');
+      }
       const tabs = ['queue', 'photos', 'settings'];
-      tabs.forEach((t, idx) => {
-        if(buttons[idx]) buttons[idx].classList.toggle('active', t === tab);
+      tabs.forEach(t => {
         const panel = document.getElementById(`dj-tab-${t}`);
         if(panel) panel.classList.toggle('hidden', t !== tab);
       });
@@ -1113,6 +1129,7 @@
         document.getElementById('screen-auth').classList.add('hidden');
         document.getElementById('screen-guest').classList.remove('hidden');
         document.getElementById('guest-navbar').classList.remove('hidden');
+        document.getElementById('dj-navbar').classList.add('hidden');
         document.getElementById('screen-admin').classList.add('hidden');
         
         document.getElementById('header-status-badge').classList.remove('hidden');
@@ -1124,11 +1141,22 @@
         document.getElementById('screen-guest').classList.add('hidden');
         document.getElementById('guest-navbar').classList.add('hidden');
         document.getElementById('screen-dj').classList.add('hidden');
+        document.getElementById('dj-navbar').classList.add('hidden');
         document.getElementById('screen-admin').classList.add('hidden');
         
         document.getElementById('header-status-badge').classList.add('hidden');
         document.getElementById('btn-header-dj-login').classList.remove('hidden');
         switchAuthTab('guest');
+      } else if (isDjLoggedIn) {
+        document.getElementById('screen-auth').classList.add('hidden');
+        document.getElementById('screen-guest').classList.add('hidden');
+        document.getElementById('guest-navbar').classList.add('hidden');
+        document.getElementById('screen-dj').classList.remove('hidden');
+        document.getElementById('dj-navbar').classList.remove('hidden');
+        document.getElementById('screen-admin').classList.add('hidden');
+
+        document.getElementById('header-status-badge').classList.remove('hidden');
+        document.getElementById('btn-header-dj-login').classList.add('hidden');
       }
     }
 
@@ -1150,14 +1178,7 @@
       if (enteredPin === DJ_PIN) {
         isDjLoggedIn = true;
         document.getElementById('input-dj-pin').value = '';
-        
-        document.getElementById('screen-auth').classList.add('hidden');
-        document.getElementById('screen-dj').classList.remove('hidden');
-        document.getElementById('screen-admin').classList.add('hidden');
-        
-        document.getElementById('header-status-badge').classList.remove('hidden');
-        document.getElementById('btn-header-dj-login').classList.add('hidden');
-        
+        checkActiveSession();
         toonPopup('Succesvol ingelogd als DJ!');
         renderDJQueue();
       } else {
@@ -1176,6 +1197,7 @@
       if (currentPartyCode) sessionStorage.setItem('entered_party_code', currentPartyCode);
       isDjLoggedIn = false;
       document.getElementById('screen-dj').classList.add('hidden');
+      document.getElementById('dj-navbar').classList.add('hidden');
       checkActiveSession();
       toonPopup('Omgeschakeld naar gastenscherm!');
     }
@@ -1186,12 +1208,14 @@
     // --- ADMIN PANEL LOGIC ---
     function openAdminPanel() {
       document.getElementById('screen-dj').classList.add('hidden');
+      document.getElementById('dj-navbar').classList.add('hidden');
       document.getElementById('screen-admin').classList.remove('hidden');
     }
 
     function closeAdminPanel() {
       document.getElementById('screen-admin').classList.add('hidden');
       document.getElementById('screen-dj').classList.remove('hidden');
+      document.getElementById('dj-navbar').classList.remove('hidden');
     }
 
     async function handleAdminUpload(event, type) {
@@ -1203,15 +1227,12 @@
         const compressedBlob = await compressImage(file, 800, 800, 0.8);
         const fileName = `${type}_${Date.now()}.jpg`;
         
-        // We proberen het direct in de 'party-photos' bucket onder het mapje 'uploads/'
-        // Dit is exact dezelfde route als de fotobooth, dus we weten 100% zeker dat de database dit toestaat voor anon.
         let bucketName = 'party-photos';
         let filePath = `uploads/${fileName}`;
         
         let uploadAttempt = await dbClient.storage.from(bucketName).upload(filePath, compressedBlob, { contentType: 'image/jpeg' });
         
         if (uploadAttempt.error) {
-          // Fallback naar de oude 'media' bucket als 'party-photos' toch weigert
           bucketName = 'media';
           filePath = fileName;
           uploadAttempt = await dbClient.storage.from(bucketName).upload(filePath, compressedBlob, { contentType: 'image/jpeg' });
@@ -2020,33 +2041,6 @@
       document.getElementById('photo-modal').classList.remove('hidden');
     }
     function closePhotoModal() { document.getElementById('photo-modal').classList.add('hidden'); }
-
-    async function deleteAllPhotos() {
-      if (allPhotos.length === 0) return toonPopup('Geen foto\'s om te wissen!');
-      if (confirm('Weet je ZEKER dat je alle foto\'s definitief wilt verwijderen? Dit kan niet ongedaan worden gemaakt.')) {
-        toonPopup('Bezig met wissen van alle foto\'s...');
-        
-        // 1. Verzamel alle storage paths
-        const paths = allPhotos.map(p => p.storage_path).filter(path => path);
-        
-        try {
-            // 2. Wis bestanden uit de storage emmer
-            if (paths.length > 0) {
-                const { error: storageError } = await dbClient.storage.from('party-photos').remove(paths);
-                if (storageError) console.error("Storage delete error:", storageError);
-            }
-            
-            // 3. Wis de database rijen
-            const { error: dbError } = await dbClient.from('photos').delete().neq('id', 0); // Wist alle rijen
-            if (dbError) throw dbError;
-            
-            toonPopup('Alle foto\'s zijn verwijderd!');
-            loadPhotos();
-        } catch (err) {
-            toonPopup('Fout bij wissen van foto\'s: ' + err.message);
-        }
-      }
-    }
 
     async function deletePhoto(id, storagePath) {
       if (confirm('Foto definitief verwijderen?')) {
