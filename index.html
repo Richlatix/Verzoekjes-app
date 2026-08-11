@@ -585,6 +585,7 @@
               <div id="search-results" class="search-results-list"></div>
             </div>
 
+            <!-- Grote Handmatig Knop over hele breedte -->
             <button class="btn btn-sm btn-secondary" style="margin-bottom: 14px; padding: 12px; width: 100%; border: 1px dashed var(--card-border);" onclick="toggleManualRequestForm()" id="btn-toggle-manual">
               ➕ Staat je nummer er niet tussen? Klik hier!
             </button>
@@ -1200,18 +1201,24 @@
       
       try {
         const compressedBlob = await compressImage(file, 800, 800, 0.8);
-        const fileName = `${type}_${Date.now()}.png`;
+        const fileName = `${type}_${Date.now()}.jpg`;
         
-        let bucketName = 'media';
-        let uploadAttempt = await dbClient.storage.from(bucketName).upload(fileName, compressedBlob, { contentType: file.type, upsert: true });
+        // We proberen het direct in de 'party-photos' bucket onder het mapje 'uploads/'
+        // Dit is exact dezelfde route als de fotobooth, dus we weten 100% zeker dat de database dit toestaat voor anon.
+        let bucketName = 'party-photos';
+        let filePath = `uploads/${fileName}`;
+        
+        let uploadAttempt = await dbClient.storage.from(bucketName).upload(filePath, compressedBlob, { contentType: 'image/jpeg' });
         
         if (uploadAttempt.error) {
-          bucketName = 'party-photos';
-          uploadAttempt = await dbClient.storage.from(bucketName).upload(fileName, compressedBlob, { contentType: file.type, upsert: true });
+          // Fallback naar de oude 'media' bucket als 'party-photos' toch weigert
+          bucketName = 'media';
+          filePath = fileName;
+          uploadAttempt = await dbClient.storage.from(bucketName).upload(filePath, compressedBlob, { contentType: 'image/jpeg' });
           if (uploadAttempt.error) throw uploadAttempt.error;
         }
 
-        const { data: publicUrlData } = dbClient.storage.from(bucketName).getPublicUrl(fileName);
+        const { data: publicUrlData } = dbClient.storage.from(bucketName).getPublicUrl(filePath);
         const keyName = type === 'logo' ? 'logo_url' : 'promo_photo_url';
         
         await dbClient.from('settings').upsert({ key: keyName, value: publicUrlData.publicUrl }, { onConflict: 'key' });
@@ -1220,7 +1227,8 @@
         event.target.value = '';
         loadAppSettings(); 
       } catch (err) {
-        toonPopup('Upload mislukt. Controleer je instellingen.');
+        console.error("Fout bij uploaden:", err);
+        toonPopup('Upload mislukt. Controleer je database permissies.');
       }
     }
 
@@ -2077,6 +2085,7 @@
         await dbClient.from('presence').delete();
         await dbClient.from('photos').delete().neq('id', 0);
         
+        // Zorg dat bij een nieuw feest de verzoekjes weer automatisch AAN staan
         await dbClient.from('settings').upsert({ key: 'requests_disabled', value: 'false' }, { onConflict: 'key' });
         await dbClient.from('settings').upsert({ key: 'party_code', value: newCode }, { onConflict: 'key' });
         
