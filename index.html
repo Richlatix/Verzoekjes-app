@@ -240,7 +240,7 @@
 
     /* SEARCH RESULTS DROPDOWN */
     .search-results-list {
-      max-height: 220px;
+      max-height: 250px;
       overflow-y: auto;
       background: rgba(20, 22, 28, 0.95);
       border: 1px solid var(--card-border);
@@ -1015,14 +1015,15 @@
     }
     
     function getVotedSongIds() { try { return JSON.parse(localStorage.getItem('voted_song_ids')) || []; } catch(e){ return []; } }
+    
+    // Updated recordVote: does NOT trigger spam timer
     function recordVote(id) { 
         const voted = getVotedSongIds(); 
         if (!voted.includes(id)) { voted.push(id); localStorage.setItem('voted_song_ids', JSON.stringify(voted)); } 
-        if (!isDjLoggedIn) sessionStorage.setItem('last_request_time', Date.now()); // Record time for spam check
     }
 
     function checkSpam() {
-      if (isDjLoggedIn) return true; // DJ kan altijd toevoegen
+      if (isDjLoggedIn) return true;
       const lastTime = sessionStorage.getItem('last_request_time');
       if (lastTime) {
         const diff = Math.floor((Date.now() - parseInt(lastTime)) / 1000);
@@ -1510,6 +1511,12 @@
       }
     }
 
+    function toggleSearchComment(id, isDj) {
+       const prefix = isDj ? 'dj-search-comment-' : 'search-comment-';
+       const box = document.getElementById(prefix + id);
+       if(box) box.classList.toggle('hidden');
+    }
+
     function filterSongs(query) {
       const resultsDiv = document.getElementById('search-results');
       if (!query || query.length < 2) {
@@ -1531,14 +1538,20 @@
         if (s.status === 'done') statusBadge = '<span class="badge" style="background: var(--success-color); margin-left: 8px; font-size: 0.65rem; padding: 2px 6px;">Al Gedraaid</span>';
 
         return `
-        <div class="search-result-item" onclick="selectLibrarySong(${s.id}, '${s.title.replace(/'/g, "\\'")}', '${s.artist.replace(/'/g, "\\'")}')">
-          <div>
-            <div class="search-result-title" style="display:flex; align-items:center;">
-              ${s.title} ${statusBadge}
+        <div>
+            <div class="search-result-item" onclick="toggleSearchComment(${s.id}, false)">
+              <div style="flex:1;">
+                <div class="search-result-title" style="display:flex; align-items:center;">
+                  ${s.title} ${statusBadge}
+                </div>
+                <div class="search-result-artist">${s.artist}</div>
+              </div>
+              <span style="color: var(--accent-color); font-size:1.2rem; cursor:pointer;">+</span>
             </div>
-            <div class="search-result-artist">${s.artist}</div>
-          </div>
-          <span style="color: var(--accent-color); font-size:1.2rem;">+</span>
+            <div id="search-comment-${s.id}" class="hidden" style="background: rgba(0,0,0,0.2); padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <input type="text" id="search-note-input-${s.id}" class="input-field mb-2" style="padding: 10px; font-size: 0.85rem;" placeholder="Opmerking (bijv. Voor de jarige!)..." onkeydown="if(event.key==='Enter') submitLibraryRequest(${s.id}, false)">
+                <button class="btn btn-sm btn-primary" onclick="submitLibraryRequest(${s.id}, false)">Aanvragen 🚀</button>
+            </div>
         </div>
         `;
       }).join('');
@@ -1566,24 +1579,70 @@
         if (s.status === 'done') statusBadge = '<span class="badge" style="background: var(--success-color); margin-left: 8px; font-size: 0.65rem; padding: 2px 6px;">Al Gedraaid</span>';
 
         return `
-        <div class="search-result-item" onclick="vote(${s.id}, null, true); document.getElementById('quick-search-library').value=''; document.getElementById('quick-search-results').style.display='none'; toggleDjQuickPanel('add');">
-          <div>
-            <div class="search-result-title" style="display:flex; align-items:center;">
-              ${s.title} ${statusBadge}
+        <div>
+            <div class="search-result-item" onclick="toggleSearchComment(${s.id}, true)">
+              <div style="flex:1;">
+                <div class="search-result-title" style="display:flex; align-items:center;">
+                  ${s.title} ${statusBadge}
+                </div>
+                <div class="search-result-artist">${s.artist}</div>
+              </div>
+              <span style="color: var(--accent-color); font-size:1.2rem; cursor:pointer;">+</span>
             </div>
-            <div class="search-result-artist">${s.artist}</div>
-          </div>
-          <span style="color: var(--accent-color); font-size:1.2rem;">+</span>
+            <div id="dj-search-comment-${s.id}" class="hidden" style="background: rgba(0,0,0,0.2); padding: 12px; border-bottom: 1px solid rgba(255,255,255,0.05);">
+                <input type="text" id="dj-search-note-input-${s.id}" class="input-field mb-2" style="padding: 10px; font-size: 0.85rem;" placeholder="Opmerking (optioneel)..." onkeydown="if(event.key==='Enter') submitLibraryRequest(${s.id}, true)">
+                <button class="btn btn-sm btn-primary" onclick="submitLibraryRequest(${s.id}, true)">Direct Toevoegen 🚀</button>
+            </div>
         </div>
         `;
       }).join('');
       resultsDiv.style.display = 'block';
     }
 
-    function selectLibrarySong(id, title, artist) {
-      document.getElementById('input-search-library').value = '';
-      document.getElementById('search-results').style.display = 'none';
-      vote(id);
+    async function submitLibraryRequest(id, isDjAction) {
+        if (!isDjAction && !checkSpam()) return;
+        
+        const noteInput = document.getElementById(isDjAction ? `dj-search-note-input-${id}` : `search-note-input-${id}`);
+        const optionalNote = noteInput ? noteInput.value.trim() : null;
+
+        const song = allSongs.find(s => s.id === id);
+        if (!song) return;
+
+        if (!isDjAction && containsBlacklistedWord(song.title, song.artist, optionalNote)) {
+            return toonPopup('Oeps, dit woord is niet toegestaan.');
+        }
+
+        const currentVotes = Number(song.votes) || 0;
+        const newVotes = isDjAction ? currentVotes : (song.status === 'done' ? 1 : currentVotes + 1);
+        
+        let newNote = song.note || "";
+        if (optionalNote) {
+            newNote = newNote ? newNote + ' • ' + optionalNote : optionalNote;
+        }
+
+        const updateData = { votes: newVotes, status: 'requested', created_at: new Date().toISOString() };
+        if (newNote) updateData.note = newNote;
+
+        const { error } = await dbClient.from('requests').update(updateData).eq('id', id);
+        if (error) {
+            toonPopup('Fout bij aanvragen!');
+        } else {
+            if (!isDjAction) {
+                recordVote(id);
+                sessionStorage.setItem('last_request_time', Date.now()); 
+            }
+            toonPopup(`🎉 Verzoekje voor "${song.title}" doorgegeven!`);
+            
+            if (isDjAction) {
+                document.getElementById('quick-search-library').value = '';
+                document.getElementById('quick-search-results').style.display = 'none';
+                toggleDjQuickPanel('add');
+            } else {
+                document.getElementById('input-search-library').value = '';
+                document.getElementById('search-results').style.display = 'none';
+            }
+            loadRequests();
+        }
     }
 
     async function submitCustomRequest() {
@@ -1611,34 +1670,30 @@
       } else {
         toonPopup(`🎉 Verzoekje "${title}" verstuurd!`);
         if (data && data[0]) recordVote(data[0].id);
+        
+        sessionStorage.setItem('last_request_time', Date.now()); // Update timer voor custom forms
+        
         titleInput.value = ''; artistInput.value = ''; noteInput.value = '';
         toggleManualRequestForm();
         loadRequests();
       }
     }
 
-    async function vote(id, optionalNote = null, isDjAction = false) {
-      if (!isDjAction && !checkSpam()) return;
+    // NIEUW: Upvote functie ZONDER spam protectie
+    async function upvoteSong(id) {
+        const song = allSongs.find(s => s.id === id);
+        if (!song) return;
         
-      const song = allSongs.find(s => s.id === id);
-      if (!song) return;
-      if (!isDjAction && containsBlacklistedWord(song.title, song.artist, optionalNote)) {
-        return toonPopup('Oeps, er is iets misgegaan bij het verzenden.');
-      }
-      
-      const currentVotes = Number(song.votes) || 0;
-      const newVotes = isDjAction ? currentVotes : (song.status === 'done' ? 1 : currentVotes + 1);
-      const updateData = { votes: newVotes, status: 'requested', created_at: new Date().toISOString() };
-      if (optionalNote) updateData.note = optionalNote;
-      
-      const { error } = await dbClient.from('requests').update(updateData).eq('id', id);
-      if (error) {
-        toonPopup('Fout bij toevoegen!');
-      } else {
-        if (!isDjAction) recordVote(id);
-        toonPopup(`🎵 Verzoekje voor "${song.title}" doorgegeven!`);
-        loadRequests();
-      }
+        const newVotes = (Number(song.votes) || 0) + 1;
+        
+        const { error } = await dbClient.from('requests').update({ votes: newVotes }).eq('id', id);
+        if (error) {
+            toonPopup('Fout bij stemmen!');
+        } else {
+            recordVote(id); // Registreert wel de stem in localStorage, maar past GEEN spam timer aan
+            toonPopup(`👍 Gestemd op "${song.title}"!`);
+            loadRequests();
+        }
     }
 
     function renderGuestRequests() {
@@ -1663,7 +1718,8 @@
               <div class="request-artist">${r.artist}</div>
               ${r.note ? `<div class="request-note">💬 "${r.note}"</div>` : ''}
             </div>
-            <button class="upvote-btn ${hasVoted ? 'voted' : ''}" onclick="vote(${r.id})" ${hasVoted ? 'disabled' : ''}>
+            <!-- Hier roepen we nu upvoteSong aan in plaats van vote -->
+            <button class="upvote-btn ${hasVoted ? 'voted' : ''}" onclick="upvoteSong(${r.id})" ${hasVoted ? 'disabled' : ''}>
               <span>▲</span>
               <span>${r.votes || 0}</span>
             </button>
